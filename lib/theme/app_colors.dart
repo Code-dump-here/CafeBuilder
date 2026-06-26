@@ -10,6 +10,9 @@ class AppColors {
   static const Color placeholder = Color(0xFFACACAC);
   static const Color signUpLink = Color(0xFF977644);
   static const Color inputBorder = Color(0xFF9E896A);
+  static const Color fieldLabel = Color(0xFF3C3C43);
+  static const Color greyLine = Color(0xFFE5E7EB);
+  static const Color googleBorder = Color(0xFFD1D5DB);
   static const Color white = Color(0xFFFFFFFF);
   static const Color black = Color(0xFF000000);
 }
