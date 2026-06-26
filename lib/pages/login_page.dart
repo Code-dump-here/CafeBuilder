@@ -97,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           elevation: 0,
                         ),
-                        onPressed: () => Navigator.pushNamed(context, '/role-selection'),
+                        onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
                         child: Text(
                           'LOG IN',
                           style: GoogleFonts.inter(

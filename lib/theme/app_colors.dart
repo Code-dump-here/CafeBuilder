@@ -17,4 +17,9 @@ class AppColors {
   static const Color googleBorder = Color(0xFFD2C4BA);
   static const Color white = Color(0xFFFFFFFF);
   static const Color black = Color(0xFF000000);
+  
+  // New tokens for Dashboard
+  static const Color primaryFixed = Color(0xFFFEDCBE);
+  static const Color primaryContainer = Color(0xFF4B3621);
+  static const Color primaryFixedDim = Color(0xFFE1C1A4);
 }

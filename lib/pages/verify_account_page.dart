@@ -128,7 +128,7 @@ class _VerifyAccountPageState extends State<VerifyAccountPage> {
                     elevation: 0,
                   ),
                   onPressed: () {
-                    Navigator.pushNamed(context, '/success');
+                    Navigator.pushReplacementNamed(context, '/home');
                   },
                   child: Text(
                     'Confirm',
