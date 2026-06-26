@@ -255,8 +255,11 @@ class _LoginPageState extends State<LoginPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Image.network(
-            'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+            'https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png',
             height: 20,
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(Icons.account_circle_outlined, size: 20, color: AppColors.espresso);
+            },
           ),
           const SizedBox(width: 12),
           Text(

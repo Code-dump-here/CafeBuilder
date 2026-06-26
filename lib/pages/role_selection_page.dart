@@ -81,7 +81,11 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                     elevation: 0,
                   ),
                   onPressed: () {
-                    // Navigate to next step or home
+                    if (_selectedRole == 'cafe_owner') {
+                      Navigator.pushNamed(context, '/verify-account');
+                    } else {
+                      Navigator.pushNamed(context, '/profile-setup');
+                    }
                   },
                   child: Text(
                     'CONTINUE',

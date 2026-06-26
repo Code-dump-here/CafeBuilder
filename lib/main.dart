@@ -7,6 +7,8 @@ import 'pages/sms_otp_page.dart';
 import 'pages/sms_change_password_page.dart';
 import 'pages/success_page.dart';
 import 'pages/role_selection_page.dart';
+import 'pages/profile_setup_page.dart';
+import 'pages/verify_account_page.dart';
 import 'widgets/page_navigator.dart';
 
 void main() {
@@ -36,6 +38,8 @@ class CafeBuilderApp extends StatelessWidget {
             const PageNavigatorWrapper(child: SmsChangePasswordPage()),
         '/success': (context) => const PageNavigatorWrapper(child: SuccessPage()),
         '/role-selection': (context) => const PageNavigatorWrapper(child: RoleSelectionPage()),
+        '/profile-setup': (context) => const PageNavigatorWrapper(child: ProfileSetupPage()),
+        '/verify-account': (context) => const PageNavigatorWrapper(child: VerifyAccountPage()),
       },
     );
   }
