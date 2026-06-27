@@ -73,7 +73,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 40),
                     // Form Fields
                     _buildLabel('Full Name', 'full-name'),
-                    _buildInputField(hint: 'Nguyễn Văn An'),
+                    _buildInputField(hint: 'John Doe'),
                     const SizedBox(height: 24),
                     _buildLabel('Email', 'email'),
                     _buildInputField(hint: 'example@architect.studio'),
