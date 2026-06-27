@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'ai_advice_page.dart';
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});
@@ -49,6 +50,11 @@ class _DashboardTabState extends State<DashboardTab> {
                 
                 // Active Project Card
                 _buildActiveProjectCard(),
+                
+                const SizedBox(height: 40),
+                
+                // Smart AI Assistant Banner
+                _buildAiBanner(context),
                 
                 const SizedBox(height: 40),
                 
@@ -544,6 +550,61 @@ class _DashboardTabState extends State<DashboardTab> {
         const SizedBox(height: 12),
         _buildDocumentItem('Moodboard: Walnut & Clay', 'Updated Yesterday', Icons.palette_outlined),
       ],
+    );
+  }
+
+  Widget _buildAiBanner(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AiAdvicePage()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFD9EAA3).withOpacity(0.5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF56642B).withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF56642B),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.psychology_outlined, color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AI Design Assistant',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Text(
+                    'Get instant professional advice for your coffee shop design.',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.primary),
+          ],
+        ),
+      ),
     );
   }
 

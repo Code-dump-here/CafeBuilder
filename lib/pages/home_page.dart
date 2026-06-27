@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'discovery_page.dart';
 import 'dashboard_tab.dart';
+import 'profile_tab.dart';
+import 'ai_advice_page.dart';
+import 'services_tab.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,8 +27,8 @@ class _HomePageState extends State<HomePage> {
           children: [
             const DashboardTab(),
             const DiscoveryPage(),
-            Center(child: Text('EXPERT TAB', style: GoogleFonts.playfairDisplay(fontSize: 24))),
-            Center(child: Text('PROFILE TAB', style: GoogleFonts.playfairDisplay(fontSize: 24))),
+            const ServicesTab(),
+            const ProfileTab(),
           ],
         ),
       ),
