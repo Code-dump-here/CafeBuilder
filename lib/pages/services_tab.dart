@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'find_designers_page.dart';
+import 'find_constructors_page.dart';
 
 class ServicesTab extends StatelessWidget {
   const ServicesTab({super.key});
@@ -72,6 +73,12 @@ class ServicesTab extends StatelessWidget {
                   title: 'Hire a Contractor',
                   desc: 'Professional construction team, ensuring progress and the most sophisticated finishing quality.',
                   actionText: 'VIEW PARTNERS',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const FindConstructorsPage()),
+                    );
+                  },
                 ),
                 
                 const SizedBox(height: 24),

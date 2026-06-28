@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
+import 'my_projects_page.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -255,7 +256,16 @@ class _ProfileTabState extends State<ProfileTab> {
   Widget _buildMenuSection() {
     return Column(
       children: [
-        _buildMenuItem(Icons.architecture_rounded, 'Project Management'),
+        _buildMenuItem(
+          Icons.architecture_rounded, 
+          'Project Management',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MyProjectsPage()),
+            );
+          },
+        ),
         _buildMenuItem(Icons.dashboard_customize_outlined, 'My Moodboards'),
         _buildMenuItem(Icons.person_search_outlined, 'My Application'),
         _buildMenuItem(Icons.history_rounded, 'Consultation History'),
@@ -285,7 +295,7 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title) {
+  Widget _buildMenuItem(IconData icon, String title, {VoidCallback? onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -293,6 +303,7 @@ class _ProfileTabState extends State<ProfileTab> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
+        onTap: onTap,
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(

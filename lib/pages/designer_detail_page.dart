@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'select_project_page.dart';
 
 class DesignerDetailPage extends StatelessWidget {
   const DesignerDetailPage({super.key});
@@ -117,7 +118,14 @@ class DesignerDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SelectProjectPage(designerName: 'TROP Studio'),
+                  ),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.espresso,
                 foregroundColor: Colors.white,
