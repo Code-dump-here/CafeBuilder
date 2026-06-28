@@ -81,11 +81,23 @@ class MarketplaceState {
   static int initialIndex = 0;
   static VoidCallback? onRoleChanged;
 
+  /// Called whenever a new broadcast is inserted into [broadcasts].
+  /// MarketplacePage subscribes to this to trigger a rebuild.
+  static VoidCallback? onBroadcastsChanged;
+
   static void toggleRole() {
     isServiceProvider = !isServiceProvider;
     initialIndex = isServiceProvider ? 2 : 0; // If switching to provider, default to Marketplace tab
     if (onRoleChanged != null) {
       onRoleChanged!();
+    }
+  }
+
+  /// Insert a new project and notify listeners.
+  static void addBroadcast(BroadcastProject project) {
+    broadcasts.insert(0, project);
+    if (onBroadcastsChanged != null) {
+      onBroadcastsChanged!();
     }
   }
 }

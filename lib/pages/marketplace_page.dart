@@ -15,9 +15,31 @@ class _MarketplacePageState extends State<MarketplacePage> {
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    // Rebuild whenever a new project is broadcast to the marketplace
+    MarketplaceState.onBroadcastsChanged = () {
+      if (mounted) setState(() {});
+    };
+  }
+
+  @override
+  void dispose() {
+    MarketplaceState.onBroadcastsChanged = null;
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Filter marketplace based on search
+    // Filter marketplace based on search and user role
     final items = MarketplaceState.broadcasts.where((item) {
+      if (!MarketplaceState.isServiceProvider) {
+        if (MarketplaceState.activeProject == null || item.id != MarketplaceState.activeProject!.id) {
+          return false;
+        }
+      }
+
       final matchesSearch = item.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           item.location.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           item.style.toLowerCase().contains(_searchQuery.toLowerCase());

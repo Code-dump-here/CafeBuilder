@@ -69,10 +69,9 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
       imageUrl: 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
     );
 
-    // Save to global list
+    // Save to global list and notify MarketplacePage to rebuild
     MarketplaceState.activeProject = newBroadcast;
-    // Prepend so that it is the first item on the Marketplace list
-    MarketplaceState.broadcasts.insert(0, newBroadcast);
+    MarketplaceState.addBroadcast(newBroadcast);
 
     setState(() {
       _flowSubStep = 2;

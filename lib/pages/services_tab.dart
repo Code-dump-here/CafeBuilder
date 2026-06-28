@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'find_designers_page.dart';
 
 class ServicesTab extends StatelessWidget {
   const ServicesTab({super.key});
@@ -54,6 +55,12 @@ class ServicesTab extends StatelessWidget {
                   title: 'Hire a Designer',
                   desc: 'Find interior design studios and leading architects for high-end F&B spaces.',
                   actionText: 'EXPLORE STUDIOS',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const FindDesignersPage()),
+                    );
+                  },
                 ),
                 
                 const SizedBox(height: 24),
@@ -123,19 +130,22 @@ class ServicesTab extends StatelessWidget {
     required String title,
     required String desc,
     required String actionText,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -201,7 +211,7 @@ class ServicesTab extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildDarkProjectCard() {
