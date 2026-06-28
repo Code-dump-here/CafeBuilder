@@ -27,6 +27,7 @@ class _PageNavigatorWrapperState extends State<PageNavigatorWrapper>
     {'label': 'New Pass', 'route': '/sms-change-password', 'icon': Icons.key_outlined},
     {'label': 'Success', 'route': '/success', 'icon': Icons.check_circle_outline},
     {'label': 'Roles', 'route': '/role-selection', 'icon': Icons.supervised_user_circle_outlined},
+    {'label': 'New Project', 'route': '/project-onboarding', 'icon': Icons.add_business_outlined},
   ];
 
   @override

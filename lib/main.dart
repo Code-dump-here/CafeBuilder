@@ -10,6 +10,7 @@ import 'pages/role_selection_page.dart';
 import 'pages/profile_setup_page.dart';
 import 'pages/verify_account_page.dart';
 import 'pages/home_page.dart';
+import 'pages/project_onboarding_page.dart';
 import 'widgets/page_navigator.dart';
 
 void main() {
@@ -42,6 +43,7 @@ class CafeBuilderApp extends StatelessWidget {
         '/profile-setup': (context) => const PageNavigatorWrapper(child: ProfileSetupPage()),
         '/verify-account': (context) => const PageNavigatorWrapper(child: VerifyAccountPage()),
         '/home': (context) => const PageNavigatorWrapper(child: HomePage()),
+        '/project-onboarding': (context) => const PageNavigatorWrapper(child: ProjectOnboardingPage()),
       },
     );
   }

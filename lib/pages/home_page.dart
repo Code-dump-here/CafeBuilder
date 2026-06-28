@@ -34,7 +34,9 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: _currentIndex == 0 
         ? FloatingActionButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushNamed(context, '/project-onboarding');
+            },
             backgroundColor: AppColors.espresso,
             shape: const CircleBorder(),
             child: const Icon(Icons.add, color: Colors.white, size: 32),
