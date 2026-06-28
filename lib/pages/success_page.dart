@@ -16,74 +16,77 @@ class SuccessPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(),
-              // Shield illustration
+              // Success Icon/Illustration
               Container(
-                width: 208,
-                height: 208,
-                decoration: const BoxDecoration(
+                width: 160,
+                height: 160,
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFFD0D5DD),
+                  color: AppColors.splashBackground.withOpacity(0.5),
                 ),
                 child: Center(
                   child: Container(
-                    width: 174,
-                    height: 174,
+                    width: 120,
+                    height: 120,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.white,
                     ),
                     child: const Icon(
-                      Icons.shield_outlined,
+                      Icons.check_circle_rounded,
                       size: 80,
                       color: AppColors.primary,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 42),
+              const SizedBox(height: 48),
               Text(
                 'Success!',
-                style: GoogleFonts.inriaSans(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.textPrimary,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.appName,
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Your password has been changed. Please log in again with your new password.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.textSecondary,
-                  height: 1.4,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Your password has been changed. Please log in again with your new password.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
                 ),
               ),
               const Spacer(),
               SizedBox(
                 width: double.infinity,
-                height: 49,
+                height: 56,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: AppColors.appName,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(36),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
                   onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
                   child: Text(
-                    'Back To Sign In',
+                    'Back To Login',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
-                      fontWeight: FontWeight.w400,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.white,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
             ],
           ),
         ),
