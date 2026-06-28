@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../models/marketplace_state.dart';
 
-class ProfileTab extends StatelessWidget {
+class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
 
+  @override
+  State<ProfileTab> createState() => _ProfileTabState();
+}
+
+class _ProfileTabState extends State<ProfileTab> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -136,10 +142,29 @@ class ProfileTab extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Project Owner / Cafe Owner',
+            MarketplaceState.isServiceProvider ? 'Contractor & Designer' : 'Project Owner / Cafe Owner',
             style: GoogleFonts.inter(
               fontSize: 14,
               color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              setState(() {
+                MarketplaceState.toggleRole();
+              });
+            },
+            icon: const Icon(Icons.swap_horiz, size: 16, color: Colors.white),
+            label: Text(
+              MarketplaceState.isServiceProvider ? 'Switch to Owner Mode' : 'Switch to Provider Mode',
+              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
           ),
           const SizedBox(height: 16),

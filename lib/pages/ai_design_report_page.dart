@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'project_success_page.dart';
 
 class DesignSynthesisLoadingPage extends StatefulWidget {
   final String cafeName;
@@ -282,43 +283,89 @@ class AiDesignReportPage extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     // Final Action Buttons
+                    // Primary CTA: Post directly to Marketplace (broadcast config step)
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProjectSuccessPage(
+                              cafeName: cafeName,
+                              location: location,
+                              style: style,
+                              budgetLevel: budgetLevel,
+                              totalBudget: totalBudget,
+                              mood: mood,
+                              role: role,
+                              area: area,
+                              initialStep: 1, // Jump straight to Broadcast Config
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.podcasts_rounded, size: 18),
+                      label: Text(
+                        'Post to Marketplace',
+                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.espresso,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 56),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // Reset and go to home screen dashboard
-                              Navigator.of(context).popUntil((route) => route.isFirst);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.espresso,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              elevation: 0,
-                            ),
-                            child: Text(
-                              'Save to Dashboard',
-                              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
                           child: OutlinedButton(
                             onPressed: () {
-                              // Go back to edit onboarding details
-                              Navigator.maybePop(context);
+                              // Show "Project Created" confirmation first
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProjectSuccessPage(
+                                    cafeName: cafeName,
+                                    location: location,
+                                    style: style,
+                                    budgetLevel: budgetLevel,
+                                    totalBudget: totalBudget,
+                                    mood: mood,
+                                    role: role,
+                                    area: area,
+                                    initialStep: 0,
+                                  ),
+                                ),
+                              );
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.espresso,
                               side: const BorderSide(color: AppColors.espresso),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: Text(
+                              'Save to Dashboard',
+                              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.maybePop(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.textSecondary,
+                              side: BorderSide(color: AppColors.outlineVariant.withOpacity(0.7)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             child: Text(
                               'Edit details',
-                              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
