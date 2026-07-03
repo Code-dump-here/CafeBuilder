@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
+import '../services/auth_service.dart';
 import 'my_projects_page.dart';
 
 class ProfileTab extends StatefulWidget {
@@ -336,7 +337,10 @@ class _ProfileTabState extends State<ProfileTab> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () {},
+        onTap: () async {
+          await AuthService.logout();
+          if (context.mounted) Navigator.pushReplacementNamed(context, '/login');
+        },
         borderRadius: BorderRadius.circular(12),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

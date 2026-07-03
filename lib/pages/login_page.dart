@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/auth_service.dart';
+import '../services/api_client.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,6 +13,39 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
+  bool _isLoading = false;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) return;
+    setState(() => _isLoading = true);
+    try {
+      await AuthService.login(_emailController.text.trim(), _passwordController.text);
+      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Connection failed. Is the server running?'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,15 +132,24 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           elevation: 0,
                         ),
-                        onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
-                        child: Text(
-                          'LOG IN',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 2.0,
-                          ),
-                        ),
+                        onPressed: _isLoading ? null : _login,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                'LOG IN',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 2.0,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 48),
@@ -205,6 +249,8 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildUnderlinedInputField({required String hint}) {
     return TextField(
+      controller: _emailController,
+      keyboardType: TextInputType.emailAddress,
       style: GoogleFonts.inter(color: AppColors.espresso, fontSize: 16),
       decoration: InputDecoration(
         hintText: hint,
@@ -222,6 +268,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildUnderlinedPasswordField() {
     return TextField(
+      controller: _passwordController,
       obscureText: _obscurePassword,
       style: GoogleFonts.inter(color: AppColors.espresso, fontSize: 16),
       decoration: InputDecoration(
