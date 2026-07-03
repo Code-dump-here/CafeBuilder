@@ -108,7 +108,7 @@ class _SmsChangePasswordPageState extends State<SmsChangePasswordPage> {
       height: 54,
       decoration: BoxDecoration(
         color: AppColors.white,
-        border: Border.all(color: AppColors.inputBorder),
+        border: Border.all(color: AppColors.outlineVariant),
         borderRadius: BorderRadius.circular(40),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20),

@@ -93,7 +93,7 @@ class SmsOtpPage extends StatelessWidget {
       height: 54,
       decoration: BoxDecoration(
         color: AppColors.white,
-        border: Border.all(color: AppColors.inputBorder),
+        border: Border.all(color: AppColors.outlineVariant),
         borderRadius: BorderRadius.circular(40),
       ),
       child: TextField(
