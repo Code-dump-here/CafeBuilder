@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/auth_service.dart';
+import '../services/api_client.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -12,6 +14,49 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
   bool _agreedToTerms = false;
+  bool _isLoading = false;
+
+  final _fullNameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _fullNameCtrl.dispose();
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _register() async {
+    if (_emailCtrl.text.isEmpty || _passwordCtrl.text.isEmpty) return;
+    setState(() => _isLoading = true);
+    try {
+      await AuthService.register(
+        email: _emailCtrl.text.trim(),
+        password: _passwordCtrl.text,
+        role: 'owner',
+        phone: _phoneCtrl.text.isNotEmpty ? _phoneCtrl.text.trim() : null,
+      );
+      if (mounted) Navigator.pushNamed(context, '/role-selection');
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Connection failed. Is the server running?'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,13 +118,13 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 40),
                     // Form Fields
                     _buildLabel('Full Name', 'full-name'),
-                    _buildInputField(hint: 'John Doe'),
+                    _buildInputField(hint: 'John Doe', controller: _fullNameCtrl),
                     const SizedBox(height: 24),
                     _buildLabel('Email', 'email'),
-                    _buildInputField(hint: 'example@architect.studio'),
+                    _buildInputField(hint: 'example@architect.studio', controller: _emailCtrl, keyboardType: TextInputType.emailAddress),
                     const SizedBox(height: 24),
                     _buildLabel('Phone Number', 'phone'),
-                    _buildInputField(hint: '090 123 4567'),
+                    _buildInputField(hint: '090 123 4567', controller: _phoneCtrl, keyboardType: TextInputType.phone),
                     const SizedBox(height: 24),
                     _buildLabel('Password', 'password'),
                     _buildPasswordField(),
@@ -148,8 +193,14 @@ class _RegisterPageState extends State<RegisterPage> {
                           elevation: 2,
                           shadowColor: AppColors.espresso.withOpacity(0.2),
                         ),
-                        onPressed: _agreedToTerms ? () => Navigator.pushNamed(context, '/role-selection') : null,
-                        child: Text(
+                        onPressed: (_agreedToTerms && !_isLoading) ? _register : null,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : Text(
                           'Continue',
                           style: GoogleFonts.inter(
                             fontSize: 14,
@@ -218,8 +269,10 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildInputField({required String hint}) {
+  Widget _buildInputField({required String hint, TextEditingController? controller, TextInputType? keyboardType}) {
     return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
       style: GoogleFonts.inter(color: AppColors.espresso, fontSize: 16),
       decoration: InputDecoration(
         hintText: hint,
