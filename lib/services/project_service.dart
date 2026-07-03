@@ -13,7 +13,7 @@ class ProjectService {
       'pageSize': pageSize,
       if (ownerId != null) 'ownerId': ownerId,
     };
-    final response = await ApiClient.authGet('/api/projects', params);
+    final response = await ApiClient.authGet('/projects', params);
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     final data = ResponseData.fromJson(
@@ -24,28 +24,28 @@ class ProjectService {
   }
 
   static Future<ProjectResponse> getProject(int id) async {
-    final response = await ApiClient.authGet('/api/projects/$id');
+    final response = await ApiClient.authGet('/projects/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ResponseData.fromJson(body, (d) => ProjectResponse.fromJson(d)).data!;
   }
 
   static Future<ProjectResponse> createProject(CreateProjectRequest request) async {
-    final response = await ApiClient.authPost('/api/projects', request.toJson());
+    final response = await ApiClient.authPost('/projects', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ResponseData.fromJson(body, (d) => ProjectResponse.fromJson(d)).data!;
   }
 
   static Future<ProjectResponse> updateProject(int id, UpdateProjectRequest request) async {
-    final response = await ApiClient.authPut('/api/projects/$id', request.toJson());
+    final response = await ApiClient.authPut('/projects/$id', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ResponseData.fromJson(body, (d) => ProjectResponse.fromJson(d)).data!;
   }
 
   static Future<void> deleteProject(int id) async {
-    final response = await ApiClient.authDelete('/api/projects/$id');
+    final response = await ApiClient.authDelete('/projects/$id');
     ApiClient.throwIfError(response);
   }
 }

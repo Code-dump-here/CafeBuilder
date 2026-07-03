@@ -7,7 +7,7 @@ class ServiceProviderService {
     int pageNumber = 1,
     int pageSize = 10,
   }) async {
-    final response = await ApiClient.authGet('/api/service-providers', {
+    final response = await ApiClient.authGet('/service-providers', {
       'pageNumber': pageNumber,
       'pageSize': pageSize,
     });
@@ -20,7 +20,7 @@ class ServiceProviderService {
   }
 
   static Future<ServiceProviderResponse> getProvider(int id) async {
-    final response = await ApiClient.authGet('/api/service-providers/$id');
+    final response = await ApiClient.authGet('/service-providers/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ResponseData.fromJson(body, (d) => ServiceProviderResponse.fromJson(d)).data!;
@@ -28,7 +28,7 @@ class ServiceProviderService {
 
   static Future<ServiceProviderResponse> createProvider(
       CreateServiceProviderRequest request) async {
-    final response = await ApiClient.authPost('/api/service-providers', request.toJson());
+    final response = await ApiClient.authPost('/service-providers', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ResponseData.fromJson(body, (d) => ServiceProviderResponse.fromJson(d)).data!;
@@ -36,28 +36,28 @@ class ServiceProviderService {
 
   static Future<ServiceProviderResponse> updateProvider(
       int id, UpdateServiceProviderRequest request) async {
-    final response = await ApiClient.authPut('/api/service-providers/$id', request.toJson());
+    final response = await ApiClient.authPut('/service-providers/$id', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ResponseData.fromJson(body, (d) => ServiceProviderResponse.fromJson(d)).data!;
   }
 
   static Future<void> deleteProvider(int id) async {
-    final response = await ApiClient.authDelete('/api/service-providers/$id');
+    final response = await ApiClient.authDelete('/service-providers/$id');
     ApiClient.throwIfError(response);
   }
 }
 
 class ShopOwnerService {
   static Future<ShopOwnerResponse> getShopOwner(int id) async {
-    final response = await ApiClient.authGet('/api/shop-owners/$id');
+    final response = await ApiClient.authGet('/shop-owners/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ResponseData.fromJson(body, (d) => ShopOwnerResponse.fromJson(d)).data!;
   }
 
   static Future<ShopOwnerResponse> createShopOwner(CreateShopOwnerRequest request) async {
-    final response = await ApiClient.authPost('/api/shop-owners', request.toJson());
+    final response = await ApiClient.authPost('/shop-owners', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ResponseData.fromJson(body, (d) => ShopOwnerResponse.fromJson(d)).data!;
@@ -65,7 +65,7 @@ class ShopOwnerService {
 
   static Future<ShopOwnerResponse> updateShopOwner(
       int id, UpdateShopOwnerRequest request) async {
-    final response = await ApiClient.authPut('/api/shop-owners/$id', request.toJson());
+    final response = await ApiClient.authPut('/shop-owners/$id', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ResponseData.fromJson(body, (d) => ShopOwnerResponse.fromJson(d)).data!;

@@ -7,7 +7,7 @@ class AiRecommendationService {
     int pageSize = 10,
     int? briefId,
   }) async {
-    final response = await ApiClient.authGet('/api/ai-recommendations', {
+    final response = await ApiClient.authGet('/ai-recommendations', {
       'pageNumber': pageNumber,
       'pageSize': pageSize,
       if (briefId != null) 'briefId': briefId,
@@ -21,7 +21,7 @@ class AiRecommendationService {
   }
 
   static Future<AiRecommendationResponse> getRecommendation(int id) async {
-    final response = await ApiClient.authGet('/api/ai-recommendations/$id');
+    final response = await ApiClient.authGet('/ai-recommendations/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ResponseData.fromJson(body, (d) => AiRecommendationResponse.fromJson(d)).data!;
@@ -34,7 +34,7 @@ class AiRecommendationService {
     double? estimatedDesignCost,
     double? estimatedConstructionCost,
   }) async {
-    final response = await ApiClient.authPost('/api/ai-recommendations', {
+    final response = await ApiClient.authPost('/ai-recommendations', {
       'briefId': briefId,
       'conceptSummary': conceptSummary,
       'payload': payload,

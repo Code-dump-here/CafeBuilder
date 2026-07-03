@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  static const String _baseUrl = 'http://localhost:8080';
+  static const String _baseUrl = 'https://smartcoffeebuilder-be-295284732683.asia-southeast1.run.app/api';
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _accountIdKey = 'account_id';

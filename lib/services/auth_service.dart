@@ -5,7 +5,7 @@ import 'api_client.dart';
 class AuthService {
   static Future<AuthResponse> login(String email, String password) async {
     final response = await ApiClient.post(
-      '/api/auth/login',
+      '/auth/login',
       LoginRequest(email: email, password: password).toJson(),
     );
     ApiClient.throwIfError(response);
@@ -29,7 +29,7 @@ class AuthService {
     String? phone,
   }) async {
     final response = await ApiClient.post(
-      '/api/auth/register',
+      '/auth/register',
       RegisterRequest(email: email, password: password, role: role, phone: phone).toJson(),
     );
     ApiClient.throwIfError(response);
@@ -50,7 +50,7 @@ class AuthService {
     final refreshToken = await ApiClient.getRefreshToken();
     if (refreshToken != null) {
       await ApiClient.authPost(
-        '/api/auth/logout',
+        '/auth/logout',
         RefreshTokenRequest(refreshToken: refreshToken).toJson(),
       );
     }
@@ -61,7 +61,7 @@ class AuthService {
     final refreshToken = await ApiClient.getRefreshToken();
     if (refreshToken == null) throw ApiException(statusCode: 401, message: 'No refresh token');
     final response = await ApiClient.post(
-      '/api/auth/refresh',
+      '/auth/refresh',
       RefreshTokenRequest(refreshToken: refreshToken).toJson(),
     );
     ApiClient.throwIfError(response);
