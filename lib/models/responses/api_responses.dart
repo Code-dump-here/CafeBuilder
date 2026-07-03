@@ -75,11 +75,11 @@ class AuthResponse {
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) => AuthResponse(
-        accessToken: json['accessToken'],
-        refreshToken: json['refreshToken'],
-        accountId: json['accountId'],
-        email: json['email'],
-        role: json['role'],
+        accessToken: json['accessToken'] ?? json['AccessToken'],
+        refreshToken: json['refreshToken'] ?? json['RefreshToken'],
+        accountId: (json['accountId'] ?? json['AccountId'] as num).toInt(),
+        email: json['email'] ?? json['Email'],
+        role: json['role'] ?? json['Role'],
       );
 }
 

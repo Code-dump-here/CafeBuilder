@@ -1,5 +1,5 @@
 import '../models/requests/auth_requests.dart';
-import '../models/responses/api_responses.dart';
+import '../models/responses/api_responses.dart' show AuthResponse;
 import 'api_client.dart';
 
 class AuthService {
@@ -9,9 +9,7 @@ class AuthService {
       LoginRequest(email: email, password: password).toJson(),
     );
     ApiClient.throwIfError(response);
-    final body = ApiClient.parseBody(response);
-    final data = ResponseData.fromJson(body, (d) => AuthResponse.fromJson(d));
-    final auth = data.data!;
+    final auth = AuthResponse.fromJson(ApiClient.parseBody(response));
     await ApiClient.saveTokens(
       accessToken: auth.accessToken,
       refreshToken: auth.refreshToken,
@@ -33,9 +31,7 @@ class AuthService {
       RegisterRequest(email: email, password: password, role: role, phone: phone).toJson(),
     );
     ApiClient.throwIfError(response);
-    final body = ApiClient.parseBody(response);
-    final data = ResponseData.fromJson(body, (d) => AuthResponse.fromJson(d));
-    final auth = data.data!;
+    final auth = AuthResponse.fromJson(ApiClient.parseBody(response));
     await ApiClient.saveTokens(
       accessToken: auth.accessToken,
       refreshToken: auth.refreshToken,
@@ -65,9 +61,7 @@ class AuthService {
       RefreshTokenRequest(refreshToken: refreshToken).toJson(),
     );
     ApiClient.throwIfError(response);
-    final body = ApiClient.parseBody(response);
-    final data = ResponseData.fromJson(body, (d) => AuthResponse.fromJson(d));
-    final auth = data.data!;
+    final auth = AuthResponse.fromJson(ApiClient.parseBody(response));
     await ApiClient.saveTokens(
       accessToken: auth.accessToken,
       refreshToken: auth.refreshToken,
