@@ -301,6 +301,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Widget _buildPasswordField() {
     return TextField(
+      controller: _passwordCtrl,
       obscureText: _obscurePassword,
       style: GoogleFonts.inter(color: AppColors.espresso, fontSize: 16),
       decoration: InputDecoration(
