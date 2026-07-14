@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'package_review_page.dart';
 
 class DesignPackagesPage extends StatelessWidget {
   const DesignPackagesPage({super.key});
@@ -74,6 +75,12 @@ class DesignPackagesPage extends StatelessWidget {
                 contentCount: '6 Files included',
                 timeline: 'Uploaded 2 hours ago',
                 designerAvatar: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=150', // Drawing/architect photo
+                onOpenPackage: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PackageReviewPage()),
+                  );
+                },
               ),
               const SizedBox(height: 24),
               _buildPackageCard(
@@ -84,6 +91,12 @@ class DesignPackagesPage extends StatelessWidget {
                 contentCount: '6 Files included',
                 timeline: 'Uploaded 2 hours ago',
                 designerAvatar: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=150',
+                onOpenPackage: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PackageReviewPage()),
+                  );
+                },
               ),
             ],
           ),
@@ -100,6 +113,7 @@ class DesignPackagesPage extends StatelessWidget {
     required String contentCount,
     required String timeline,
     required String designerAvatar,
+    VoidCallback? onOpenPackage,
   }) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -174,7 +188,7 @@ class DesignPackagesPage extends StatelessWidget {
             width: double.infinity,
             height: 54,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: onOpenPackage ?? () {},
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.espresso, 
                 elevation: 0,

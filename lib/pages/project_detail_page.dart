@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'design_packages_page.dart';
+import 'collaboration_page.dart';
 
 class ProjectDetailPage extends StatelessWidget {
   const ProjectDetailPage({super.key});
@@ -450,7 +451,16 @@ class ProjectDetailPage extends StatelessWidget {
         Expanded(
           child: Column(
             children: [
-              _buildActionCard(Icons.group_outlined, 'Collab', onTap: () {}),
+              _buildActionCard(
+                Icons.group_outlined, 
+                'Collab', 
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CollaborationPage()),
+                  );
+                },
+              ),
               const SizedBox(height: 12),
               _buildActionCard(Icons.construction_outlined, 'Constructor', onTap: () {}),
             ],
@@ -464,19 +474,20 @@ class ProjectDetailPage extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: AppColors.espresso, size: 24),
-          const SizedBox(height: 8),
-          Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
-        ],
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.outlineVariant.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: AppColors.espresso, size: 24),
+            const SizedBox(height: 8),
+            Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+          ],
+        ),
       ),
     );
   }
