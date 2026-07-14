@@ -4,6 +4,8 @@ import '../theme/app_colors.dart';
 import '../services/project_service.dart';
 import '../services/api_client.dart';
 import '../models/responses/api_responses.dart';
+import '../models/marketplace_state.dart';
+import 'marketplace_page.dart';
 
 class MyProjectsPage extends StatefulWidget {
   const MyProjectsPage({super.key});
@@ -59,6 +61,23 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
             color: AppColors.espresso,
           ),
         ),
+        actions: [
+          if (!MarketplaceState.isServiceProvider)
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MarketplacePage(showBackButton: true)),
+                );
+              },
+              icon: const Icon(Icons.store_mall_directory_outlined, color: AppColors.espresso, size: 18),
+              label: Text(
+                'Marketplace',
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
+              ),
+            ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),

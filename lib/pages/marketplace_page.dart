@@ -4,7 +4,8 @@ import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
 
 class MarketplacePage extends StatefulWidget {
-  const MarketplacePage({super.key});
+  final bool showBackButton;
+  const MarketplacePage({super.key, this.showBackButton = false});
 
   @override
   State<MarketplacePage> createState() => _MarketplacePageState();
@@ -78,6 +79,15 @@ class _MarketplacePageState extends State<MarketplacePage> {
         children: [
           Row(
             children: [
+              if (widget.showBackButton)
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: AppColors.espresso),
+                  onPressed: () => Navigator.pop(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  splashRadius: 24,
+                ),
+              if (widget.showBackButton) const SizedBox(width: 8),
               const Icon(Icons.store_mall_directory_rounded, color: AppColors.espresso, size: 28),
               const SizedBox(width: 8),
               Text(
