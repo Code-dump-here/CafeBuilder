@@ -1056,7 +1056,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         ...[
           _buildMoodTile('Warm & Cozy', 'Soft, ambient', [const Color(0xFFD9B48F), const Color(0xFFAC7C58), const Color(0xFF7A4F30)], 'https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&q=80&w=300'),
           _buildMoodTile('Cinematic & Moody', 'Dramatic, focused', [const Color(0xFF323B33), const Color(0xFF5E655F), const Color(0xFFDFE2DE)], 'https://images.unsplash.com/photo-1507133750040-4a8f57021571?auto=format&fit=crop&q=80&w=300'),
-          _buildMoodTile('Bright & Clean', 'Natural, abundant', [const Color(0xFFEDEAD8), const Color(0xFFD7CFBC), const Color(0xFFC7BDAB)], 'https://images.unsplash.com/photo-154118811-1e0d58224f24?auto=format&fit=crop&q=80&w=300'),
+          _buildMoodTile('Bright & Clean', 'Natural, abundant', [const Color(0xFFEDEAD8), const Color(0xFFD7CFBC), const Color(0xFFC7BDAB)], 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=300'),
           _buildMoodTile('Artistic & Memorable', 'Curated, statement', [const Color(0xFFB15B3C), const Color(0xFFCE9B82), const Color(0xFFE8DCD4)], 'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?auto=format&fit=crop&q=80&w=300'),
           _buildMoodTile('Premium & Elegant', 'Layered, refined', [const Color(0xFF3E3024), const Color(0xFF9E896A), const Color(0xFFDFDCD7)], 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=300'),
           _buildMoodTile('Natural & Calm', 'Diffused, peaceful', [const Color(0xFF75855F), const Color(0xFFC5CEB8), const Color(0xFFECEFE7)], 'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&q=80&w=300'),

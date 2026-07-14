@@ -158,7 +158,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
               status: 'Draft',
               statusColor: AppColors.placeholder,
               date: 'Updated 1 week ago',
-              imageUrl: 'https://images.unsplash.com/photo-1541123437800-1c0c05a1ce65?auto=format&fit=crop&q=80&w=150',
+              imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=150',
             ),
             const SizedBox(height: 48), // Bottom space
           ],
@@ -187,7 +187,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
             child: Image.network(
-              'https://images.unsplash.com/photo-1524360341773-45cdbb281e05?auto=format&fit=crop&q=80&w=600',
+              'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
               height: 140,
               width: double.infinity,
               fit: BoxFit.cover,
@@ -361,7 +361,12 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ProjectDetailPage()),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.espresso,
                         foregroundColor: Colors.white,

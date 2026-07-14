@@ -11,6 +11,10 @@ import 'pages/profile_setup_page.dart';
 import 'pages/verify_account_page.dart';
 import 'pages/home_page.dart';
 import 'pages/project_onboarding_page.dart';
+import 'pages/package_details_page.dart';
+import 'pages/element_details_page.dart';
+import 'pages/chat_page.dart';
+import 'pages/collaboration_workspace_page.dart';
 import 'widgets/page_navigator.dart';
 
 void main() {
@@ -44,6 +48,10 @@ class CafeBuilderApp extends StatelessWidget {
         '/verify-account': (context) => const PageNavigatorWrapper(child: VerifyAccountPage()),
         '/home': (context) => const PageNavigatorWrapper(child: HomePage()),
         '/project-onboarding': (context) => const PageNavigatorWrapper(child: ProjectOnboardingPage()),
+        '/package-details': (context) => const PageNavigatorWrapper(child: PackageDetailsPage()),
+        '/element-details': (context) => const PageNavigatorWrapper(child: ElementDetailsPage()),
+        '/chat': (context) => const PageNavigatorWrapper(child: ChatPage()),
+        '/collab-workspace': (context) => const PageNavigatorWrapper(child: CollaborationWorkspacePage()),
       },
     );
   }

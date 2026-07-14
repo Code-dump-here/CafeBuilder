@@ -51,7 +51,7 @@ class ServicesTab extends StatelessWidget {
                 
                 // Card 1: Hire a Designer
                 _buildWhiteServiceCard(
-                  imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD2_S_NqV9F9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6',
+                  imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=600',
                   icon: Icons.architecture_rounded,
                   title: 'Hire a Designer',
                   desc: 'Find interior design studios and leading architects for high-end F&B spaces.',
@@ -68,7 +68,7 @@ class ServicesTab extends StatelessWidget {
                 
                 // Card 2: Hire a Contractor
                 _buildWhiteServiceCard(
-                  imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD7_N_m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6',
+                  imageUrl: 'https://images.unsplash.com/photo-1541888081622-15d2a2a5d249?auto=format&fit=crop&q=80&w=600',
                   icon: Icons.construction_rounded,
                   title: 'Hire a Contractor',
                   desc: 'Professional construction team, ensuring progress and the most sophisticated finishing quality.',
@@ -109,7 +109,7 @@ class ServicesTab extends StatelessWidget {
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   image: DecorationImage(
-                    image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuCdRocndzSsN-UYAyAdDehJe5iER8FIYMiE35WxCJBErozOUf2B3yLChgipuBhVB2ygfuMi7dPypKlDSHVvpvWUNEwx8C9H199dSCEp1Tu738oOGnNuAe3tyDtyMBfFBo0DrDvijOS7KW3cFo5vI8z6GhSGAKWUlR0QnpCnGtGNj6-lhHHKxFyfYkRe1xA8mCEpLYpwWtG1LxWP0NA4RwzOLw-qHhhmkGrZtqHn__ZXAvz-Cz47e0qey8ZAZ_4keMq0p93ycyXaXlbg'),
+                    image: NetworkImage('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150'),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -296,7 +296,7 @@ class ServicesTab extends StatelessWidget {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
             child: Image.network(
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuCT_N_m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0m9m8m7m6m5m4m3m2m1m0',
+              'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=600',
               height: 200,
               width: double.infinity,
               fit: BoxFit.cover,

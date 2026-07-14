@@ -28,6 +28,10 @@ class _PageNavigatorWrapperState extends State<PageNavigatorWrapper>
     {'label': 'Success', 'route': '/success', 'icon': Icons.check_circle_outline},
     {'label': 'Roles', 'route': '/role-selection', 'icon': Icons.supervised_user_circle_outlined},
     {'label': 'New Project', 'route': '/project-onboarding', 'icon': Icons.add_business_outlined},
+    {'label': 'Pkg Details', 'route': '/package-details', 'icon': Icons.inventory_2_outlined},
+    {'label': 'Elem Detail', 'route': '/element-details', 'icon': Icons.layers_outlined},
+    {'label': 'Chat', 'route': '/chat', 'icon': Icons.chat_bubble_outline},
+    {'label': 'Collab', 'route': '/collab-workspace', 'icon': Icons.group_work_outlined},
   ];
 
   @override
