@@ -6,6 +6,7 @@ import '../services/api_client.dart';
 import '../models/responses/api_responses.dart';
 import '../models/marketplace_state.dart';
 import 'marketplace_page.dart';
+import 'project_detail_page.dart';
 
 class MyProjectsPage extends StatefulWidget {
   const MyProjectsPage({super.key});
