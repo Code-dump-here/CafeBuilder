@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/project_service.dart';
+import '../services/design_brief_service.dart';
+import '../services/api_client.dart';
+import '../models/requests/project_requests.dart';
+import '../models/requests/design_brief_requests.dart';
 import 'ai_design_report_page.dart';
 
 class ProjectOnboardingPage extends StatefulWidget {
@@ -68,8 +73,36 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     }
   }
 
-  void _startDesignSynthesis() {
-    // Show Synthesis Loader page
+  bool _isSaving = false;
+
+  Future<void> _startDesignSynthesis() async {
+    setState(() => _isSaving = true);
+    try {
+      final accountId = await ApiClient.getAccountId();
+      final project = await ProjectService.createProject(CreateProjectRequest(
+        ownerId: accountId ?? 0,
+        name: _cafeNameCtrl.text.isEmpty ? 'My Cafe' : _cafeNameCtrl.text,
+        address: _addressCtrl.text.isEmpty ? _locationCtrl.text : _addressCtrl.text,
+        areaM2: _floorLength * _floorWidth,
+        budget: _totalBudget,
+      ));
+
+      await DesignBriefService.createDesignBrief(CreateDesignBriefRequest(
+        projectId: project.id,
+        targetCustomer: _selectedAudiences.join(', '),
+        style: _selectedSoul,
+        mood: _selectedMood,
+        businessModel: _selectedCafeTypes.join(', '),
+        brandNote: _conceptNarrativeCtrl.text.isNotEmpty ? _conceptNarrativeCtrl.text : null,
+        businessGoals: _differentiatorsCtrl.text.isNotEmpty ? _differentiatorsCtrl.text : null,
+      ));
+    } catch (_) {
+      // Continue to synthesis page even if API fails
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(

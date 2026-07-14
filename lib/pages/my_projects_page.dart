@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
-import 'project_detail_page.dart';
+import '../services/project_service.dart';
+import '../services/api_client.dart';
+import '../models/responses/api_responses.dart';
 
 class MyProjectsPage extends StatefulWidget {
   const MyProjectsPage({super.key});
@@ -12,11 +14,24 @@ class MyProjectsPage extends StatefulWidget {
 
 class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  List<ProjectResponse> _projects = [];
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadProjects();
+  }
+
+  Future<void> _loadProjects() async {
+    try {
+      final accountId = await ApiClient.getAccountId();
+      final result = await ProjectService.getProjects(ownerId: accountId);
+      if (mounted) setState(() { _projects = result.items; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
