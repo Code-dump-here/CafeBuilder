@@ -1,15 +1,21 @@
-name: Distribute Android to Firebase
+name: Firebase — distribute APK & deploy web
 
-# Auto-build the Android APK and push it to Firebase App Distribution
-# every time the main branch is updated. The "workflow_dispatch" entry also
-# adds a manual "Run workflow" button in the GitHub Actions tab.
+# On every push to main (and via the manual "Run workflow" button) this
+# ships two things in parallel:
+#   * distribute-android — builds a release APK and pushes it to Firebase
+#     App Distribution for the "testers" group.
+#   * deploy-web         — builds the Flutter web app and deploys it to
+#     Firebase Hosting, giving a browser-accessible URL
+#     (https://project-d9f1553a-255e-41c1-961.web.app).
+# The two jobs are independent: if one fails the other still ships.
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 jobs:
-  build-distribute:
+  distribute-android:
+    name: Build APK & distribute to testers
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -47,3 +53,37 @@ jobs:
           releaseNotes: |
             Build from ${{ github.ref_name }} @ ${{ github.sha }}
           file: build/app/outputs/flutter-apk/app-release.apk
+
+  deploy-web:
+    name: Build web & deploy to Firebase Hosting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.44.6'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web (release)
+        run: flutter build web --release
+
+      # Deploy build/web to Firebase Hosting via the Firebase CLI. We pin
+      # firebase-tools to a major that still accepts FIREBASE_TOKEN, since
+      # SA-key auth is blocked by org policy. Requires Hosting to be enabled
+      # once in the Firebase console so the default site exists.
+      - name: Deploy to Firebase Hosting
+        run: >-
+          npx --yes firebase-tools@13 deploy
+          --only hosting
+          --project project-d9f1553a-255e-41c1-961
+          --token "$FIREBASE_TOKEN"
+          --non-interactive
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
