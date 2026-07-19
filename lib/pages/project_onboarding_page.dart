@@ -78,6 +78,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
 
   Future<void> _startDesignSynthesis() async {
     setState(() => _isSaving = true);
+    int briefId = 0;
     try {
       final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
       final project = await ProjectService.createProject(CreateProjectRequest(
@@ -88,7 +89,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         budget: _totalBudget,
       ));
 
-      await DesignBriefService.createDesignBrief(CreateDesignBriefRequest(
+      final brief = await DesignBriefService.createDesignBrief(CreateDesignBriefRequest(
         projectId: project.id,
         targetCustomer: _selectedAudiences.join(', '),
         style: _selectedSoul,
@@ -97,6 +98,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         brandNote: _conceptNarrativeCtrl.text.isNotEmpty ? _conceptNarrativeCtrl.text : null,
         businessGoals: _differentiatorsCtrl.text.isNotEmpty ? _differentiatorsCtrl.text : null,
       ));
+      briefId = brief.id ?? 0;
     } catch (_) {
       // Continue to synthesis page even if API fails
     } finally {
@@ -116,6 +118,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           mood: _selectedMood,
           role: _selectedRole,
           area: _floorLength * _floorWidth,
+          briefId: briefId,
+          functionalAreas: _selectedFunctionalAreas,
+          conceptNarrative: _conceptNarrativeCtrl.text,
         ),
       ),
     );

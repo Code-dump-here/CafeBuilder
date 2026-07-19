@@ -5,8 +5,6 @@ import '../services/project_service.dart';
 import '../services/api_client.dart';
 import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
-import '../models/marketplace_state.dart';
-import 'marketplace_page.dart';
 import 'project_detail_page.dart';
 
 class MyProjectsPage extends StatefulWidget {
@@ -385,7 +383,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const ProjectDetailPage()),
+                          MaterialPageRoute(builder: (context) => ProjectDetailPage()),
                         );
                       },
                       style: ElevatedButton.styleFrom(
