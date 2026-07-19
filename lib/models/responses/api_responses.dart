@@ -18,7 +18,9 @@ class ResponseData<T> {
     return ResponseData(
       success: json['success'] ?? true,
       message: json['message'],
-      data: json['data'] != null && fromJsonT != null ? fromJsonT(json['data']) : null,
+      data: fromJsonT == null
+          ? null
+          : fromJsonT(json['data'] ?? json),
       statusCode: json['statusCode'] ?? 200,
     );
   }
@@ -177,7 +179,7 @@ class DesignBriefResponse {
 
   factory DesignBriefResponse.fromJson(Map<String, dynamic> json) => DesignBriefResponse(
         id: json['id'],
-        projectId: json['projectId'],
+        projectId: (json['projectShopOwnerId'] ?? json['projectId']) as int,
         targetCustomer: json['targetCustomer'],
         style: json['style'],
         mood: json['mood'],
@@ -214,8 +216,8 @@ class AiRecommendationResponse {
       AiRecommendationResponse(
         id: json['id'],
         briefId: json['briefId'],
-        conceptSummary: json['conceptSummary'],
-        payload: json['payload'],
+        conceptSummary: json['conceptSummary'] ?? '',
+        payload: json['payload'] ?? '',
         estimatedDesignCost: json['estimatedDesignCost'] != null
             ? (json['estimatedDesignCost'] as num).toDouble()
             : null,

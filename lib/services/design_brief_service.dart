@@ -11,7 +11,7 @@ class DesignBriefService {
     final params = <String, dynamic>{
       'pageNumber': pageNumber,
       'pageSize': pageSize,
-      if (projectId != null) 'projectId': projectId,
+      if (projectId != null) 'projectShopOwnerId': projectId,
     };
     final response = await ApiClient.authGet('/design-briefs', params);
     ApiClient.throwIfError(response);
