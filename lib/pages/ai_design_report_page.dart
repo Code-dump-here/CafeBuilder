@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'project_success_page.dart';
 import '../services/ai_recommendation_service.dart';
+import '../models/responses/api_responses.dart';
 
 class DesignSynthesisLoadingPage extends StatefulWidget {
   final String cafeName;
@@ -43,6 +45,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
   Timer? _progressTimer;
   Timer? _statusTimer;
   bool _apiDone = false;
+  AiRecommendationResponse? _report;
 
   final List<String> _loadingStatuses = [
     'Initializing space analysis...',
@@ -94,7 +97,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
   Future<void> _startAiRecommendation() async {
     try {
       if (widget.briefId > 0) {
-        await AiRecommendationService.createRecommendation(
+        final result = await AiRecommendationService.createRecommendation(
           briefId: widget.briefId,
           mustHaveZones: widget.functionalAreas,
           niceToHaveZones: [],
@@ -105,9 +108,15 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
           alternativesCount: 3,
           referenceImageUrls: [],
         );
+        if (mounted) {
+          setState(() {
+            _report = result;
+          });
+        }
       }
     } catch (e) {
       // Ignore API errors so we still progress to the report screen
+      debugPrint("API Error: $e");
     } finally {
       if (mounted) {
         setState(() {
@@ -130,6 +139,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
           mood: widget.mood,
           role: widget.role,
           area: widget.area,
+          report: _report,
         ),
       ),
     );
@@ -234,6 +244,7 @@ class AiDesignReportPage extends StatelessWidget {
   final String mood;
   final String role;
   final double area;
+  final AiRecommendationResponse? report;
 
   const AiDesignReportPage({
     super.key,
@@ -245,13 +256,17 @@ class AiDesignReportPage extends StatelessWidget {
     required this.mood,
     required this.role,
     required this.area,
+    this.report,
   });
 
   @override
   Widget build(BuildContext context) {
     // Generate ranges based on totalBudget
-    double lowEstimate = totalBudget * 0.9;
-    double highEstimate = totalBudget * 1.15;
+    double baseCost = report?.estimatedConstructionCost != null && report!.estimatedConstructionCost! > 0 
+        ? report!.estimatedConstructionCost! 
+        : totalBudget;
+    double lowEstimate = baseCost * 0.9;
+    double highEstimate = baseCost * 1.15;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -285,6 +300,10 @@ class AiDesignReportPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (report?.conceptSummary != null && report!.conceptSummary.isNotEmpty) ...[
+                      _buildConceptSummary(report!.conceptSummary),
+                      const SizedBox(height: 32),
+                    ],
                     // Space Analysis
                     _buildSpaceAnalysis(),
                     const SizedBox(height: 32),
@@ -294,7 +313,7 @@ class AiDesignReportPage extends StatelessWidget {
                     const SizedBox(height: 32),
 
                     // 3D Layout Model section
-                    _build3DLayoutModel(),
+                    _build3DLayoutModel(context),
                     const SizedBox(height: 32),
 
                     // Brand Identity
@@ -527,16 +546,16 @@ class AiDesignReportPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSpaceAnalysis() {
+  Widget _buildConceptSummary(String summary) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.architecture_outlined, size: 20, color: AppColors.espresso),
+            const Icon(Icons.psychology_outlined, size: 20, color: AppColors.espresso),
             const SizedBox(width: 8),
             Text(
-              'Space Analysis',
+              'AI Concept Summary',
               style: GoogleFonts.playfairDisplay(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -546,53 +565,180 @@ class AiDesignReportPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        // Layout Proportion Bar
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: SizedBox(
-            height: 12,
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 60,
-                  child: Container(color: AppColors.espresso),
-                ),
-                Expanded(
-                  flex: 22,
-                  child: Container(color: const Color(0xFFB19777)),
-                ),
-                Expanded(
-                  flex: 18,
-                  child: Container(color: const Color(0xFFDCD2C5)),
-                ),
-              ],
-            ),
+        Text(
+          summary,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            height: 1.6,
+            color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Map<String, int>? _parseZonesFromPayload() {
+    final payloadTxt = report?.payload;
+    if (payloadTxt == null || payloadTxt.isEmpty) return null;
+    try {
+      final jsonData = jsonDecode(payloadTxt);
+      Map<String, dynamic>? zonesMap;
+      if (jsonData is Map) {
+        for (final key in ['zones', 'spaceAllocation', 'areas', 'zoneAllocation', 'layout']) {
+          if (jsonData[key] is Map) {
+            zonesMap = Map<String, dynamic>.from(jsonData[key] as Map);
+            break;
+          }
+        }
+      }
+      if (zonesMap != null && zonesMap.isNotEmpty) {
+        return zonesMap.map((k, v) => MapEntry(k, (v is int) ? v : (v as num).toInt()));
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  List<String> _getSpatialDetails() {
+    final payloadTxt = report?.payload;
+    if (payloadTxt != null && payloadTxt.isNotEmpty) {
+      try {
+        final jsonData = jsonDecode(payloadTxt);
+        if (jsonData is Map) {
+          for (final key in ['spatialDetails', 'spatialRecommendations', 'recommendations', 'details', 'suggestions']) {
+            if (jsonData[key] is List) {
+              final list = (jsonData[key] as List).whereType<String>().toList();
+              if (list.isNotEmpty) return list.take(4).toList();
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    final summary = report?.conceptSummary;
+    if (summary != null && summary.isNotEmpty) {
+      final sentences = summary
+          .split(RegExp(r'(?<=[.!?])\s+'))
+          .where((s) => s.trim().length > 20)
+          .take(4)
+          .toList();
+      if (sentences.isNotEmpty) return sentences;
+    }
+    return [
+      'Design layout optimized for $style aesthetic with natural flow circulation',
+      'Accent zoning tailored for $mood atmosphere — warm lighting and material transitions',
+      'Main service counter positioned for rapid throughput and visual hierarchy',
+      'Spatial metrics calculated for ${area.toStringAsFixed(0)} m\u00B2 total floor area — ${(area * 0.6).toStringAsFixed(0)} m\u00B2 seating capacity',
+    ];
+  }
+
+  Widget _buildSpaceAnalysis() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildProportionLegend('Seating Area', '60%', AppColors.espresso),
-            _buildProportionLegend('Brewing Area', '22%', const Color(0xFFB19777)),
-            _buildProportionLegend('Utility Area', '18%', const Color(0xFFDCD2C5)),
+            const Icon(Icons.architecture_outlined, size: 20, color: AppColors.espresso),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Space Analysis',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.espresso,
+                ),
+              ),
+            ),
+            Builder(builder: (context) {
+              final aiZones = _parseZonesFromPayload();
+              if (aiZones == null) return const SizedBox.shrink();
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD9EAA3).withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'AI GENERATED',
+                  style: GoogleFonts.inter(
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF56642B),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              );
+            }),
           ],
         ),
-        const SizedBox(height: 24),
-        Text(
-          'RECOMMENDED SPATIAL DETAILS',
-          style: GoogleFonts.inter(
-            fontSize: 9,
-            fontWeight: FontWeight.bold,
-            color: AppColors.placeholder,
-            letterSpacing: 1.0,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildBulletPoint('Maximize natural light from storefront (8.0m wide window design)'),
-        _buildBulletPoint('Incorporate warm, subtle accent zoning (ideal for $mood vibe)'),
-        _buildBulletPoint('Ensure clearance around main POS bar to accommodate target audience'),
-        _buildBulletPoint('Optimize layout based on calculated ground floor spatial metrics (${225.toInt()} m²)'),
+        const SizedBox(height: 16),
+        Builder(builder: (context) {
+          final aiZones = _parseZonesFromPayload();
+          final spatialDetails = _getSpatialDetails();
+
+          int seatingPct = 60;
+          int brewingPct = 22;
+          int utilityPct = 18;
+          String seatingLabel = 'Seating Area';
+          String brewingLabel = 'Brewing Area';
+          String utilityLabel = 'Utility Area';
+
+          if (aiZones != null && aiZones.length >= 2) {
+            final entries = aiZones.entries.toList();
+            seatingLabel = entries[0].key;
+            seatingPct = entries[0].value;
+            brewingLabel = entries[1].key;
+            brewingPct = entries[1].value;
+            if (entries.length >= 3) {
+              utilityLabel = entries[2].key;
+              utilityPct = entries[2].value;
+            } else {
+              utilityPct = (100 - seatingPct - brewingPct).clamp(0, 100);
+            }
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: SizedBox(
+                  height: 12,
+                  child: Row(
+                    children: [
+                      Expanded(flex: seatingPct, child: Container(color: AppColors.espresso)),
+                      Expanded(flex: brewingPct, child: Container(color: const Color(0xFFB19777))),
+                      if (utilityPct > 0)
+                        Expanded(flex: utilityPct, child: Container(color: const Color(0xFFDCD2C5))),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 6,
+                children: [
+                  _buildProportionLegend(seatingLabel, '$seatingPct%', AppColors.espresso),
+                  _buildProportionLegend(brewingLabel, '$brewingPct%', const Color(0xFFB19777)),
+                  if (utilityPct > 0)
+                    _buildProportionLegend(utilityLabel, '$utilityPct%', const Color(0xFFDCD2C5)),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text(
+                aiZones != null ? 'AI SPATIAL RECOMMENDATIONS' : 'RECOMMENDED SPATIAL DETAILS',
+                style: GoogleFonts.inter(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.placeholder,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...spatialDetails.map((detail) => _buildBulletPoint(detail)),
+            ],
+          );
+        }),
       ],
     );
   }
@@ -644,7 +790,50 @@ class AiDesignReportPage extends StatelessWidget {
     );
   }
 
+  List<Map<String, dynamic>> _getFunctionalRequirements() {
+    final payloadTxt = report?.payload;
+    if (payloadTxt != null && payloadTxt.isNotEmpty) {
+      try {
+        final json = jsonDecode(payloadTxt);
+        if (json is Map && json.containsKey('functionalRequirements') && json['functionalRequirements'] is List) {
+           final items = (json['functionalRequirements'] as List)
+              .whereType<Map<String, dynamic>>()
+              .take(4)
+              .toList();
+           if (items.isNotEmpty) return items;
+        }
+      } catch (_) {}
+    }
+    
+    // Smart contextual fallbacks
+    return [
+      {
+        'icon': Icons.volume_mute_outlined,
+        'title': 'Acoustics & Flow',
+        'desc': 'Acoustic treatment for sound buffers, spacing between tables matching the $style concept, ensuring quiet areas for focus.',
+      },
+      {
+        'icon': Icons.wb_sunny_outlined,
+        'title': 'Insulation Treatment',
+        'desc': 'Double-glazed storefront window frame matching modern design conventions, ensuring optimal thermal and sound control.',
+      },
+      {
+        'icon': Icons.lightbulb_outline,
+        'title': 'Ergonomics & Lighting',
+        'desc': 'Dimmable LED configurations, task illumination tailored for the $mood atmosphere, and dramatic brewing station backlights.',
+      },
+      {
+        'icon': Icons.air,
+        'title': 'Ventilation & Odor',
+        'desc': 'Dedicated exhaust setup and active cross-ventilation, safeguarding high standard of air and brewing aroma quality.',
+      },
+    ];
+  }
+
   Widget _buildFunctionalRequirements() {
+    final reqs = _getFunctionalRequirements();
+    bool isAiGen = report?.payload != null && report!.payload.contains('functionalRequirements');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -652,37 +841,41 @@ class AiDesignReportPage extends StatelessWidget {
           children: [
             const Icon(Icons.assignment_turned_in_outlined, size: 20, color: AppColors.espresso),
             const SizedBox(width: 8),
-            Text(
-              'Functional Requirements',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.espresso,
+            Expanded(
+              child: Text(
+                'Functional Requirements',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.espresso,
+                ),
               ),
             ),
+            if (isAiGen)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD9EAA3).withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'AI GENERATED',
+                  style: GoogleFonts.inter(
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF56642B),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 16),
-        _buildRequirementItem(
-          Icons.volume_mute_outlined,
-          'Acoustics & Flow',
-          'Acoustic treatment for sound buffers, spacing between tables matching the concept, ensuring quiet areas for focus.',
-        ),
-        _buildRequirementItem(
-          Icons.wb_sunny_outlined,
-          'Insulation Treatment',
-          'Double-glazed storefront window frame matching modern design conventions, ensuring optimal thermal and sound control.',
-        ),
-        _buildRequirementItem(
-          Icons.lightbulb_outline,
-          'Ergonomics & Lighting',
-          'Dimmable LED configurations, task illumination for individual seats, and dramatic brewing station backlights.',
-        ),
-        _buildRequirementItem(
-          Icons.air,
-          'Ventilation & Odor',
-          'Dedicated exhaust setup and active cross-ventilation, safeguarding high standard of air and brewing aroma quality.',
-        ),
+        ...reqs.map((e) => _buildRequirementItem(
+          e['icon'] as IconData? ?? Icons.settings_outlined,
+          e['title']?.toString() ?? 'Requirement',
+          e['desc']?.toString() ?? '...',
+        )),
       ],
     );
   }
@@ -732,7 +925,74 @@ class AiDesignReportPage extends StatelessWidget {
     );
   }
 
-  Widget _build3DLayoutModel() {
+  String _extractImageUrl() {
+    final payloadTxt = report?.payload;
+    if (payloadTxt == null || payloadTxt.isEmpty) {
+      return 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=800';
+    }
+    
+    try {
+      final json = jsonDecode(payloadTxt);
+      if (json is Map) {
+         // Check common image keys
+         for (final key in ['imageUrls', 'imageUrl', 'image', 'url', 'image_url', 'view', 'layoutImage', '3dModel']) {
+           if (json.containsKey(key)) {
+             if (json[key] is List && (json[key] as List).isNotEmpty) {
+               return json[key][0].toString();
+             } else if (json[key] is String && (json[key] as String).isNotEmpty) {
+               return json[key].toString();
+             }
+           }
+         }
+      }
+      if (json is List && json.isNotEmpty) {
+         return json.first.toString();
+      }
+    } catch (_) {}
+    
+    // Fallback: search for any URL ending in standard image formats or just use any URL in the payload
+    final imageRegex = RegExp(r'https?:\/\/[^\s"\]\)]+\.(?:jpg|jpeg|png|webp|gif)', caseSensitive: false);
+    final imgMatch = imageRegex.firstMatch(payloadTxt);
+    if (imgMatch != null) return imgMatch.group(0)!;
+    
+    final regex = RegExp(r'https?:\/\/[^\s"\]\)]+');
+    final match = regex.firstMatch(payloadTxt);
+    if (match != null) {
+      return match.group(0)!;
+    }
+    
+    return 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=800';
+  }
+
+  void _showPayloadDetails(BuildContext context) {
+    final payloadTxt = report?.payload;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: Text(
+          'AI Generated Technical Payload',
+          style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold, color: AppColors.espresso),
+        ),
+        content: SingleChildScrollView(
+          child: Text(
+            (payloadTxt == null || payloadTxt.isEmpty) ? 'No payload data available from AI.' : payloadTxt,
+            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary, height: 1.5),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close', style: GoogleFonts.inter(color: AppColors.espresso, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _build3DLayoutModel(BuildContext context) {
+    final imageUrl = _extractImageUrl();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -776,10 +1036,15 @@ class AiDesignReportPage extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     Image.network(
-                      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=800',
+                      imageUrl,
                       height: 200,
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 200,
+                        color: Colors.grey[200],
+                        child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+                      ),
                     ),
                     Container(
                       height: 200,
@@ -808,7 +1073,7 @@ class AiDesignReportPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => _showPayloadDetails(context),
                       icon: const Icon(Icons.thirteen_mp_outlined, size: 16),
                       label: Text(
                         'View details',
@@ -831,7 +1096,24 @@ class AiDesignReportPage extends StatelessWidget {
     );
   }
 
+  List<String> _getBrandKeywords() {
+    final payloadTxt = report?.payload;
+    if (payloadTxt != null && payloadTxt.isNotEmpty) {
+      try {
+        final json = jsonDecode(payloadTxt);
+        if (json is Map && json.containsKey('brandKeywords') && json['brandKeywords'] is List) {
+           final items = (json['brandKeywords'] as List).whereType<String>().toList();
+           if (items.isNotEmpty) return items;
+        }
+      } catch (_) {}
+    }
+    return ['Sophisticated', 'Minimal', mood, style, 'Dynamic', 'Premium'];
+  }
+
   Widget _buildBrandIdentity() {
+    final keywords = _getBrandKeywords();
+    bool isAiGen = report?.payload != null && report!.payload.contains('brandKeywords');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -839,14 +1121,33 @@ class AiDesignReportPage extends StatelessWidget {
           children: [
             const Icon(Icons.palette_outlined, size: 20, color: AppColors.espresso),
             const SizedBox(width: 8),
-            Text(
-              'Brand Identity',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.espresso,
+            Expanded(
+              child: Text(
+                'Brand Identity',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.espresso,
+                ),
               ),
             ),
+            if (isAiGen)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD9EAA3).withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'AI GENERATED',
+                  style: GoogleFonts.inter(
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF56642B),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 16),
@@ -883,14 +1184,7 @@ class AiDesignReportPage extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: [
-            'Sophisticated',
-            'Minimal',
-            mood,
-            style,
-            'Serene',
-            'Professional',
-          ].map((w) => Container(
+          children: keywords.take(6).map((w) => Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -898,7 +1192,7 @@ class AiDesignReportPage extends StatelessWidget {
               border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
             ),
             child: Text(
-              w,
+              w.length > 20 ? w.substring(0, 20) : w,
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -932,7 +1226,35 @@ class AiDesignReportPage extends StatelessWidget {
     );
   }
 
+  List<Map<String, String>> _getTimeline() {
+    final payloadTxt = report?.payload;
+    if (payloadTxt != null && payloadTxt.isNotEmpty) {
+      try {
+        final json = jsonDecode(payloadTxt);
+        if (json is Map && json.containsKey('timeline') && json['timeline'] is List) {
+           final items = (json['timeline'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map((e) => {
+                'title': e['title']?.toString() ?? 'Phase',
+                'desc': e['desc']?.toString() ?? e['description']?.toString() ?? '...',
+              })
+              .take(3)
+              .toList();
+           if (items.isNotEmpty) return items;
+        }
+      } catch (_) {}
+    }
+    return [
+      {'title': 'Analysis & Concept (${budgetLevel})', 'desc': 'Weeks 1 - 4: Concept design reviews, schematic structural diagrams and material definitions tailored to the $style style.'},
+      {'title': 'Layout & Blueprint', 'desc': 'Weeks 5 - 8: Technical blueprints detail, electrical mapping for $area m2, space permit approval files.'},
+      {'title': 'Construction & Decoration', 'desc': 'Weeks 9 - 16: Interior masonry contracting, decor deployment & custom workspace fitting.'},
+    ];
+  }
+
   Widget _buildRoadmapTimeline() {
+    final steps = _getTimeline();
+    bool isAiGen = report?.payload != null && report!.payload.contains('timeline');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -940,20 +1262,41 @@ class AiDesignReportPage extends StatelessWidget {
           children: [
             const Icon(Icons.timeline_outlined, size: 20, color: AppColors.espresso),
             const SizedBox(width: 8),
-            Text(
-              'Roadmap & Timeline',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.espresso,
+            Expanded(
+              child: Text(
+                'Roadmap & Timeline',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.espresso,
+                ),
               ),
             ),
+            if (isAiGen)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD9EAA3).withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'AI GENERATED',
+                  style: GoogleFonts.inter(
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF56642B),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 16),
-        _buildTimelineStep('1', 'Analysis & Sketch', 'Weeks 1 - 4: Concept design reviews, schematic structural diagrams and material definitions.'),
-        _buildTimelineStep('2', 'Layout & Plan', 'Weeks 5 - 8: Technical blueprints detail, electrical mapping, space permit approval files.'),
-        _buildTimelineStep('3', 'Construction & Decoration', 'Weeks 9 - 16: Interior masonry contracting, decor deployment & custom workspace fitting.'),
+        ...steps.asMap().entries.map((e) => _buildTimelineStep(
+          (e.key + 1).toString(),
+          e.value['title']!,
+          e.value['desc']!
+        )),
       ],
     );
   }

@@ -9,6 +9,27 @@ import '../models/requests/project_requests.dart';
 import '../models/requests/design_brief_requests.dart';
 import 'ai_design_report_page.dart';
 
+class _FloorItem {
+  TextEditingController nameCtrl;
+  TextEditingController lengthCtrl;
+  TextEditingController widthCtrl;
+
+  _FloorItem(String name)
+      : nameCtrl = TextEditingController(text: name),
+        lengthCtrl = TextEditingController(text: '15.0'),
+        widthCtrl = TextEditingController(text: '15.0');
+
+  double get length => double.tryParse(lengthCtrl.text) ?? 15.0;
+  double get width => double.tryParse(widthCtrl.text) ?? 15.0;
+  double get area => length * width;
+
+  void dispose() {
+    nameCtrl.dispose();
+    lengthCtrl.dispose();
+    widthCtrl.dispose();
+  }
+}
+
 class ProjectOnboardingPage extends StatefulWidget {
   const ProjectOnboardingPage({super.key});
 
@@ -32,7 +53,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   String _selectedStyleRef = 'Modern Organic';
   final List<String> _selectedAudiences = ['Freelancers'];
   String _selectedBudgetLevel = 'Premium'; // Economy, Standard, Premium, Luxury
-  double _totalBudget = 150000;
+  double _totalBudget = 1500000000;
   double _pctConstruction = 0.40;
   double _pctFurniture = 0.30;
   double _pctLighting = 0.15;
@@ -41,11 +62,11 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   String _selectedSoul = 'Modern Minimal';
   final List<String> _selectedFunctionalAreas = ['Customer Seating', 'Coffee Bar', 'Order Counter'];
   final _addressCtrl = TextEditingController();
-  final _floorNameCtrl = TextEditingController(text: 'Ground Floor');
-  double _floorLength = 15.0;
-  double _floorWidth = 15.0;
+  final List<_FloorItem> _floors = [_FloorItem('Ground Floor')];
   double _ceilingHeight = 3.2;
   double _storefrontWidth = 8.0;
+
+  double get _totalArea => _floors.fold(0.0, (sum, f) => sum + f.area);
 
   @override
   void dispose() {
@@ -54,7 +75,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     _conceptNarrativeCtrl.dispose();
     _differentiatorsCtrl.dispose();
     _addressCtrl.dispose();
-    _floorNameCtrl.dispose();
+    for (var f in _floors) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -85,7 +108,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         ownerId: shopOwnerId,
         name: _cafeNameCtrl.text.isEmpty ? 'My Cafe' : _cafeNameCtrl.text,
         address: _addressCtrl.text.isEmpty ? _locationCtrl.text : _addressCtrl.text,
-        areaM2: _floorLength * _floorWidth,
+        areaM2: _totalArea,
         budget: _totalBudget,
       ));
 
@@ -117,7 +140,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           totalBudget: _totalBudget,
           mood: _selectedMood,
           role: _selectedRole,
-          area: _floorLength * _floorWidth,
+          area: _totalArea,
           briefId: briefId,
           functionalAreas: _selectedFunctionalAreas,
           conceptNarrative: _conceptNarrativeCtrl.text,
@@ -706,9 +729,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         ),
         const SizedBox(height: 24),
         ...[
-          _buildAudienceCard('Students', 'Values focus, affordable comfort, and late-night accessibility for deep study sessions.', 'High-speed Wi-Fi focus'),
-          _buildAudienceCard('Office Workers', 'Needs speed, takeaway efficiency, and professional settings for quick morning meetings.', 'Rapid service workflow'),
-          _buildAudienceCard('Freelancers', 'Seeks aesthetic inspiration, reliable power outlets, and long-stay hospitality.', 'Ergonomic seating priority'),
+          _buildAudienceCard('Students', 'Values focus, affordable comfort, and late-night accessibility for deep study sessions.', 'High-speed Wi-Fi focus', showImg: true, imgUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=500'),
+          _buildAudienceCard('Office Workers', 'Needs speed, takeaway efficiency, and professional settings for quick morning meetings.', 'Rapid service workflow', showImg: true, imgUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=500'),
+          _buildAudienceCard('Freelancers', 'Seeks aesthetic inspiration, reliable power outlets, and long-stay hospitality.', 'Ergonomic seating priority', showImg: true, imgUrl: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=500'),
           _buildAudienceCard('Families', 'Prioritizes safety, spacious seating, and a welcoming atmosphere for all ages.', 'Low-noise acoustic design', showImg: true, imgUrl: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=500'),
           _buildAudienceCard('Digital Nomads', 'Driven by community, high-quality caffeine, and "Instagrammable" architectural details.', 'Iconic photo-op corners', showImg: true, imgUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=500'),
         ],
@@ -846,21 +869,21 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              _buildBudgetLevelCard('Economy', 'Essential quality', '\$20K - \$50K', 35000),
+              _buildBudgetLevelCard('Economy', 'Essential quality', '500Tr - 1 Tỷ', 700000000),
               const SizedBox(width: 12),
-              _buildBudgetLevelCard('Standard', 'Good quality balance', '\$50K - \$100K', 75000),
+              _buildBudgetLevelCard('Standard', 'Good quality balance', '1 Tỷ - 2 Tỷ', 1500000000),
               const SizedBox(width: 12),
-              _buildBudgetLevelCard('Premium', 'High-end materials', '\$100K - \$200K', 15000),
+              _buildBudgetLevelCard('Premium', 'High-end materials', '2 Tỷ - 5 Tỷ', 3500000000),
               const SizedBox(width: 12),
-              _buildBudgetLevelCard('Luxury', 'Bespoke everything', '\$200K+', 250000),
+              _buildBudgetLevelCard('Luxury', 'Bespoke everything', '5 Tỷ+', 6000000000),
             ],
           ),
         ),
         const SizedBox(height: 32),
-        _buildTextFieldLabel('Total Investment Budget (\$)'),
+        _buildTextFieldLabel('Total Investment Budget (VND)'),
         TextField(
           keyboardType: TextInputType.number,
-          decoration: _buildInputDec('e.g., 150000'),
+          decoration: _buildInputDec('e.g., 1500000000'),
           style: GoogleFonts.inter(color: AppColors.textPrimary),
           onChanged: (val) {
             final parsed = double.tryParse(val);
@@ -1002,6 +1025,10 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     );
   }
 
+  String _formatVND(double amount) {
+    return amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+  }
+
   Widget _buildAllocationSlider(String label, double val, ValueChanged<double> onChanged) {
     double amt = _totalBudget * val;
     return Column(
@@ -1012,7 +1039,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           children: [
             Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.espresso)),
             Text(
-              '${(val * 100).toStringAsFixed(0)}% (\$${amt.toStringAsFixed(0)})',
+              '${(val * 100).toStringAsFixed(0)}% (${_formatVND(amt)} ₫)',
               style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.placeholder),
             ),
           ],
@@ -1494,91 +1521,114 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         ),
         const SizedBox(height: 20),
         _buildTextFieldLabel('Floor Measurements'),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.outlineVariant.withOpacity(0.4)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTextFieldLabel('Floor Name'),
-              TextField(
-                controller: _floorNameCtrl,
-                decoration: _buildInputDec('Ground Floor'),
-                style: GoogleFonts.inter(color: AppColors.textPrimary),
+        ..._floors.asMap().entries.map((entry) {
+          int index = entry.key;
+          _FloorItem floor = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.outlineVariant.withOpacity(0.4)),
               ),
-              const SizedBox(height: 16),
-              Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTextFieldLabel('Length (m)'),
-                        TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: _buildInputDec('15.0'),
-                          onChanged: (val) {
-                            final parsed = double.tryParse(val);
-                            if (parsed != null) setState(() => _floorLength = parsed);
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildTextFieldLabel('Floor Name'),
+                      if (_floors.length > 1)
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              floor.dispose();
+                              _floors.removeAt(index);
+                            });
                           },
-                          controller: TextEditingController()..text = _floorLength.toString(),
+                          child: const Icon(Icons.close, color: Colors.grey, size: 20),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTextFieldLabel('Width (m)'),
-                        TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: _buildInputDec('15.0'),
-                          onChanged: (val) {
-                            final parsed = double.tryParse(val);
-                            if (parsed != null) setState(() => _floorWidth = parsed);
-                          },
-                          controller: TextEditingController()..text = _floorWidth.toString(),
-                        ),
-                      ],
-                    ),
+                  TextField(
+                    controller: floor.nameCtrl,
+                    decoration: _buildInputDec('e.g., Ground Floor'),
+                    style: GoogleFonts.inter(color: AppColors.textPrimary),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTextFieldLabel('Area (m²)'),
-                        Container(
-                          height: 48,
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF6F3F1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.outlineVariant.withOpacity(0.6)),
-                          ),
-                          child: Text(
-                            (_floorLength * _floorWidth).toStringAsFixed(1),
-                            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
-                          ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildTextFieldLabel('Length (m)'),
+                            TextField(
+                              keyboardType: TextInputType.number,
+                              decoration: _buildInputDec('15.0'),
+                              onChanged: (val) {
+                                setState(() {}); // Refresh area calculation
+                              },
+                              controller: floor.lengthCtrl,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildTextFieldLabel('Width (m)'),
+                            TextField(
+                              keyboardType: TextInputType.number,
+                              decoration: _buildInputDec('15.0'),
+                              onChanged: (val) {
+                                setState(() {}); // Refresh area calculation
+                              },
+                              controller: floor.widthCtrl,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildTextFieldLabel('Area (m²)'),
+                            Container(
+                              height: 48,
+                              alignment: Alignment.centerLeft,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF6F3F1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.outlineVariant.withOpacity(0.6)),
+                              ),
+                              child: Text(
+                                floor.area.toStringAsFixed(1),
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
+            ),
+          );
+        }),
         TextButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            setState(() {
+              _floors.add(_FloorItem('Floor ${_floors.length + 1}'));
+            });
+          },
           icon: const Icon(Icons.add, color: AppColors.espresso),
           label: Text('Add Floor', style: GoogleFonts.inter(color: AppColors.espresso, fontWeight: FontWeight.bold)),
         ),
@@ -1587,7 +1637,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         Row(
           children: [
             Expanded(
-              child: _buildParameterField('Est. Total Area (m²)', (_floorLength * _floorWidth).toStringAsFixed(0)),
+              child: _buildParameterField('Est. Total Area (m²)', _totalArea.toStringAsFixed(0)),
             ),
             const SizedBox(width: 12),
             Expanded(

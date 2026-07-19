@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'find_designers_page.dart';
 import 'find_constructors_page.dart';
+import 'project_onboarding_page.dart';
 
 class ServicesTab extends StatelessWidget {
   const ServicesTab({super.key});
@@ -84,7 +85,7 @@ class ServicesTab extends StatelessWidget {
                 const SizedBox(height: 24),
                 
                 // Card 3: Start New Project
-                _buildDarkProjectCard(),
+                _buildDarkProjectCard(context),
                 
                 const SizedBox(height: 100), // Bottom nav space
               ],
@@ -221,7 +222,7 @@ class ServicesTab extends StatelessWidget {
     ));
   }
 
-  Widget _buildDarkProjectCard() {
+  Widget _buildDarkProjectCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.espresso,
@@ -273,7 +274,12 @@ class ServicesTab extends StatelessWidget {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProjectOnboardingPage()),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppColors.primary,
