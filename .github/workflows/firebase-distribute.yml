@@ -1,0 +1,49 @@
+name: Distribute Android to Firebase
+
+# Auto-build the Android APK and push it to Firebase App Distribution
+# every time the main branch is updated. The "workflow_dispatch" entry also
+# adds a manual "Run workflow" button in the GitHub Actions tab.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-distribute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java (required by the Android Gradle build)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.44.6'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # google-services.json is committed to the repo, so no secret is needed
+      # to inject it here. The google-services Gradle plugin reads it at build.
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
+          # Firebase CLI token from `firebase login:ci` (SA key creation is
+          # blocked by org policy, so we authenticate with a CI token instead).
+          token: ${{ secrets.FIREBASE_TOKEN }}
+          groups: testers
+          releaseNotes: |
+            Build from ${{ github.ref_name }} @ ${{ github.sha }}
+          file: build/app/outputs/flutter-apk/app-release.apk

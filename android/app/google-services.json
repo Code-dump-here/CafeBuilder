@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "295284732683",
+    "project_id": "project-d9f1553a-255e-41c1-961",
+    "storage_bucket": "project-d9f1553a-255e-41c1-961.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:295284732683:android:c854b2821f09f1e9dca80e",
+        "android_client_info": {
+          "package_name": "com.cafebuilder.cafe_builder"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDQxwBSFjhRC0Ssaru0V5UMV3XOdFKTWg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
