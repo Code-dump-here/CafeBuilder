@@ -29,18 +29,25 @@ class AiRecommendationService {
 
   static Future<AiRecommendationResponse> createRecommendation({
     required int briefId,
-    required String conceptSummary,
-    required String payload,
-    double? estimatedDesignCost,
-    double? estimatedConstructionCost,
+    required List<String> mustHaveZones,
+    required List<String> niceToHaveZones,
+    required String notes,
+    bool generateImage = true,
+    int imageView = 0,
+    int detailLevel = 0,
+    int alternativesCount = 3,
+    List<String> referenceImageUrls = const [],
   }) async {
     final response = await ApiClient.authPost('/ai-recommendations', {
       'briefId': briefId,
-      'conceptSummary': conceptSummary,
-      'payload': payload,
-      if (estimatedDesignCost != null) 'estimatedDesignCost': estimatedDesignCost,
-      if (estimatedConstructionCost != null)
-        'estimatedConstructionCost': estimatedConstructionCost,
+      'mustHaveZones': mustHaveZones,
+      'niceToHaveZones': niceToHaveZones,
+      'notes': notes,
+      'generateImage': generateImage,
+      'imageView': imageView,
+      'detailLevel': detailLevel,
+      'alternativesCount': alternativesCount,
+      'referenceImageUrls': referenceImageUrls,
     });
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);

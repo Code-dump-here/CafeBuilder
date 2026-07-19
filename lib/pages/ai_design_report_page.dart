@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'project_success_page.dart';
+import '../services/ai_recommendation_service.dart';
 
 class DesignSynthesisLoadingPage extends StatefulWidget {
   final String cafeName;
@@ -13,6 +14,9 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
   final String mood;
   final String role;
   final double area;
+  final int briefId;
+  final List<String> functionalAreas;
+  final String conceptNarrative;
 
   const DesignSynthesisLoadingPage({
     super.key,
@@ -24,6 +28,9 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
     required this.mood,
     required this.role,
     required this.area,
+    this.briefId = 0,
+    this.functionalAreas = const [],
+    this.conceptNarrative = '',
   });
 
   @override
@@ -35,6 +42,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
   double _progress = 0.0;
   Timer? _progressTimer;
   Timer? _statusTimer;
+  bool _apiDone = false;
 
   final List<String> _loadingStatuses = [
     'Initializing space analysis...',
@@ -49,10 +57,13 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
   @override
   void initState() {
     super.initState();
+    _startAiRecommendation();
     // Progress increment timer
     _progressTimer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
       setState(() {
-        _progress += 0.01;
+        if (_progress < 0.95 || _apiDone) {
+          _progress += 0.01;
+        }
         if (_progress >= 1.0) {
           _progress = 1.0;
           timer.cancel();
@@ -78,6 +89,32 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
     _progressTimer?.cancel();
     _statusTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _startAiRecommendation() async {
+    try {
+      if (widget.briefId > 0) {
+        await AiRecommendationService.createRecommendation(
+          briefId: widget.briefId,
+          mustHaveZones: widget.functionalAreas,
+          niceToHaveZones: [],
+          notes: widget.conceptNarrative,
+          generateImage: true,
+          imageView: 0,
+          detailLevel: 0,
+          alternativesCount: 3,
+          referenceImageUrls: [],
+        );
+      }
+    } catch (e) {
+      // Ignore API errors so we still progress to the report screen
+    } finally {
+      if (mounted) {
+        setState(() {
+          _apiDone = true;
+        });
+      }
+    }
   }
 
   void _goToReport() {

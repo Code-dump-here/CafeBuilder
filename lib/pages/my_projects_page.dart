@@ -4,6 +4,7 @@ import '../theme/app_colors.dart';
 import '../services/project_service.dart';
 import '../services/api_client.dart';
 import '../models/responses/api_responses.dart';
+import 'project_detail_page.dart';
 
 class MyProjectsPage extends StatefulWidget {
   const MyProjectsPage({super.key});
@@ -364,7 +365,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const ProjectDetailPage()),
+                          MaterialPageRoute(builder: (context) => ProjectDetailPage()),
                         );
                       },
                       style: ElevatedButton.styleFrom(
