@@ -4,6 +4,7 @@ import '../theme/app_colors.dart';
 import '../services/project_service.dart';
 import '../services/design_brief_service.dart';
 import '../services/api_client.dart';
+import '../services/service_provider_service.dart';
 import '../models/requests/project_requests.dart';
 import '../models/requests/design_brief_requests.dart';
 import 'ai_design_report_page.dart';
@@ -78,9 +79,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   Future<void> _startDesignSynthesis() async {
     setState(() => _isSaving = true);
     try {
-      final accountId = await ApiClient.getAccountId();
+      final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
       final project = await ProjectService.createProject(CreateProjectRequest(
-        ownerId: accountId ?? 0,
+        ownerId: shopOwnerId,
         name: _cafeNameCtrl.text.isEmpty ? 'My Cafe' : _cafeNameCtrl.text,
         address: _addressCtrl.text.isEmpty ? _locationCtrl.text : _addressCtrl.text,
         areaM2: _floorLength * _floorWidth,

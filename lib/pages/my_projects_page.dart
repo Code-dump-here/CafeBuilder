@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../services/project_service.dart';
 import '../services/api_client.dart';
+import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
 import '../models/marketplace_state.dart';
 import 'marketplace_page.dart';
@@ -29,8 +30,8 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
 
   Future<void> _loadProjects() async {
     try {
-      final accountId = await ApiClient.getAccountId();
-      final result = await ProjectService.getProjects(ownerId: accountId);
+      final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
+      final result = await ProjectService.getProjects(ownerId: shopOwnerId);
       if (mounted) setState(() { _projects = result.items; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);

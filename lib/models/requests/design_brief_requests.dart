@@ -24,7 +24,7 @@ class CreateDesignBriefRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'projectId': projectId,
+        'projectShopOwnerId': projectId,
         'targetCustomer': targetCustomer,
         'style': style,
         'mood': mood,
