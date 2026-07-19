@@ -9,6 +9,7 @@ class ApiClient {
   static const String _accountIdKey = 'account_id';
   static const String _roleKey = 'role';
   static const String _emailKey = 'email';
+  static const String _shopOwnerIdKey = 'shop_owner_id';
 
   // Token storage
   static Future<void> saveTokens({
@@ -33,6 +34,22 @@ class ApiClient {
     await prefs.remove(_accountIdKey);
     await prefs.remove(_roleKey);
     await prefs.remove(_emailKey);
+    await prefs.remove(_shopOwnerIdKey);
+  }
+
+  static Future<void> saveShopOwnerId(int id) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_shopOwnerIdKey, id);
+  }
+
+  static Future<int?> getShopOwnerId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_shopOwnerIdKey);
+  }
+
+  static Future<String?> getEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_emailKey);
   }
 
   static Future<String?> getAccessToken() async {
@@ -107,11 +124,15 @@ class ApiClient {
 
   static void throwIfError(http.Response response) {
     if (response.statusCode >= 400) {
-      final body = jsonDecode(response.body);
-      throw ApiException(
-        statusCode: response.statusCode,
-        message: body['message'] ?? 'Request failed',
-      );
+      String message = 'Request failed';
+      try {
+        final body = jsonDecode(response.body);
+        // BE errors are ProblemDetails: { status, title, detail }
+        message = body['detail'] ?? body['title'] ?? body['message'] ?? message;
+      } catch (_) {
+        if (response.body.isNotEmpty) message = response.body;
+      }
+      throw ApiException(statusCode: response.statusCode, message: message);
     }
   }
 }

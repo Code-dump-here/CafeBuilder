@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../services/project_service.dart';
 import '../services/api_client.dart';
+import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
 import 'project_detail_page.dart';
 
@@ -27,8 +28,8 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
 
   Future<void> _loadProjects() async {
     try {
-      final accountId = await ApiClient.getAccountId();
-      final result = await ProjectService.getProjects(ownerId: accountId);
+      final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
+      final result = await ProjectService.getProjects(ownerId: shopOwnerId);
       if (mounted) setState(() { _projects = result.items; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
@@ -60,6 +61,23 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
             color: AppColors.espresso,
           ),
         ),
+        actions: [
+          if (!MarketplaceState.isServiceProvider)
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MarketplacePage(showBackButton: true)),
+                );
+              },
+              icon: const Icon(Icons.store_mall_directory_outlined, color: AppColors.espresso, size: 18),
+              label: Text(
+                'Marketplace',
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
+              ),
+            ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),

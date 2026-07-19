@@ -394,7 +394,7 @@ class _DashboardTabState extends State<DashboardTab> {
         ),
         const SizedBox(height: 20),
         SizedBox(
-          height: 380,
+          height: 460,
           child: ListView(
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,

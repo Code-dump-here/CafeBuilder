@@ -13,32 +13,36 @@ class PackageReviewPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Center(
-            child: Container(
-              width: 32,
-              height: 32,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.espresso),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 image: DecorationImage(
-                  image: NetworkImage(
-                      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150'),
+                  image: NetworkImage('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150'),
                   fit: BoxFit.cover,
                 ),
               ),
             ),
-          ),
+            const SizedBox(width: 8),
+            Text(
+              'Design Cafe',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.espresso,
+              ),
+            ),
+          ],
         ),
-        title: Text(
-          'Design Cafe',
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.espresso,
-          ),
-        ),
-        centerTitle: false,
+        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none_outlined,

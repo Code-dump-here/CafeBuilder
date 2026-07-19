@@ -144,29 +144,10 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
           const SizedBox(height: 4),
           Text(
-            MarketplaceState.isServiceProvider ? 'Contractor & Designer' : 'Project Owner / Cafe Owner',
+            'Project Owner / Cafe Owner',
             style: GoogleFonts.inter(
               fontSize: 14,
               color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () {
-              setState(() {
-                MarketplaceState.toggleRole();
-              });
-            },
-            icon: const Icon(Icons.swap_horiz, size: 16, color: Colors.white),
-            label: Text(
-              MarketplaceState.isServiceProvider ? 'Switch to Owner Mode' : 'Switch to Provider Mode',
-              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
           ),
           const SizedBox(height: 16),

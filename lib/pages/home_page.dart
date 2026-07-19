@@ -88,7 +88,8 @@ class _HomePageState extends State<HomePage> {
           _buildNavItem(0, Icons.architecture,              'HOME'),
           _buildNavItem(1, Icons.collections_outlined,      'GALLERY'),
           _buildNavItem(2, Icons.design_services_outlined,  'SERVICES'),
-          _buildNavItem(3, Icons.store_mall_directory_rounded, 'MARKET'),
+          if (MarketplaceState.isServiceProvider)
+            _buildNavItem(3, Icons.store_mall_directory_rounded, 'MARKET'),
           _buildNavItem(4, Icons.person_outline,            'PROFILE'),
         ],
       ),
