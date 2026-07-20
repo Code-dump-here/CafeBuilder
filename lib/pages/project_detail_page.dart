@@ -1,14 +1,103 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/project_service.dart';
+import '../services/api_client.dart';
+import '../models/responses/api_responses.dart';
 import 'design_packages_page.dart';
 import 'collaboration_page.dart';
 
-class ProjectDetailPage extends StatelessWidget {
-  const ProjectDetailPage({super.key});
+class ProjectDetailPage extends StatefulWidget {
+  final int projectId;
+
+  const ProjectDetailPage({super.key, required this.projectId});
+
+  @override
+  State<ProjectDetailPage> createState() => _ProjectDetailPageState();
+}
+
+class _ProjectDetailPageState extends State<ProjectDetailPage> {
+  ProjectResponse? _project;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProject();
+  }
+
+  Future<void> _loadProject() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final project = await ProjectService.getProject(widget.projectId);
+      if (mounted) {
+        setState(() {
+          _project = project;
+          _loading = false;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e.message;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Failed to load project';
+        });
+      }
+    }
+  }
+
+  double _progressFor(ProjectResponse p) {
+    switch (p.status.toLowerCase()) {
+      case 'completed':
+        return 1.0;
+      case 'draft':
+        return 0.2;
+      case 'inprogress':
+      case 'in_progress':
+      case 'active':
+        return 0.65;
+      default:
+        return 0.4;
+    }
+  }
+
+  String _statusLabel(String status) {
+    if (status.isEmpty) return 'Draft';
+    return status[0].toUpperCase() + status.substring(1);
+  }
+
+  String _formatMoney(double value) {
+    if (value >= 1000000) return '\$${(value / 1000000).toStringAsFixed(1)}M';
+    if (value >= 1000) return '\$${(value / 1000).toStringAsFixed(0)}k';
+    return '\$${value.toStringAsFixed(0)}';
+  }
+
+  String _formatMoneyFull(double value) {
+    final s = value.toStringAsFixed(0);
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      final fromEnd = s.length - i;
+      buf.write(s[i]);
+      if (fromEnd > 1 && fromEnd % 3 == 1) buf.write(',');
+    }
+    return '\$$buf';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final project = _project;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFBF8F6),
       appBar: AppBar(
@@ -18,30 +107,14 @@ class ProjectDetailPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: AppColors.espresso),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                image: DecorationImage(
-                  image: NetworkImage('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Design Cafe',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.espresso,
-              ),
-            ),
-          ],
+        title: Text(
+          project?.name ?? 'Project Detail',
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.espresso,
+          ),
+          overflow: TextOverflow.ellipsis,
         ),
         centerTitle: true,
         actions: [
@@ -51,64 +124,103 @@ class ProjectDetailPage extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: AppColors.espresso,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            Text(
-              'Good Morning, Minh',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: AppColors.espresso,
-              ),
+      floatingActionButton: project == null
+          ? null
+          : FloatingActionButton(
+              onPressed: () {},
+              backgroundColor: AppColors.espresso,
+              child: const Icon(Icons.add, color: Colors.white),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Project: Tropical Coffee House',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildProgressCard(),
-            const SizedBox(height: 20),
-            _buildBudgetOverview(),
-            const SizedBox(height: 20),
-            _buildNextMilestone(),
-            const SizedBox(height: 20),
-            _buildRecentActivity(),
-            const SizedBox(height: 20),
-            _buildPendingApprovals(),
-            const SizedBox(height: 20),
-            _buildProjectTeam(),
-            const SizedBox(height: 24),
-            Text(
-              'Quick Actions',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.espresso,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildQuickActions(context),
-            const SizedBox(height: 80),
-          ],
-        ),
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.espresso))
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(onPressed: _loadProject, child: const Text('Retry')),
+                      ],
+                    ),
+                  ),
+                )
+              : RefreshIndicator(
+                  color: AppColors.espresso,
+                  onRefresh: _loadProject,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        Text(
+                          project!.name,
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.espresso,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          project.address,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${project.areaM2.toStringAsFixed(0)} m² · ${_statusLabel(project.status)}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.placeholder,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _buildProgressCard(project),
+                        const SizedBox(height: 20),
+                        _buildBudgetOverview(project),
+                        const SizedBox(height: 20),
+                        _buildNextMilestone(),
+                        const SizedBox(height: 20),
+                        _buildRecentActivity(),
+                        const SizedBox(height: 20),
+                        _buildPendingApprovals(),
+                        const SizedBox(height: 20),
+                        _buildProjectTeam(),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Quick Actions',
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.espresso,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildQuickActions(context),
+                        const SizedBox(height: 80),
+                      ],
+                    ),
+                  ),
+                ),
     );
   }
 
-  Widget _buildProgressCard() {
+  Widget _buildProgressCard(ProjectResponse project) {
+    final progress = _progressFor(project);
+    final percent = (progress * 100).round();
+
     return Container(
       height: 160,
       width: double.infinity,
@@ -140,7 +252,7 @@ class ProjectDetailPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                'Phase: Technical Drawings',
+                'Status: ${_statusLabel(project.status)}',
                 style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),
@@ -148,12 +260,15 @@ class ProjectDetailPage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'In regular progress...',
-                  style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+                Expanded(
+                  child: Text(
+                    project.name,
+                    style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 Text(
-                  '65%',
+                  '$percent%',
                   style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ],
@@ -165,7 +280,7 @@ class ProjectDetailPage extends StatelessWidget {
               decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
-                widthFactor: 0.65,
+                widthFactor: progress,
                 child: Container(decoration: BoxDecoration(color: const Color(0xFFD9EAA3), borderRadius: BorderRadius.circular(2))),
               ),
             ),
@@ -175,7 +290,7 @@ class ProjectDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBudgetOverview() {
+  Widget _buildBudgetOverview(ProjectResponse project) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -209,7 +324,7 @@ class ProjectDetailPage extends StatelessWidget {
                       width: 120,
                       height: 120,
                       child: CircularProgressIndicator(
-                        value: 0.7,
+                        value: 1.0,
                         strokeWidth: 12,
                         backgroundColor: AppColors.outlineVariant.withOpacity(0.5),
                         valueColor: const AlwaysStoppedAnimation<Color>(AppColors.espresso),
@@ -220,8 +335,11 @@ class ProjectDetailPage extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('\$84k', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso)),
-                        Text('Used', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+                        Text(
+                          _formatMoney(project.budget),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                        ),
+                        Text('Budget', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
                       ],
                     ),
                   ),
@@ -238,21 +356,27 @@ class ProjectDetailPage extends StatelessWidget {
                 children: [
                   Text('Total Budget', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
-                  Text('\$120,000', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                  Text(
+                    _formatMoneyFull(project.budget),
+                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                  ),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('Remaining', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+                  Text('Area', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
-                  Text('\$36,000', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF56642B))),
+                  Text(
+                    '${project.areaM2.toStringAsFixed(0)} m²',
+                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF56642B)),
+                  ),
                 ],
               ),
             ],
           ),
         ],
-      )
+      ),
     );
   }
 

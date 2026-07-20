@@ -17,8 +17,10 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
   final String role;
   final double area;
   final int briefId;
-  final List<String> functionalAreas;
-  final String conceptNarrative;
+  final List<String> mustHaveZones;
+  final List<String> niceToHaveZones;
+  final String notes;
+  final List<String> referenceImageUrls;
 
   const DesignSynthesisLoadingPage({
     super.key,
@@ -31,8 +33,10 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
     required this.role,
     required this.area,
     this.briefId = 0,
-    this.functionalAreas = const [],
-    this.conceptNarrative = '',
+    this.mustHaveZones = const [],
+    this.niceToHaveZones = const [],
+    this.notes = '',
+    this.referenceImageUrls = const [],
   });
 
   @override
@@ -47,9 +51,9 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
   bool _apiDone = false;
   AiRecommendationResponse? _report;
 
-  final List<String> _loadingStatuses = [
+  late final List<String> _loadingStatuses = [
     'Initializing space analysis...',
-    'Analyzing spatial metrics for ${225.toInt()} m²...',
+    'Analyzing spatial metrics for ${widget.area.toStringAsFixed(0)} m²...',
     'Cross-referencing brand concept narrative...',
     'Synthesizing spatial constraints & allocations...',
     'Generating optimal functional layout grid...',
@@ -96,27 +100,40 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
 
   Future<void> _startAiRecommendation() async {
     try {
-      if (widget.briefId > 0) {
-        final result = await AiRecommendationService.createRecommendation(
-          briefId: widget.briefId,
-          mustHaveZones: widget.functionalAreas,
-          niceToHaveZones: [],
-          notes: widget.conceptNarrative,
-          generateImage: true,
-          imageView: 0,
-          detailLevel: 0,
-          alternativesCount: 3,
-          referenceImageUrls: [],
-        );
+      if (widget.briefId <= 0) return;
+
+      final existing = await AiRecommendationService.getRecommendations(
+        briefId: widget.briefId,
+        pageNumber: 1,
+        pageSize: 1,
+      );
+      if (existing.items.isNotEmpty) {
         if (mounted) {
           setState(() {
-            _report = result;
+            _report = existing.items.first;
           });
         }
+        return;
+      }
+
+      final result = await AiRecommendationService.createRecommendation(
+        briefId: widget.briefId,
+        mustHaveZones: widget.mustHaveZones,
+        niceToHaveZones: widget.niceToHaveZones,
+        notes: widget.notes,
+        generateImage: true,
+        imageView: 0,
+        detailLevel: 0,
+        alternativesCount: 3,
+        referenceImageUrls: widget.referenceImageUrls,
+      );
+      if (mounted) {
+        setState(() {
+          _report = result;
+        });
       }
     } catch (e) {
-      // Ignore API errors so we still progress to the report screen
-      debugPrint("API Error: $e");
+      debugPrint('AI recommendation error: $e');
     } finally {
       if (mounted) {
         setState(() {

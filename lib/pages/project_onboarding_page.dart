@@ -61,6 +61,24 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   String _selectedMood = 'Warm & Cozy';
   String _selectedSoul = 'Modern Minimal';
   final List<String> _selectedFunctionalAreas = ['Customer Seating', 'Coffee Bar', 'Order Counter'];
+  static const _allFunctionalAreas = [
+    'Customer Seating',
+    'Coffee Bar',
+    'Order Counter',
+    'Commercial Kitchen',
+    'Restrooms',
+    'Back of House',
+  ];
+  static const _styleReferenceImages = {
+    'Modern Organic': 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=300',
+    'Classic Editorial': 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=300',
+  };
+  static const _soulStyleImages = {
+    'Modern Minimal': 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=400',
+    'Japandi': 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=400',
+    'Industrial': 'https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&q=80&w=400',
+    'Vintage': 'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?auto=format&fit=crop&q=80&w=400',
+  };
   final _addressCtrl = TextEditingController();
   final List<_FloorItem> _floors = [_FloorItem('Ground Floor')];
   double _ceilingHeight = 3.2;
@@ -99,9 +117,42 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
 
   bool _isSaving = false;
 
+  List<String> get _niceToHaveZones =>
+      _allFunctionalAreas.where((area) => !_selectedFunctionalAreas.contains(area)).toList();
+
+  List<String> get _referenceImageUrls {
+    final urls = <String>[];
+    final styleRef = _styleReferenceImages[_selectedStyleRef];
+    if (styleRef != null) urls.add(styleRef);
+    final soulRef = _soulStyleImages[_selectedSoul];
+    if (soulRef != null && !urls.contains(soulRef)) urls.add(soulRef);
+    return urls;
+  }
+
+  String _buildAiNotes() {
+    final floorSummary = _floors.map((f) => '${f.nameCtrl.text}: ${f.area.toStringAsFixed(1)} m²').join(', ');
+    return [
+      if (_conceptNarrativeCtrl.text.isNotEmpty) _conceptNarrativeCtrl.text,
+      'Role: $_selectedRole',
+      'Project type: $_projectType',
+      'Style: $_selectedSoul',
+      'Mood: $_selectedMood',
+      'Budget level: $_selectedBudgetLevel',
+      'Total budget: $_totalBudget',
+      'Target audience: ${_selectedAudiences.join(', ')}',
+      'Cafe type: ${_selectedCafeTypes.join(', ')}',
+      if (_differentiatorsCtrl.text.isNotEmpty) 'Differentiators: ${_differentiatorsCtrl.text}',
+      'Total area: ${_totalArea.toStringAsFixed(1)} m²',
+      'Ceiling height: $_ceilingHeight m',
+      'Storefront width: $_storefrontWidth m',
+      'Floors: $floorSummary',
+    ].join('\n');
+  }
+
   Future<void> _startDesignSynthesis() async {
     setState(() => _isSaving = true);
     int briefId = 0;
+    String? errorMessage;
     try {
       final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
       final project = await ProjectService.createProject(CreateProjectRequest(
@@ -121,14 +172,23 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         brandNote: _conceptNarrativeCtrl.text.isNotEmpty ? _conceptNarrativeCtrl.text : null,
         businessGoals: _differentiatorsCtrl.text.isNotEmpty ? _differentiatorsCtrl.text : null,
       ));
-      briefId = brief.id ?? 0;
+      briefId = brief.id;
+    } on ApiException catch (e) {
+      errorMessage = e.message;
     } catch (_) {
-      // Continue to synthesis page even if API fails
+      errorMessage = 'Failed to create project. Please try again.';
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
 
     if (!mounted) return;
+    if (errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -142,8 +202,10 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           role: _selectedRole,
           area: _totalArea,
           briefId: briefId,
-          functionalAreas: _selectedFunctionalAreas,
-          conceptNarrative: _conceptNarrativeCtrl.text,
+          mustHaveZones: List<String>.from(_selectedFunctionalAreas),
+          niceToHaveZones: _niceToHaveZones,
+          notes: _buildAiNotes(),
+          referenceImageUrls: _referenceImageUrls,
         ),
       ),
     );
@@ -1802,7 +1864,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
             ),
           ),
           ElevatedButton(
-            onPressed: _nextStep,
+            onPressed: _isSaving ? null : _nextStep,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.espresso,
               foregroundColor: Colors.white,
@@ -1813,12 +1875,25 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  _currentStep == _totalSteps - 1 ? 'Generate Synthesis' : 'Continue',
-                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward, size: 16),
+                if (_isSaving) ...[
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Creating project...',
+                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                ] else ...[
+                  Text(
+                    _currentStep == _totalSteps - 1 ? 'Generate Synthesis' : 'Continue',
+                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward, size: 16),
+                ],
               ],
             ),
           ),
