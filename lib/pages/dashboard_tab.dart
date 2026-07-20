@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../services/service_provider_service.dart';
+import '../services/project_service.dart';
+import '../services/project_working_service.dart';
+import '../services/design_service.dart';
 import '../services/api_client.dart';
 import '../models/responses/api_responses.dart';
 import 'ai_advice_page.dart';
+import 'project_detail_page.dart';
+import 'project_onboarding_page.dart';
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});
@@ -15,20 +20,42 @@ class DashboardTab extends StatefulWidget {
 
 class _DashboardTabState extends State<DashboardTab> {
   ShopOwnerResponse? _shopOwner;
+  ProjectResponse? _latestProject;
+  List<DesignResponse> _recentDesigns = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadDashboard();
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadDashboard() async {
+    setState(() => _loading = true);
     try {
-      final owner = await ShopOwnerService.getCurrentShopOwner();
+      final shopOwner = await ShopOwnerService.getCurrentShopOwner();
+      final shopOwnerId = shopOwner.id;
+
+      final projectsResult = await ProjectService.getProjects(
+        ownerId: shopOwnerId,
+        pageSize: 50,
+      );
+      final projects = List<ProjectResponse>.from(projectsResult.items)
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+
+      ProjectResponse? latest;
+      List<DesignResponse> designs = [];
+
+      if (projects.isNotEmpty) {
+        latest = await ProjectService.getProject(projects.first.id);
+        designs = await _loadRecentDesigns(latest.id);
+      }
+
       if (mounted) {
         setState(() {
-          _shopOwner = owner;
+          _shopOwner = shopOwner;
+          _latestProject = latest;
+          _recentDesigns = designs;
           _loading = false;
         });
       }
@@ -36,6 +63,91 @@ class _DashboardTabState extends State<DashboardTab> {
       if (mounted) setState(() => _loading = false);
     } catch (_) {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<List<DesignResponse>> _loadRecentDesigns(int projectShopOwnerId) async {
+    final workings = await ProjectWorkingService.getProjectWorkings(
+      projectShopOwnerId: projectShopOwnerId,
+      pageSize: 50,
+    );
+    if (workings.items.isEmpty) return [];
+
+    final allDesigns = <DesignResponse>[];
+    for (final working in workings.items) {
+      try {
+        final result = await DesignService.getDesigns(
+          projectWorkingId: working.id,
+          pageSize: 20,
+        );
+        allDesigns.addAll(result.items);
+      } catch (_) {}
+    }
+
+    allDesigns.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return allDesigns.take(2).toList();
+  }
+
+  double _progressFor(ProjectResponse project) {
+    switch (project.status.toLowerCase()) {
+      case 'completed':
+        return 1.0;
+      case 'draft':
+        return 0.2;
+      case 'inprogress':
+      case 'in_progress':
+      case 'active':
+        return 0.65;
+      default:
+        return 0.4;
+    }
+  }
+
+  String _phaseLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return 'Phase 1: Drafting';
+      case 'completed':
+        return 'Completed';
+      case 'inprogress':
+      case 'in_progress':
+      case 'active':
+        return 'Phase 2: In Progress';
+      default:
+        if (status.isEmpty) return 'Phase 1: Drafting';
+        return 'Phase: ${status[0].toUpperCase()}${status.substring(1)}';
+    }
+  }
+
+  List<String> _providerNames(ProjectResponse project) {
+    return project.providers
+        .whereType<Map>()
+        .map((p) => p['displayName']?.toString() ?? '')
+        .where((name) => name.isNotEmpty)
+        .toList();
+  }
+
+  String _formatUpdated(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inHours < 1) return 'Updated just now';
+    if (diff.inHours < 24) return 'Updated ${diff.inHours} hours ago';
+    if (diff.inDays == 1) return 'Updated yesterday';
+    if (diff.inDays < 7) return 'Updated ${diff.inDays} days ago';
+    return 'Updated ${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  IconData _iconForDesignType(String type) {
+    switch (type.toLowerCase()) {
+      case 'layout_2d':
+        return Icons.architecture;
+      case 'render_3d':
+        return Icons.view_in_ar_rounded;
+      case 'concept':
+        return Icons.palette_outlined;
+      case 'technical_drawing':
+        return Icons.draw_outlined;
+      default:
+        return Icons.description_outlined;
     }
   }
 
@@ -158,6 +270,90 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _buildActiveProjectCard() {
+    if (_loading) {
+      return Container(
+        width: double.infinity,
+        height: 220,
+        decoration: BoxDecoration(
+          color: AppColors.espresso,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(color: AppColors.primaryFixed),
+        ),
+      );
+    }
+
+    if (_latestProject == null) {
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ProjectOnboardingPage()),
+          ).then((_) => _loadDashboard());
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.espresso,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'YOUR PROJECT',
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryFixed.withOpacity(0.6),
+                  letterSpacing: 2.0,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Start your first project',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryFixed,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Create a brief to begin your cafe build journey.',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppColors.primaryFixedDim.withOpacity(0.8),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProjectOnboardingPage()),
+                  ).then((_) => _loadDashboard());
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryFixed,
+                  foregroundColor: AppColors.espresso,
+                  elevation: 0,
+                ),
+                child: const Text('Get Started'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final project = _latestProject!;
+    final progress = _progressFor(project);
+    final percent = (progress * 100).round();
+    final providers = _providerNames(project);
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -208,7 +404,7 @@ class _DashboardTabState extends State<DashboardTab> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Artisan Reserve Roastery',
+                          project.name,
                           style: GoogleFonts.playfairDisplay(
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
@@ -216,7 +412,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           ),
                         ),
                         Text(
-                          'Phase 1: Drafting',
+                          _phaseLabel(project.status),
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: AppColors.primaryFixedDim.withOpacity(0.8),
@@ -231,8 +427,8 @@ class _DashboardTabState extends State<DashboardTab> {
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: AppColors.primaryFixed.withOpacity(0.2)),
                       ),
-                      child: const Text(
-                        '85%',
+                      child: Text(
+                        '$percent%',
                         style: TextStyle(
                           color: AppColors.primaryFixed,
                           fontWeight: FontWeight.bold,
@@ -253,7 +449,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   ),
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
-                    widthFactor: 0.85,
+                    widthFactor: progress,
                     child: Container(
                       decoration: BoxDecoration(
                         color: AppColors.primaryFixed,
@@ -269,39 +465,48 @@ class _DashboardTabState extends State<DashboardTab> {
                     // Avatars
                     SizedBox(
                       height: 36,
-                      width: 100,
-                      child: Stack(
-                        children: [
-                          _buildAvatar(0, 'https://lh3.googleusercontent.com/aida-public/AB6AXuBmkslFEeNh9bICog8Pu0yUiRU0MVi2Qh550V6EZ1kThT19MbWMN4zVOprggD2DGM8aTaO3v-SFr00dwYE-e0_B7AscyQI7qP_827N4BdQaEac77QH2KmN88KF0njIFYahVcjjGymeYOb7yOfVaVa46pLpdWHdNMGCbhCtWywxlHt0gxSrEuu8OpCF40t5Jg_JQFN16gifu1lWXopGQnp7ijpDsEwGfoux5OQ1EUwRraAFfa4I5wrPOhf2oqvOPo9vUX6e3S8a-uk_t'),
-                          _buildAvatar(1, 'https://lh3.googleusercontent.com/aida-public/AB6AXuBaM8sdl1PiH-E1VWQi4JUanMwhfPP2SYwD3lSSrrpj1aGNZSAtM_iMdSbG27hpwzz2wsDKu702w9y33yxsz5eDFVWEDSwxCBBeb7dw1K4EEfixxILCgW340Ik7hAFSPPH8BVJ4Lxl-eMHEEc05PlGaIGpoTfuJGDL1zz84IdbNxsntzcLFl6PDv5c56hifhZ5KWBhsiYE4y4JAIPwQ-sY6qamcvBiYR-Dp4EmGOJn5QAasJVuI7mBgxJjreCrnUjXvKIL-ZtdP4AZn'),
-                          Positioned(
-                            left: 56,
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryFixedDim,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: AppColors.espresso, width: 2),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '+3',
-                                  style: TextStyle(
-                                    color: AppColors.espresso,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                      width: providers.length > 2 ? 100 : (providers.isEmpty ? 36 : 72),
+                      child: providers.isEmpty
+                          ? _buildInitialAvatar(0, '?')
+                          : Stack(
+                              children: [
+                                for (var i = 0; i < providers.length && i < 2; i++)
+                                  _buildInitialAvatar(i, providers[i][0].toUpperCase()),
+                                if (providers.length > 2)
+                                  Positioned(
+                                    left: 56,
+                                    child: Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryFixedDim,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: AppColors.espresso, width: 2),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '+${providers.length - 2}',
+                                          style: const TextStyle(
+                                            color: AppColors.espresso,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
                     ),
-                    // Button
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProjectDetailPage(projectId: project.id),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryFixed,
                         foregroundColor: AppColors.espresso,
@@ -323,6 +528,31 @@ class _DashboardTabState extends State<DashboardTab> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInitialAvatar(int index, String initial) {
+    return Positioned(
+      left: index * 28.0,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.primaryFixedDim,
+          border: Border.all(color: AppColors.espresso, width: 2),
+        ),
+        child: Center(
+          child: Text(
+            initial,
+            style: const TextStyle(
+              color: AppColors.espresso,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -580,9 +810,14 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
         ),
         const SizedBox(height: 20),
-        _buildDocumentItem('1st Floor Layout', 'Updated 2 hours ago', Icons.architecture),
-        const SizedBox(height: 12),
-        _buildDocumentItem('Moodboard: Walnut & Clay', 'Updated Yesterday', Icons.palette_outlined),
+        for (var i = 0; i < _recentDesigns.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          _buildDocumentItem(
+            _recentDesigns[i].title,
+            _formatUpdated(_recentDesigns[i].updatedAt),
+            _iconForDesignType(_recentDesigns[i].type),
+          ),
+        ],
       ],
     );
   }

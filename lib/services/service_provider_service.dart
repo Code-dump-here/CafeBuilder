@@ -4,16 +4,51 @@ import '../models/responses/api_responses.dart';
 import 'api_client.dart';
 
 class ServiceProviderService {
+  static const _placeholderImages = [
+    'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
+    'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
+    'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=600',
+    'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&q=80&w=600',
+    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=600',
+  ];
+
+  static String imageFor(int providerId, int index) =>
+      _placeholderImages[(providerId + index) % _placeholderImages.length];
+
+  static String typeLabel(ServiceProviderResponse provider) {
+    if (provider.capability == 'both') return 'DESIGN & BUILD';
+    if (provider.providerType == 'company') {
+      return provider.capability == 'constructor' ? 'CONSTRUCTION FIRM' : 'DESIGN STUDIO';
+    }
+    return provider.capability == 'constructor' ? 'CONTRACTOR' : 'INDIVIDUAL DESIGNER';
+  }
+
+  static String tierLabel(ServiceProviderResponse provider) {
+    if (provider.isVerified) return 'VERIFIED';
+    if (provider.avgRating >= 4.5) return 'PREMIUM';
+    return 'PARTNER';
+  }
+
   static Future<PaginationResponse<ServiceProviderResponse>> getProviders({
     int pageNumber = 1,
     int pageSize = 10,
+    String? capability,
+    bool? isVerified,
+    String? search,
   }) async {
-    final response = await ApiClient.authGet('/service-provider-profiles', {
+    final params = <String, dynamic>{
       'pageNumber': pageNumber,
       'pageSize': pageSize,
-    });
+      if (capability != null) 'capability': capability,
+      if (isVerified != null) 'isVerified': isVerified,
+      if (search != null && search.isNotEmpty) 'search': search,
+    };
+    final response = await ApiClient.authGet('/service-provider-profiles', params);
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
+    if (body['items'] is List) {
+      return PaginationResponse.fromJson(body, ServiceProviderResponse.fromJson);
+    }
     return ResponseData.fromJson(
       body,
       (d) => PaginationResponse.fromJson(d, ServiceProviderResponse.fromJson),
@@ -24,6 +59,9 @@ class ServiceProviderService {
     final response = await ApiClient.authGet('/service-provider-profiles/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
+    if (body['id'] != null) {
+      return ServiceProviderResponse.fromJson(body);
+    }
     return ResponseData.fromJson(body, (d) => ServiceProviderResponse.fromJson(d)).data!;
   }
 

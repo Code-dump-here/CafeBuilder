@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../models/responses/api_responses.dart';
+import '../services/api_client.dart';
+import '../services/project_service.dart';
+import '../services/service_provider_service.dart';
 import 'booking_confirmed_page.dart';
 import 'hire_request_confirmed_page.dart';
+import 'project_onboarding_page.dart';
 
 class SelectProjectPage extends StatefulWidget {
   final String designerName;
   final bool isConstructor;
-  
+
   const SelectProjectPage({
-    super.key, 
+    super.key,
     required this.designerName,
     this.isConstructor = false,
   });
@@ -19,31 +24,105 @@ class SelectProjectPage extends StatefulWidget {
 }
 
 class _SelectProjectPageState extends State<SelectProjectPage> {
+  List<ProjectResponse> _projects = [];
   int _selectedIndex = 0;
+  bool _loading = true;
+  String? _error;
 
-  final List<Map<String, dynamic>> _projects = [
-    {
-      'title': 'Artisanal Espresso Lounge',
-      'status': 'Synthesis Ready',
-      'date': 'Oct 12, 2023',
-      'image': 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
-    },
-    {
-      'title': 'Minimalist Garden Cafe',
-      'status': 'Draft Complete',
-      'date': 'Nov 05, 2023',
-      'image': 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
-    },
-    {
-      'title': 'Old Town Roastery',
-      'status': 'Draft Complete',
-      'date': 'Dec 01, 2023',
-      'image': 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=600',
-    },
+  static const _coverImages = [
+    'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
+    'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
+    'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=600',
+    'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=600',
+  ];
+
+  static const _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadProjects();
+  }
+
+  Future<void> _loadProjects() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
+      final result = await ProjectService.getProjects(
+        ownerId: shopOwnerId,
+        pageSize: 50,
+      );
+      if (mounted) {
+        setState(() {
+          _projects = result.items;
+          _selectedIndex = 0;
+          _loading = false;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e.message;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Failed to load projects';
+        });
+      }
+    }
+  }
+
+  String _coverFor(ProjectResponse project) =>
+      _coverImages[project.id.abs() % _coverImages.length];
+
+  String _formatDate(DateTime date) =>
+      '${_months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+
+  String _statusLabel(String status) {
+    if (status.isEmpty) return 'Draft';
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return 'Draft Complete';
+      case 'inprogress':
+      case 'in_progress':
+      case 'active':
+        return 'Synthesis Ready';
+      case 'completed':
+        return 'Completed';
+      default:
+        return status[0].toUpperCase() + status.substring(1);
+    }
+  }
+
+  bool _isHighlightedStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'inprogress':
+      case 'in_progress':
+      case 'active':
+      case 'completed':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  ProjectResponse? get _selectedProject =>
+      _projects.isNotEmpty ? _projects[_selectedIndex] : null;
+
+  @override
   Widget build(BuildContext context) {
+    final providerLabel = widget.isConstructor ? 'contractors' : 'designers';
+
     return Scaffold(
       backgroundColor: const Color(0xFFFBF8F6),
       appBar: AppBar(
@@ -73,7 +152,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Choose a project brief to share with ${widget.designerName}. Our designers will review your selection and respond within 24 hours.',
+                    'Choose a project brief to share with ${widget.designerName}. Our $providerLabel will review your selection and respond within 24 hours.',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       height: 1.5,
@@ -81,10 +160,45 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  ...List.generate(_projects.length, (index) {
-                    return _buildProjectCard(index, _projects[index]);
-                  }),
-                  _buildCreateNewCard(),
+                  if (_loading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48),
+                      child: Center(
+                        child: CircularProgressIndicator(color: AppColors.espresso),
+                      ),
+                    )
+                  else if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Column(
+                        children: [
+                          Text(_error!, textAlign: TextAlign.center),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _loadProjects,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else ...[
+                    if (_projects.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(
+                          'You don\'t have any projects yet. Create one to share with ${widget.designerName}.',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                      )
+                    else
+                      for (var i = 0; i < _projects.length; i++)
+                        _buildProjectCard(i, _projects[i]),
+                    _buildCreateNewCard(),
+                  ],
                   const SizedBox(height: 24),
                 ],
               ),
@@ -99,27 +213,30 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
               ),
             ),
             child: ElevatedButton(
-              onPressed: () {
-                if (widget.isConstructor) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HireRequestConfirmedPage(
-                        constructorName: widget.designerName,
-                      ),
-                    ),
-                  );
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BookingConfirmedPage(
-                        projectTitle: _projects[_selectedIndex]['title'],
-                      ),
-                    ),
-                  );
-                }
-              },
+              onPressed: _projects.isEmpty || _loading
+                  ? null
+                  : () {
+                      final project = _selectedProject!;
+                      if (widget.isConstructor) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HireRequestConfirmedPage(
+                              constructorName: widget.designerName,
+                            ),
+                          ),
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BookingConfirmedPage(
+                              projectTitle: project.name,
+                            ),
+                          ),
+                        );
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.espresso,
                 foregroundColor: Colors.white,
@@ -142,14 +259,13 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
     );
   }
 
-  Widget _buildProjectCard(int index, Map<String, dynamic> project) {
-    bool isSelected = _selectedIndex == index;
+  Widget _buildProjectCard(int index, ProjectResponse project) {
+    final isSelected = _selectedIndex == index;
+    final statusLabel = _statusLabel(project.status);
+    final highlighted = _isHighlightedStatus(project.status);
+
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
+      onTap: () => setState(() => _selectedIndex = index),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -176,7 +292,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
                   child: Image.network(
-                    project['image'],
+                    _coverFor(project),
                     height: 140,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -209,13 +325,22 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    project['title'],
+                    project.name,
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: AppColors.espresso,
                     ),
                   ),
+                  if (project.address.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      project.address,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.placeholder),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -223,17 +348,17 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: project['status'] == 'Synthesis Ready'
+                          color: highlighted
                               ? const Color(0xFFD9EAA3).withOpacity(0.5)
                               : const Color(0xFFEBEBEB),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          project['status'],
+                          statusLabel,
                           style: GoogleFonts.inter(
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
-                            color: project['status'] == 'Synthesis Ready'
+                            color: highlighted
                                 ? const Color(0xFF56642B)
                                 : AppColors.textSecondary,
                           ),
@@ -244,7 +369,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                           const Icon(Icons.calendar_month_outlined, size: 14, color: AppColors.placeholder),
                           const SizedBox(width: 4),
                           Text(
-                            project['date'],
+                            _formatDate(project.updatedAt),
                             style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
                           ),
                         ],
@@ -261,45 +386,53 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
   }
 
   Widget _buildCreateNewCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outlineVariant, width: 2), // Instead of dashes, using thick border
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.espresso,
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ProjectOnboardingPage()),
+        ).then((_) => _loadProjects());
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.outlineVariant, width: 2),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: AppColors.espresso,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add, color: Colors.white),
             ),
-            child: const Icon(Icons.add, color: Colors.white),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Create New Project',
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.espresso,
+            const SizedBox(height: 16),
+            Text(
+              'Create New Project',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.espresso,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Start a new brief for a different\nlocation or concept.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-              height: 1.5,
+            const SizedBox(height: 8),
+            Text(
+              'Start a new brief for a different\nlocation or concept.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

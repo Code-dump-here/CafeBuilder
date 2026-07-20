@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../models/responses/api_responses.dart';
+import '../services/api_client.dart';
+import '../services/service_provider_service.dart';
 import 'constructor_detail_page.dart';
 
 class FindConstructorsPage extends StatefulWidget {
@@ -12,35 +16,63 @@ class FindConstructorsPage extends StatefulWidget {
 
 class _FindConstructorsPageState extends State<FindConstructorsPage> {
   final TextEditingController _searchController = TextEditingController();
+  List<ServiceProviderResponse> _constructors = [];
+  bool _loading = true;
+  String? _error;
+  Timer? _debounce;
 
-  final List<Map<String, dynamic>> _constructors = [
-    {
-      'name': 'Vanguard Builds Co.',
-      'type': 'Construction Firm',
-      'rating': '4.9',
-      'projects': '42 Cafe Projects',
-      'location': 'Hanoi, Vietnam',
-      'services': ['Structural & MEP', 'Artisan Finishing', 'Kitchen HVAC'],
-      'images': [
-        'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&q=80&w=600',
-        'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=300',
-        'https://images.unsplash.com/photo-1541123356070-7d722bf1d15c?auto=format&fit=crop&q=80&w=300',
-      ],
-    },
-    {
-      'name': 'Heritage Stone & Steel',
-      'type': 'Construction Firm',
-      'rating': '4.8',
-      'projects': '28 Cafe Projects',
-      'location': 'Ho Chi Minh City',
-      'services': ['Custom Metalwork', 'Stone Masonry', 'Electrical Design'],
-      'images': [
-        'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=600',
-        'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&q=80&w=300',
-        'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=300',
-      ],
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadConstructors();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), _loadConstructors);
+  }
+
+  Future<void> _loadConstructors() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final result = await ServiceProviderService.getProviders(
+        capability: 'constructor',
+        pageSize: 50,
+        search: _searchController.text.trim().isEmpty ? null : _searchController.text.trim(),
+      );
+      if (mounted) {
+        setState(() {
+          _constructors = result.items;
+          _loading = false;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e.message;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Failed to load contractors';
+        });
+      }
+    }
+  }
 
   void _showFilterSheet(BuildContext context) {
     showModalBottomSheet(
@@ -153,7 +185,32 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
               ),
             ),
             const SizedBox(height: 24),
-            ..._constructors.map((c) => _buildConstructorCard(c)).toList(),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 48),
+                child: Center(child: CircularProgressIndicator(color: AppColors.espresso)),
+              )
+            else if (_error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Column(
+                  children: [
+                    Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    ElevatedButton(onPressed: _loadConstructors, child: const Text('Retry')),
+                  ],
+                ),
+              )
+            else if (_constructors.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Text(
+                  'No contractors found.',
+                  style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondary),
+                ),
+              )
+            else
+              for (final contractor in _constructors) _buildConstructorCard(contractor),
           ],
         ),
       ),
@@ -181,7 +238,20 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
     );
   }
 
-  Widget _buildConstructorCard(Map<String, dynamic> data) {
+  Widget _buildConstructorCard(ServiceProviderResponse provider) {
+    final type = ServiceProviderService.typeLabel(provider);
+    final experience = provider.yearsExperience != null
+        ? '${provider.yearsExperience}+ years in construction'
+        : 'Cafe construction specialist';
+    final services = [
+      provider.capability,
+      if (provider.portfolioHeadline != null) provider.portfolioHeadline!,
+      provider.providerType,
+    ];
+    final image1 = ServiceProviderService.imageFor(provider.id, 0);
+    final image2 = ServiceProviderService.imageFor(provider.id, 1);
+    final image3 = ServiceProviderService.imageFor(provider.id, 2);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
@@ -209,7 +279,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  data['type'],
+                  type,
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -228,7 +298,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
                     const Icon(Icons.star, size: 12, color: AppColors.espresso),
                     const SizedBox(width: 4),
                     Text(
-                      data['rating'],
+                      provider.avgRating.toStringAsFixed(1),
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -242,7 +312,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            data['name'],
+            provider.displayName,
             style: GoogleFonts.playfairDisplay(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -255,7 +325,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
               const Icon(Icons.coffee_outlined, size: 14, color: AppColors.placeholder),
               const SizedBox(width: 8),
               Text(
-                data['projects'],
+                experience,
                 style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
@@ -266,7 +336,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
               const Icon(Icons.location_on_outlined, size: 14, color: AppColors.placeholder),
               const SizedBox(width: 8),
               Text(
-                data['location'],
+                provider.isVerified ? 'Verified partner · Vietnam' : 'Vietnam',
                 style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
@@ -280,7 +350,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: (data['services'] as List).map((tag) => Container(
+            children: services.map((tag) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -293,13 +363,24 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
               ),
             )).toList(),
           ),
+          if (provider.bio != null && provider.bio!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              provider.bio!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+            ),
+          ],
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const ConstructorDetailPage(),
+                  builder: (context) => ConstructorDetailPage(
+                    serviceProviderProfileId: provider.id,
+                  ),
                 ),
               );
             },
@@ -326,7 +407,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
-                  data['images'][0],
+                  image1,
                   width: double.infinity,
                   height: 140,
                   fit: BoxFit.cover,
@@ -339,7 +420,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        data['images'][1],
+                        image2,
                         height: 90,
                         fit: BoxFit.cover,
                       ),
@@ -350,7 +431,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        data['images'][2],
+                        image3,
                         height: 90,
                         fit: BoxFit.cover,
                       ),

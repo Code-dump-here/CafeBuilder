@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../models/responses/api_responses.dart';
+import '../services/api_client.dart';
+import '../services/service_provider_service.dart';
 import 'designer_detail_page.dart';
 
 class FindDesignersPage extends StatefulWidget {
@@ -12,54 +16,63 @@ class FindDesignersPage extends StatefulWidget {
 
 class _FindDesignersPageState extends State<FindDesignersPage> {
   final TextEditingController _searchController = TextEditingController();
+  List<ServiceProviderResponse> _designers = [];
+  bool _loading = true;
+  String? _error;
+  Timer? _debounce;
 
-  final List<Map<String, dynamic>> _designers = [
-    {
-      'id': 1,
-      'name': 'TROP Studio',
-      'type': 'DESIGN STUDIO',
-      'rating': '4.9',
-      'tags': ['Tropical', 'Minimalist', 'Luxury'],
-      'projects': '24 café projects completed',
-      'services': 'Turnkey: Design + Supervision',
-      'tier': 'PREMIUM',
-      'avatar': 'https://plus.unsplash.com/premium_photo-1661884238122-38e5bc352ea7?auto=format&fit=crop&q=80&w=150',
-      'images': [
-        'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=300',
-        'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=300',
-      ],
-    },
-    {
-      'id': 2,
-      'name': 'Mộc Space',
-      'type': 'INDIVIDUAL DESIGNER',
-      'rating': '4.8',
-      'tags': ['Industrial', 'Wabi-sabi'],
-      'projects': '12 café projects completed',
-      'services': 'Design Only',
-      'tier': 'MID-RANGE',
-      'avatar': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150',
-      'images': [
-        'https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&q=80&w=300',
-        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=300',
-      ],
-    },
-    {
-      'id': 3,
-      'name': 'ArchiForm',
-      'type': 'DESIGN STUDIO',
-      'rating': '5.0',
-      'tags': ['Minimalist', 'Modern Corporate'],
-      'projects': '42 café projects completed',
-      'services': 'Turnkey: Design + Supervision',
-      'tier': 'LUXURY',
-      'avatar': 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=150',
-      'images': [
-        'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=300',
-        'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=300',
-      ],
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadDesigners();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), _loadDesigners);
+  }
+
+  Future<void> _loadDesigners() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final result = await ServiceProviderService.getProviders(
+        capability: 'designer',
+        pageSize: 50,
+        search: _searchController.text.trim().isEmpty ? null : _searchController.text.trim(),
+      );
+      if (mounted) {
+        setState(() {
+          _designers = result.items;
+          _loading = false;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e.message;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Failed to load designers';
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +141,32 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
               ),
             ),
             const SizedBox(height: 24),
-            ..._designers.map((d) => _buildDesignerCard(d)).toList(),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 48),
+                child: Center(child: CircularProgressIndicator(color: AppColors.espresso)),
+              )
+            else if (_error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Column(
+                  children: [
+                    Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    ElevatedButton(onPressed: _loadDesigners, child: const Text('Retry')),
+                  ],
+                ),
+              )
+            else if (_designers.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Text(
+                  'No designers found.',
+                  style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondary),
+                ),
+              )
+            else
+              for (final designer in _designers) _buildDesignerCard(designer),
           ],
         ),
       ),
@@ -165,7 +203,16 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
     );
   }
 
-  Widget _buildDesignerCard(Map<String, dynamic> data) {
+  Widget _buildDesignerCard(ServiceProviderResponse provider) {
+    final tier = ServiceProviderService.tierLabel(provider);
+    final type = ServiceProviderService.typeLabel(provider);
+    final image1 = ServiceProviderService.imageFor(provider.id, 0);
+    final image2 = ServiceProviderService.imageFor(provider.id, 1);
+    final experience = provider.yearsExperience != null
+        ? '${provider.yearsExperience}+ years experience'
+        : 'Cafe design specialist';
+    final services = provider.portfolioHeadline ?? provider.capability;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
@@ -187,7 +234,15 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundImage: NetworkImage(data['avatar']),
+                backgroundColor: AppColors.espresso,
+                child: Text(
+                  provider.displayName.isNotEmpty ? provider.displayName[0].toUpperCase() : 'D',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -195,7 +250,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      data['name'],
+                      provider.displayName,
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -203,7 +258,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
                       ),
                     ),
                     Text(
-                      data['type'],
+                      type,
                       style: GoogleFonts.inter(
                         fontSize: 9,
                         letterSpacing: 1.0,
@@ -225,7 +280,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
                     const Icon(Icons.star, size: 12, color: Color(0xFF56642B)),
                     const SizedBox(width: 4),
                     Text(
-                      data['rating'],
+                      provider.avgRating.toStringAsFixed(1),
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -241,26 +296,22 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: (data['tags'] as List).map((tag) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF6F3F1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                tag,
-                style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary),
-              ),
-            )).toList(),
+            children: [
+              _buildTag(provider.capability),
+              _buildTag(provider.providerType),
+              if (provider.isVerified) _buildTag('Verified'),
+            ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               const Icon(Icons.architecture, size: 14, color: AppColors.placeholder),
               const SizedBox(width: 8),
-              Text(
-                data['projects'],
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.espresso),
+              Expanded(
+                child: Text(
+                  experience,
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.espresso),
+                ),
               ),
             ],
           ),
@@ -269,12 +320,23 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
             children: [
               const Icon(Icons.handshake_outlined, size: 14, color: AppColors.placeholder),
               const SizedBox(width: 8),
-              Text(
-                data['services'],
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.espresso),
+              Expanded(
+                child: Text(
+                  services,
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.espresso),
+                ),
               ),
             ],
           ),
+          if (provider.bio != null && provider.bio!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              provider.bio!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+            ),
+          ],
           const SizedBox(height: 16),
           SizedBox(
             height: 120,
@@ -283,7 +345,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    data['images'][0],
+                    image1,
                     width: MediaQuery.of(context).size.width * 0.6,
                     height: 120,
                     fit: BoxFit.cover,
@@ -300,7 +362,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        data['images'][1],
+                        image2,
                         width: 140,
                         height: 90,
                         fit: BoxFit.cover,
@@ -318,17 +380,15 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: data['tier'] == 'PREMIUM'
-                      ? AppColors.espresso
-                      : (data['tier'] == 'LUXURY' ? Colors.black : const Color(0xFFE0E0E0)),
+                  color: tier == 'PARTNER' ? const Color(0xFFE0E0E0) : AppColors.espresso,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  data['tier'],
+                  tier,
                   style: GoogleFonts.inter(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
-                    color: data['tier'] == 'MID-RANGE' ? AppColors.espresso : Colors.white,
+                    color: tier == 'PARTNER' ? AppColors.espresso : Colors.white,
                   ),
                 ),
               ),
@@ -338,7 +398,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => DesignerDetailPage(
-                        serviceProviderProfileId: data['id'] as int,
+                        serviceProviderProfileId: provider.id,
                       ),
                     ),
                   );
@@ -358,6 +418,20 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTag(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F3F1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary),
       ),
     );
   }
