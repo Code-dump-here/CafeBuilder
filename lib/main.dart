@@ -16,6 +16,7 @@ import 'pages/element_details_page.dart';
 import 'pages/chat_page.dart';
 import 'pages/collaboration_workspace_page.dart';
 import 'widgets/page_navigator.dart';
+import 'services/api_client.dart';
 
 void main() {
   runApp(const CafeBuilderApp());
@@ -29,6 +30,7 @@ class CafeBuilderApp extends StatelessWidget {
     return MaterialApp(
       title: 'Design Cafe',
       debugShowCheckedModeBanner: false,
+      navigatorKey: ApiClient.navigatorKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF9E896A)),
         useMaterial3: true,

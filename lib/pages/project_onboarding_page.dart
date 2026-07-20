@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
@@ -153,17 +154,34 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     setState(() => _isSaving = true);
     int briefId = 0;
     String? errorMessage;
+
+    // Resolve address – never send an empty string
+    final address = _addressCtrl.text.isNotEmpty
+        ? _addressCtrl.text
+        : _locationCtrl.text.isNotEmpty
+            ? _locationCtrl.text
+            : 'Vietnam';
+
     try {
+      // ── Step 1: Ensure shop owner profile ──────────────────────────────────
+      dev.log('[Onboarding] Step 1: ensureShopOwnerId', name: 'onboarding');
       final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
-      final project = await ProjectService.createProject(CreateProjectRequest(
+      dev.log('[Onboarding] shopOwnerId=$shopOwnerId', name: 'onboarding');
+
+      // ── Step 2: Create project ─────────────────────────────────────────────
+      final projectPayload = CreateProjectRequest(
         ownerId: shopOwnerId,
         name: _cafeNameCtrl.text.isEmpty ? 'My Cafe' : _cafeNameCtrl.text,
-        address: _addressCtrl.text.isEmpty ? _locationCtrl.text : _addressCtrl.text,
-        areaM2: _totalArea,
+        address: address,
+        areaM2: _totalArea > 0 ? _totalArea : 1.0,
         budget: _totalBudget,
-      ));
+      );
+      dev.log('[Onboarding] Step 2: createProject payload=${projectPayload.toJson()}', name: 'onboarding');
+      final project = await ProjectService.createProject(projectPayload);
+      dev.log('[Onboarding] project.id=${project.id}', name: 'onboarding');
 
-      final brief = await DesignBriefService.createDesignBrief(CreateDesignBriefRequest(
+      // ── Step 3: Create design brief ────────────────────────────────────────
+      final briefPayload = CreateDesignBriefRequest(
         projectId: project.id,
         targetCustomer: _selectedAudiences.join(', '),
         style: _selectedSoul,
@@ -171,12 +189,25 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         businessModel: _selectedCafeTypes.join(', '),
         brandNote: _conceptNarrativeCtrl.text.isNotEmpty ? _conceptNarrativeCtrl.text : null,
         businessGoals: _differentiatorsCtrl.text.isNotEmpty ? _differentiatorsCtrl.text : null,
-      ));
+      );
+      dev.log('[Onboarding] Step 3: createDesignBrief payload=${briefPayload.toJson()}', name: 'onboarding');
+      final brief = await DesignBriefService.createDesignBrief(briefPayload);
+      dev.log('[Onboarding] brief.id=${brief.id}', name: 'onboarding');
       briefId = brief.id;
     } on ApiException catch (e) {
-      errorMessage = e.message;
-    } catch (_) {
-      errorMessage = 'Failed to create project. Please try again.';
+      dev.log('[Onboarding] ApiException ${e.statusCode}: ${e.message}', name: 'onboarding', level: 1000);
+      if (e.statusCode == 401) {
+        // Session expired — clear tokens and go to login
+        await ApiClient.clearTokens();
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+        }
+        return;
+      }
+      errorMessage = '[${e.statusCode}] ${e.message}';
+    } catch (e, st) {
+      dev.log('[Onboarding] Unexpected error: $e', name: 'onboarding', level: 1000, stackTrace: st);
+      errorMessage = 'Unexpected error: $e';
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -184,7 +215,11 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     if (!mounted) return;
     if (errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
+        SnackBar(
+          content: Text(errorMessage!),
+          duration: const Duration(seconds: 6),
+          backgroundColor: Colors.red.shade700,
+        ),
       );
       return;
     }
@@ -200,7 +235,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           totalBudget: _totalBudget,
           mood: _selectedMood,
           role: _selectedRole,
-          area: _totalArea,
+          area: _totalArea > 0 ? _totalArea : 1.0,
           briefId: briefId,
           mustHaveZones: List<String>.from(_selectedFunctionalAreas),
           niceToHaveZones: _niceToHaveZones,
