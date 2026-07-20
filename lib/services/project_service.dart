@@ -16,32 +16,28 @@ class ProjectService {
     final response = await ApiClient.authGet('/project-shop-owners', params);
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
-    final data = ResponseData.fromJson(
-      body,
-      (d) => PaginationResponse.fromJson(d, ProjectResponse.fromJson),
-    );
-    return data.data!;
+    return PaginationResponse.fromJson(body, ProjectResponse.fromJson);
   }
 
   static Future<ProjectResponse> getProject(int id) async {
     final response = await ApiClient.authGet('/project-shop-owners/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
-    return ResponseData.fromJson(body, (d) => ProjectResponse.fromJson(d)).data!;
+    return ProjectResponse.fromJson(body);
   }
 
   static Future<ProjectResponse> createProject(CreateProjectRequest request) async {
     final response = await ApiClient.authPost('/project-shop-owners', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
-    return ResponseData.fromJson(body, (d) => ProjectResponse.fromJson(d)).data!;
+    return ProjectResponse.fromJson(body);
   }
 
   static Future<ProjectResponse> updateProject(int id, UpdateProjectRequest request) async {
     final response = await ApiClient.authPut('/project-shop-owners/$id', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
-    return ResponseData.fromJson(body, (d) => ProjectResponse.fromJson(d)).data!;
+    return ProjectResponse.fromJson(body);
   }
 
   static Future<void> deleteProject(int id) async {

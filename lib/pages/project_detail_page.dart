@@ -190,15 +190,23 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                         _buildProgressCard(project),
                         const SizedBox(height: 20),
                         _buildBudgetOverview(project),
-                        const SizedBox(height: 20),
-                        _buildNextMilestone(),
-                        const SizedBox(height: 20),
-                        _buildRecentActivity(),
-                        const SizedBox(height: 20),
-                        _buildPendingApprovals(),
-                        const SizedBox(height: 20),
-                        _buildProjectTeam(),
                         const SizedBox(height: 24),
+                        if (project.providers.isNotEmpty) ...[
+                          _buildNextMilestone(),
+                          const SizedBox(height: 20),
+                          _buildRecentActivity(),
+                          const SizedBox(height: 20),
+                          _buildPendingApprovals(),
+                          const SizedBox(height: 20),
+                          _buildProjectTeam(),
+                          const SizedBox(height: 24),
+                        ] else if (project.openPosts.isNotEmpty) ...[
+                          _buildRecruitingStatus(project.openPosts),
+                          const SizedBox(height: 24),
+                        ] else ...[
+                          _buildEmptyProvidersState(),
+                          const SizedBox(height: 24),
+                        ],
                         Text(
                           'Quick Actions',
                           style: GoogleFonts.playfairDisplay(
@@ -610,6 +618,120 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             Icon(icon, color: AppColors.espresso, size: 24),
             const SizedBox(height: 8),
             Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecruitingStatus(List<OpenPostResponse> posts) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.espresso, width: 1.5),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.campaign_outlined, color: AppColors.espresso, size: 18),
+              const SizedBox(width: 8),
+              Text('FINDING PROVIDERS...', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AppColors.espresso)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...posts.map((post) {
+            final deadlineStr = post.submissionDeadline != null 
+                ? '${post.submissionDeadline!.day}/${post.submissionDeadline!.month}/${post.submissionDeadline!.year}'
+                : 'N/A';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFBF8F6),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(post.title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.work_outline, size: 12, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Text(post.serviceKind.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+                        const SizedBox(width: 16),
+                        const Icon(Icons.timer_outlined, size: 12, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Text('Deadline: $deadlineStr', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.espresso,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                minimumSize: const Size(0, 36),
+              ),
+              icon: const Icon(Icons.list_alt, size: 14),
+              label: Text('View Proposals', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+          )
+        ],
+      )
+    );
+  }
+
+  Widget _buildEmptyProvidersState() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            const Icon(Icons.handshake_outlined, size: 32, color: AppColors.placeholder),
+            const SizedBox(height: 12),
+            Text('No Providers Yet', style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+            const SizedBox(height: 8),
+            Text(
+              'Broadcast your project to marketplace to find designers and constructors.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.espresso,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                minimumSize: const Size(0, 36),
+              ),
+              child: Text('Find Providers', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
           ],
         ),
       ),

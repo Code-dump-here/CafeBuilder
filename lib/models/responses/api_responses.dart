@@ -112,6 +112,51 @@ class AccountResponse {
       );
 }
 
+class ProjectOwnerResponse {
+  final int id;
+  final String fullName;
+  final String shopName;
+  final String phone;
+
+  ProjectOwnerResponse({
+    required this.id,
+    required this.fullName,
+    required this.shopName,
+    required this.phone,
+  });
+
+  factory ProjectOwnerResponse.fromJson(Map<String, dynamic> json) => ProjectOwnerResponse(
+        id: json['id'],
+        fullName: json['fullName'] ?? '',
+        shopName: json['shopName'] ?? '',
+        phone: json['phone'] ?? '',
+      );
+}
+
+class OpenPostResponse {
+  final int id;
+  final String serviceKind;
+  final String title;
+  final String status;
+  final DateTime? submissionDeadline;
+
+  OpenPostResponse({
+    required this.id,
+    required this.serviceKind,
+    required this.title,
+    required this.status,
+    this.submissionDeadline,
+  });
+
+  factory OpenPostResponse.fromJson(Map<String, dynamic> json) => OpenPostResponse(
+        id: json['id'],
+        serviceKind: json['serviceKind'] ?? '',
+        title: json['title'] ?? '',
+        status: json['status'] ?? '',
+        submissionDeadline: json['submissionDeadline'] != null ? DateTime.parse(json['submissionDeadline']) : null,
+      );
+}
+
 class ProjectResponse {
   final int id;
   final int ownerId;
@@ -122,6 +167,10 @@ class ProjectResponse {
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final ProjectOwnerResponse? owner;
+  final List<OpenPostResponse> openPosts;
+  final List<String> openFor;
+  final List<dynamic> providers;
 
   ProjectResponse({
     required this.id,
@@ -133,18 +182,26 @@ class ProjectResponse {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.owner,
+    this.openPosts = const [],
+    this.openFor = const [],
+    this.providers = const [],
   });
 
   factory ProjectResponse.fromJson(Map<String, dynamic> json) => ProjectResponse(
         id: json['id'],
         ownerId: json['ownerId'],
-        name: json['name'],
-        address: json['address'],
+        name: json['name'] ?? '',
+        address: json['address'] ?? '',
         areaM2: (json['areaM2'] as num).toDouble(),
         budget: (json['budget'] as num).toDouble(),
-        status: json['status'],
+        status: json['status'] ?? '',
         createdAt: DateTime.parse(json['createdAt']),
         updatedAt: DateTime.parse(json['updatedAt']),
+        owner: json['owner'] != null ? ProjectOwnerResponse.fromJson(json['owner']) : null,
+        openPosts: (json['openPosts'] as List?)?.map((e) => OpenPostResponse.fromJson(e)).toList() ?? [],
+        openFor: (json['openFor'] as List?)?.map((e) => e as String).toList() ?? [],
+        providers: json['providers'] ?? [],
       );
 }
 
