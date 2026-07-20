@@ -1,8 +1,37 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../services/service_provider_service.dart';
 
-class ChatPage extends StatelessWidget {
+class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
+
+  @override
+  State<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<ChatPage> {
+  String _ownerName = 'Owner';
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwner();
+  }
+
+  Future<void> _loadOwner() async {
+    try {
+      final name = await ShopOwnerService.getCurrentOwnerFirstName();
+      if (mounted) {
+        setState(() {
+          _ownerName = name;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +93,7 @@ class ChatPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 _buildChatBubble(
-                  sender: 'Minh',
+                  sender: _loading ? '...' : _ownerName,
                   time: '10:45 AM',
                   avatarUrl: 'https://i.pravatar.cc/100?img=68',
                   message: 'That\'s a fair point. I can see how it looks a bit tight on the workspace side. I\'ll reduce the size and send v2 by this afternoon.',
@@ -120,7 +149,7 @@ class ChatPage extends StatelessWidget {
                 ],
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -138,48 +167,42 @@ class ChatPage extends StatelessWidget {
       mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
       children: [
         if (!isMe) ...[
-           CircleAvatar(
-            radius: 16,
-            backgroundImage: NetworkImage(avatarUrl),
-          ),
-          const SizedBox(width: 12),
+          CircleAvatar(radius: 16, backgroundImage: NetworkImage(avatarUrl)),
+          const SizedBox(width: 8),
         ],
         Flexible(
           child: Column(
             crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Row(
-                   mainAxisSize: MainAxisSize.min,
-                   children: [
-                      if (isMe) Text(time, style: const TextStyle(fontSize: 10, color: AppColors.placeholder)),
-                      if (isMe) const SizedBox(width: 6),
-                      Text(sender, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
-                      if (!isMe) const SizedBox(width: 6),
-                      if (!isMe) Text(time, style: const TextStyle(fontSize: 10, color: AppColors.placeholder)),
-                   ],
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isMe) Text(time, style: const TextStyle(fontSize: 10, color: AppColors.placeholder)),
+                  if (isMe) const SizedBox(width: 8),
+                  Text(sender, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textPrimary)),
+                  if (!isMe) const SizedBox(width: 8),
+                  if (!isMe) Text(time, style: const TextStyle(fontSize: 10, color: AppColors.placeholder)),
+                ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isMe ? AppColors.primaryContainer : AppColors.white,
-                  border: isMe ? null : Border.all(color: AppColors.outlineVariant),
                   borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(16),
-                    topRight: const Radius.circular(16),
-                    bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
-                    bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
+                    topLeft: const Radius.circular(12),
+                    topRight: const Radius.circular(12),
+                    bottomLeft: Radius.circular(isMe ? 12 : 0),
+                    bottomRight: Radius.circular(isMe ? 0 : 12),
                   ),
+                  border: isMe ? null : Border.all(color: AppColors.outlineVariant),
                 ),
                 child: Text(
                   message,
                   style: TextStyle(
+                    fontSize: 13,
                     color: isMe ? AppColors.white : AppColors.textPrimary,
-                    fontSize: 14,
-                    height: 1.5,
+                    height: 1.4,
                   ),
                 ),
               ),
@@ -187,12 +210,9 @@ class ChatPage extends StatelessWidget {
           ),
         ),
         if (isMe) ...[
-          const SizedBox(width: 12),
-          CircleAvatar(
-            radius: 16,
-            backgroundImage: NetworkImage(avatarUrl),
-          ),
-        ]
+          const SizedBox(width: 8),
+          CircleAvatar(radius: 16, backgroundImage: NetworkImage(avatarUrl)),
+        ],
       ],
     );
   }

@@ -1,8 +1,37 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../services/service_provider_service.dart';
 
-class ElementDetailsPage extends StatelessWidget {
+class ElementDetailsPage extends StatefulWidget {
   const ElementDetailsPage({super.key});
+
+  @override
+  State<ElementDetailsPage> createState() => _ElementDetailsPageState();
+}
+
+class _ElementDetailsPageState extends State<ElementDetailsPage> {
+  String _ownerLabel = 'Owner (shop owner)';
+  bool _loadingOwner = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwner();
+  }
+
+  Future<void> _loadOwner() async {
+    try {
+      final name = await ShopOwnerService.getCurrentOwnerFirstName();
+      if (mounted) {
+        setState(() {
+          _ownerLabel = '$name (shop owner)';
+          _loadingOwner = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingOwner = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -248,7 +277,7 @@ class ElementDetailsPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   _buildChatBubble(
-                    sender: 'Minh (shop owner)',
+                    sender: _loadingOwner ? '... (shop owner)' : _ownerLabel,
                     time: '3:15 PM',
                     avatarUrl: 'https://i.pravatar.cc/100?img=68',
                     message: 'Absolutely, James. I\'ll update the lighting plan to include some discreet spotlights focusing on the garden elements. I\'ll have the updated version ready',

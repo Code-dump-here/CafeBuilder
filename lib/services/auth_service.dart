@@ -1,6 +1,7 @@
 import '../models/requests/auth_requests.dart';
 import '../models/responses/api_responses.dart' show AuthResponse;
 import 'api_client.dart';
+import 'service_provider_service.dart';
 
 class AuthService {
   static Future<AuthResponse> login(String email, String password) async {
@@ -51,6 +52,7 @@ class AuthService {
       );
     }
     await ApiClient.clearTokens();
+    ShopOwnerService.clearCache();
   }
 
   static Future<AuthResponse> refreshToken() async {

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
-import '../models/marketplace_state.dart';
 import '../services/auth_service.dart';
+import '../services/service_provider_service.dart';
+import '../services/api_client.dart';
+import '../models/responses/api_responses.dart';
 import 'my_projects_page.dart';
 
 class ProfileTab extends StatefulWidget {
@@ -13,6 +15,31 @@ class ProfileTab extends StatefulWidget {
 }
 
 class _ProfileTabState extends State<ProfileTab> {
+  ShopOwnerResponse? _shopOwner;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final owner = await ShopOwnerService.getCurrentShopOwner();
+      if (mounted) {
+        setState(() {
+          _shopOwner = owner;
+          _loading = false;
+        });
+      }
+    } on ApiException catch (_) {
+      if (mounted) setState(() => _loading = false);
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -135,7 +162,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Nguyen Minh',
+            _loading ? '...' : (_shopOwner?.fullName ?? 'Shop Owner'),
             style: GoogleFonts.playfairDisplay(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -144,7 +171,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Project Owner / Cafe Owner',
+            _shopOwner?.shopName ?? 'Project Owner / Cafe Owner',
             style: GoogleFonts.inter(
               fontSize: 14,
               color: AppColors.textSecondary,

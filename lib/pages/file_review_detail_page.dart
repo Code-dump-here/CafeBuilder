@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/service_provider_service.dart';
 
 enum ReviewItemStatus { needReview, revision, approved }
 
-class FileReviewDetailPage extends StatelessWidget {
+class FileReviewDetailPage extends StatefulWidget {
   final String title;
   final String imageUrl;
   final ReviewItemStatus status;
@@ -17,11 +18,39 @@ class FileReviewDetailPage extends StatelessWidget {
   });
 
   @override
+  State<FileReviewDetailPage> createState() => _FileReviewDetailPageState();
+}
+
+class _FileReviewDetailPageState extends State<FileReviewDetailPage> {
+  String _ownerLabel = 'Owner (shop owner)';
+  bool _loadingOwner = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwner();
+  }
+
+  Future<void> _loadOwner() async {
+    try {
+      final name = await ShopOwnerService.getCurrentOwnerFirstName();
+      if (mounted) {
+        setState(() {
+          _ownerLabel = '$name (shop owner)';
+          _loadingOwner = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingOwner = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     String pageTitle = 'Review File';
-    if (status == ReviewItemStatus.needReview) pageTitle = 'Review Revised File';
-    if (status == ReviewItemStatus.approved) pageTitle = 'Approved File';
-    if (status == ReviewItemStatus.revision) pageTitle = 'Revision Details';
+    if (widget.status == ReviewItemStatus.needReview) pageTitle = 'Review Revised File';
+    if (widget.status == ReviewItemStatus.approved) pageTitle = 'Approved File';
+    if (widget.status == ReviewItemStatus.revision) pageTitle = 'Revision Details';
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBF8F6),
@@ -56,26 +85,26 @@ class FileReviewDetailPage extends StatelessWidget {
             const SizedBox(height: 12),
             _buildHeaderCard(),
             const SizedBox(height: 24),
-            if (status != ReviewItemStatus.approved) ...[
+            if (widget.status != ReviewItemStatus.approved) ...[
               _buildDesignersNote(),
               const SizedBox(height: 24),
             ],
-            if (status == ReviewItemStatus.needReview) ...[
+            if (widget.status == ReviewItemStatus.needReview) ...[
               _buildVersionComparison(),
               const SizedBox(height: 24),
             ],
             _buildTimeline(),
             const SizedBox(height: 24),
-            if (status != ReviewItemStatus.approved) ...[
+            if (widget.status != ReviewItemStatus.approved) ...[
               _buildFeedbackDiscussion(),
               const SizedBox(height: 32),
             ],
           ],
         ),
       ),
-      bottomNavigationBar: status == ReviewItemStatus.needReview
+      bottomNavigationBar: widget.status == ReviewItemStatus.needReview
           ? _buildNeedReviewActions()
-          : status == ReviewItemStatus.revision
+          : widget.status == ReviewItemStatus.revision
               ? _buildRevisionActions()
               : _buildApprovedActions(),
     );
@@ -85,7 +114,7 @@ class FileReviewDetailPage extends StatelessWidget {
     String tagText = '';
     Color tagColor = Colors.transparent;
 
-    switch (status) {
+    switch (widget.status) {
       case ReviewItemStatus.needReview:
         tagText = 'REVISED V2';
         tagColor = const Color(0xFF56642B);
@@ -106,7 +135,7 @@ class FileReviewDetailPage extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         image: DecorationImage(
-          image: NetworkImage(imageUrl),
+          image: NetworkImage(widget.imageUrl),
           fit: BoxFit.cover,
         ),
       ),
@@ -142,7 +171,7 @@ class FileReviewDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              title,
+              widget.title,
               style: GoogleFonts.playfairDisplay(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -233,7 +262,7 @@ class FileReviewDetailPage extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _buildVersionBox(
-                image: imageUrl,
+                image: widget.imageUrl,
                 tag: 'v2 Revised',
                 subtitle: 'LATEST REVISION',
                 isLatest: true,
@@ -316,9 +345,9 @@ class FileReviewDetailPage extends StatelessWidget {
           color: AppColors.placeholder,
           title: 'v1 Submitted',
           subtitle: 'July 12, 2023 • 09:45 AM',
-          isLast: status == ReviewItemStatus.approved,
+          isLast: widget.status == ReviewItemStatus.approved,
         ),
-        if (status == ReviewItemStatus.approved) ...[
+        if (widget.status == ReviewItemStatus.approved) ...[
            _buildTimelineItem(
             color: const Color(0xFF56642B),
             title: 'Approved',
@@ -332,9 +361,9 @@ class FileReviewDetailPage extends StatelessWidget {
             title: 'Revision Requested',
             subtitle: 'July 13, 2023 • 02:15 PM',
             feedback: '"Please warm up the lighting and shrink the main counter area."',
-            isLast: status == ReviewItemStatus.revision,
+            isLast: widget.status == ReviewItemStatus.revision,
           ),
-          if (status == ReviewItemStatus.needReview) ...[
+          if (widget.status == ReviewItemStatus.needReview) ...[
             _buildTimelineItem(
               color: const Color(0xFF56642B),
               title: 'v2 Uploaded',
@@ -529,7 +558,7 @@ class FileReviewDetailPage extends StatelessWidget {
                 children: [
                   Text('3:15 PM', style: GoogleFonts.inter(fontSize: 9, color: AppColors.placeholder)),
                   const SizedBox(width: 6),
-                  Text('Minh ( shop owner)', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                  Text(_loadingOwner ? '... (shop owner)' : _ownerLabel, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.espresso)),
                 ],
               ),
               const SizedBox(height: 4),

@@ -360,3 +360,519 @@ class ShopOwnerResponse {
         createdAt: DateTime.parse(json['createdAt']),
       );
 }
+
+class ApplyResponse {
+  final int id;
+  final int postId;
+  final String postTitle;
+  final int projectShopOwnerId;
+  final int serviceProviderProfileId;
+  final String providerDisplayName;
+  final String proposal;
+  final int estimatedDurationDays;
+  final String status;
+  final DateTime? submittedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  ApplyResponse({
+    required this.id,
+    required this.postId,
+    required this.postTitle,
+    required this.projectShopOwnerId,
+    required this.serviceProviderProfileId,
+    required this.providerDisplayName,
+    required this.proposal,
+    required this.estimatedDurationDays,
+    required this.status,
+    this.submittedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory ApplyResponse.fromJson(Map<String, dynamic> json) => ApplyResponse(
+        id: json['id'],
+        postId: json['postId'],
+        postTitle: json['postTitle'] ?? '',
+        projectShopOwnerId: json['projectShopOwnerId'],
+        serviceProviderProfileId: json['serviceProviderProfileId'],
+        providerDisplayName: json['providerDisplayName'] ?? '',
+        proposal: json['proposal'] ?? '',
+        estimatedDurationDays: json['estimatedDurationDays'] ?? 0,
+        status: json['status'] ?? '',
+        submittedAt: json['submittedAt'] != null ? DateTime.parse(json['submittedAt']) : null,
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+      );
+}
+
+class ProjectWorkingResponse {
+  final int id;
+  final int projectShopOwnerId;
+  final String projectName;
+  final int serviceProviderProfileId;
+  final String providerDisplayName;
+  final int? applyId;
+  final String contractType;
+  final String status;
+  final String? requestMessage;
+  final DateTime? startedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  ProjectWorkingResponse({
+    required this.id,
+    required this.projectShopOwnerId,
+    required this.projectName,
+    required this.serviceProviderProfileId,
+    required this.providerDisplayName,
+    this.applyId,
+    required this.contractType,
+    required this.status,
+    this.requestMessage,
+    this.startedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory ProjectWorkingResponse.fromJson(Map<String, dynamic> json) => ProjectWorkingResponse(
+        id: json['id'],
+        projectShopOwnerId: json['projectShopOwnerId'],
+        projectName: json['projectName'] ?? '',
+        serviceProviderProfileId: json['serviceProviderProfileId'],
+        providerDisplayName: json['providerDisplayName'] ?? '',
+        applyId: json['applyId'],
+        contractType: json['contractType'] ?? '',
+        status: json['status'] ?? '',
+        requestMessage: json['requestMessage'],
+        startedAt: json['startedAt'] != null ? DateTime.parse(json['startedAt']) : null,
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+      );
+}
+
+class EngagementOverviewResponse {
+  final int projectWorkingId;
+  final String contractType;
+  final String status;
+  final ProjectResponse? projectShopOwner;
+  final DesignBriefResponse? brief;
+  final List<AiRecommendationResponse> aiRecommendations;
+  final List<DesignResponse> approvedDesigns;
+
+  EngagementOverviewResponse({
+    required this.projectWorkingId,
+    required this.contractType,
+    required this.status,
+    this.projectShopOwner,
+    this.brief,
+    this.aiRecommendations = const [],
+    this.approvedDesigns = const [],
+  });
+
+  factory EngagementOverviewResponse.fromJson(Map<String, dynamic> json) => EngagementOverviewResponse(
+        projectWorkingId: json['projectWorkingId'] ?? 0,
+        contractType: json['contractType'] ?? '',
+        status: json['status'] ?? '',
+        projectShopOwner: json['projectShopOwner'] != null
+            ? ProjectResponse.fromJson(json['projectShopOwner'])
+            : null,
+        brief: json['brief'] != null ? DesignBriefResponse.fromJson(json['brief']) : null,
+        aiRecommendations: (json['aiRecommendations'] as List?)
+                ?.map((e) => AiRecommendationResponse.fromJson(e))
+                .toList() ??
+            [],
+        approvedDesigns: (json['approvedDesigns'] as List?)
+                ?.map((e) => DesignResponse.fromJson(e))
+                .toList() ??
+            [],
+      );
+}
+
+class SurveyResponse {
+  final int id;
+  final int projectWorkingId;
+  final double version;
+  final String? conditionNote;
+  final String? reportUrl;
+  final int createdBy;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  SurveyResponse({
+    required this.id,
+    required this.projectWorkingId,
+    required this.version,
+    this.conditionNote,
+    this.reportUrl,
+    required this.createdBy,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory SurveyResponse.fromJson(Map<String, dynamic> json) => SurveyResponse(
+        id: json['id'],
+        projectWorkingId: json['projectWorkingId'],
+        version: (json['version'] as num?)?.toDouble() ?? 0.0,
+        conditionNote: json['conditionNote'],
+        reportUrl: json['reportUrl'],
+        createdBy: json['createdBy'] ?? 0,
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+      );
+}
+
+class ContractResponse {
+  final int id;
+  final int projectWorkingId;
+  final String title;
+  final String? partyInfo;
+  final String? terms;
+  final double agreedValue;
+  final String? documentUrl;
+  final DateTime? otpExpiresAt;
+  final DateTime? confirmedAt;
+  final int? confirmedBy;
+  final String status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  ContractResponse({
+    required this.id,
+    required this.projectWorkingId,
+    required this.title,
+    this.partyInfo,
+    this.terms,
+    required this.agreedValue,
+    this.documentUrl,
+    this.otpExpiresAt,
+    this.confirmedAt,
+    this.confirmedBy,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory ContractResponse.fromJson(Map<String, dynamic> json) => ContractResponse(
+        id: json['id'],
+        projectWorkingId: json['projectWorkingId'],
+        title: json['title'] ?? '',
+        partyInfo: json['partyInfo'],
+        terms: json['terms'],
+        agreedValue: (json['agreedValue'] as num?)?.toDouble() ?? 0.0,
+        documentUrl: json['documentUrl'],
+        otpExpiresAt: json['otpExpiresAt'] != null ? DateTime.parse(json['otpExpiresAt']) : null,
+        confirmedAt: json['confirmedAt'] != null ? DateTime.parse(json['confirmedAt']) : null,
+        confirmedBy: json['confirmedBy'],
+        status: json['status'] ?? '',
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+      );
+}
+
+class DesignResponse {
+  final int id;
+  final int projectWorkingId;
+  final String title;
+  final double version;
+  final String type;
+  final String? reason;
+  final String status;
+  final int createdBy;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final List<DesignImageResponse> images;
+
+  DesignResponse({
+    required this.id,
+    required this.projectWorkingId,
+    required this.title,
+    required this.version,
+    required this.type,
+    this.reason,
+    required this.status,
+    required this.createdBy,
+    required this.createdAt,
+    required this.updatedAt,
+    this.images = const [],
+  });
+
+  factory DesignResponse.fromJson(Map<String, dynamic> json) => DesignResponse(
+        id: json['id'],
+        projectWorkingId: json['projectWorkingId'],
+        title: json['title'] ?? '',
+        version: (json['version'] as num?)?.toDouble() ?? 0.0,
+        type: json['type'] ?? '',
+        reason: json['reason'],
+        status: json['status'] ?? '',
+        createdBy: json['createdBy'] ?? 0,
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+        images: (json['images'] as List?)
+                ?.map((e) => DesignImageResponse.fromJson(e))
+                .toList() ??
+            [],
+      );
+}
+
+class DesignImageResponse {
+  final int id;
+  final int designId;
+  final String imageUrl;
+  final String viewUrl;
+  final String? caption;
+  final int uploadedBy;
+  final DateTime createdAt;
+
+  DesignImageResponse({
+    required this.id,
+    required this.designId,
+    required this.imageUrl,
+    required this.viewUrl,
+    this.caption,
+    required this.uploadedBy,
+    required this.createdAt,
+  });
+
+  factory DesignImageResponse.fromJson(Map<String, dynamic> json) => DesignImageResponse(
+        id: json['id'],
+        designId: json['designId'],
+        imageUrl: json['imageUrl'] ?? '',
+        viewUrl: json['viewUrl'] ?? '',
+        caption: json['caption'],
+        uploadedBy: json['uploadedBy'] ?? 0,
+        createdAt: DateTime.parse(json['createdAt']),
+      );
+}
+
+class ConstructionItemResponse {
+  final int id;
+  final int projectWorkingId;
+  final int? parentId;
+  final String name;
+  final String? description;
+  final String? category;
+  final DateTime? estimateAt;
+  final DateTime? actualAt;
+  final String status;
+  final int createdBy;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  ConstructionItemResponse({
+    required this.id,
+    required this.projectWorkingId,
+    this.parentId,
+    required this.name,
+    this.description,
+    this.category,
+    this.estimateAt,
+    this.actualAt,
+    required this.status,
+    required this.createdBy,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory ConstructionItemResponse.fromJson(Map<String, dynamic> json) => ConstructionItemResponse(
+        id: json['id'],
+        projectWorkingId: json['projectWorkingId'],
+        parentId: json['parentId'],
+        name: json['name'] ?? '',
+        description: json['description'],
+        category: json['category'],
+        estimateAt: json['estimateAt'] != null ? DateTime.parse(json['estimateAt']) : null,
+        actualAt: json['actualAt'] != null ? DateTime.parse(json['actualAt']) : null,
+        status: json['status'] ?? '',
+        createdBy: json['createdBy'] ?? 0,
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+      );
+}
+
+class ConstructionTaskResponse {
+  final int id;
+  final int constructionItemId;
+  final String name;
+  final String? description;
+  final String? imageUrl;
+  final DateTime? estimateAt;
+  final DateTime? actualAt;
+  final String? reason;
+  final String status;
+  final int createdBy;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  ConstructionTaskResponse({
+    required this.id,
+    required this.constructionItemId,
+    required this.name,
+    this.description,
+    this.imageUrl,
+    this.estimateAt,
+    this.actualAt,
+    this.reason,
+    required this.status,
+    required this.createdBy,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory ConstructionTaskResponse.fromJson(Map<String, dynamic> json) => ConstructionTaskResponse(
+        id: json['id'],
+        constructionItemId: json['constructionItemId'],
+        name: json['name'] ?? '',
+        description: json['description'],
+        imageUrl: json['imageUrl'],
+        estimateAt: json['estimateAt'] != null ? DateTime.parse(json['estimateAt']) : null,
+        actualAt: json['actualAt'] != null ? DateTime.parse(json['actualAt']) : null,
+        reason: json['reason'],
+        status: json['status'] ?? '',
+        createdBy: json['createdBy'] ?? 0,
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+      );
+}
+
+class ReviewResponse {
+  final int id;
+  final int projectWorkingId;
+  final int projectShopOwnerId;
+  final int serviceProviderProfileId;
+  final double overallRating;
+  final String? comment;
+  final List<ReviewScore> scores;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  ReviewResponse({
+    required this.id,
+    required this.projectWorkingId,
+    required this.projectShopOwnerId,
+    required this.serviceProviderProfileId,
+    required this.overallRating,
+    this.comment,
+    this.scores = const [],
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory ReviewResponse.fromJson(Map<String, dynamic> json) => ReviewResponse(
+        id: json['id'],
+        projectWorkingId: json['projectWorkingId'],
+        projectShopOwnerId: json['projectShopOwnerId'],
+        serviceProviderProfileId: json['serviceProviderProfileId'],
+        overallRating: (json['overallRating'] as num?)?.toDouble() ?? 0.0,
+        comment: json['comment'],
+        scores: (json['scores'] as List?)
+                ?.map((e) => ReviewScore.fromJson(e))
+                .toList() ??
+            [],
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+      );
+}
+
+class ReviewScore {
+  final int id;
+  final String dimension;
+  final double score;
+
+  ReviewScore({
+    required this.id,
+    required this.dimension,
+    required this.score,
+  });
+
+  factory ReviewScore.fromJson(Map<String, dynamic> json) => ReviewScore(
+        id: json['id'],
+        dimension: json['dimension'] ?? '',
+        score: (json['score'] as num?)?.toDouble() ?? 0.0,
+      );
+}
+
+class ProviderReviewSummary {
+  final int serviceProviderProfileId;
+  final int reviewCount;
+  final double averageRating;
+  final Map<String, double> dimensionAverages;
+
+  ProviderReviewSummary({
+    required this.serviceProviderProfileId,
+    required this.reviewCount,
+    required this.averageRating,
+    this.dimensionAverages = const {},
+  });
+
+  factory ProviderReviewSummary.fromJson(Map<String, dynamic> json) {
+    final raw = json['dimensionAverages'];
+    final dimensions = <String, double>{};
+    if (raw is Map) {
+      raw.forEach((key, value) {
+        dimensions[key.toString()] = (value as num).toDouble();
+      });
+    }
+    return ProviderReviewSummary(
+      serviceProviderProfileId: json['serviceProviderProfileId'],
+      reviewCount: json['reviewCount'] ?? 0,
+      averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
+      dimensionAverages: dimensions,
+    );
+  }
+}
+
+class PostResponse {
+  final int id;
+  final int projectShopOwnerId;
+  final String? projectName;
+  final String? projectAddress;
+  final double? projectBudget;
+  final double? projectAreaM2;
+  final String serviceKind;
+  final String title;
+  final String description;
+  final String status;
+  final DateTime? submissionDeadline;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  // Bridge getters for backward compatibility with UI components (like MarketplacePage)
+  String get location => projectAddress ?? 'Remote';
+  String get style => serviceKind;
+  String get budgetTier => projectBudget != null ? '\$${projectBudget!.toStringAsFixed(0)}' : '\$TBD';
+  String get expectedStart => submissionDeadline != null ? submissionDeadline!.toString().substring(0, 10) : '';
+  List<String> get requirements => [serviceKind];
+
+  PostResponse({
+    required this.id,
+    required this.projectShopOwnerId,
+    this.projectName,
+    this.projectAddress,
+    this.projectBudget,
+    this.projectAreaM2,
+    required this.serviceKind,
+    required this.title,
+    required this.description,
+    required this.status,
+    this.submissionDeadline,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory PostResponse.fromJson(Map<String, dynamic> json) => PostResponse(
+        id: json['id'],
+        projectShopOwnerId: json['projectShopOwnerId'],
+        projectName: json['projectName'],
+        projectAddress: json['projectAddress'],
+        projectBudget: (json['projectBudget'] as num?)?.toDouble(),
+        projectAreaM2: (json['projectAreaM2'] as num?)?.toDouble(),
+        serviceKind: json['serviceKind'] ?? '',
+        title: json['title'] ?? '',
+        description: json['description'] ?? '',
+        status: json['status'] ?? '',
+        submissionDeadline: json['submissionDeadline'] != null ? DateTime.parse(json['submissionDeadline']) : null,
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+      );
+}

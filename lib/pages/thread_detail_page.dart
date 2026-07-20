@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/service_provider_service.dart';
 
-class ThreadDetailPage extends StatelessWidget {
+class ThreadDetailPage extends StatefulWidget {
   final String title;
   final String tag;
   final Color tagColor;
@@ -15,6 +16,34 @@ class ThreadDetailPage extends StatelessWidget {
     required this.tagColor,
     required this.tagTextColor,
   });
+
+  @override
+  State<ThreadDetailPage> createState() => _ThreadDetailPageState();
+}
+
+class _ThreadDetailPageState extends State<ThreadDetailPage> {
+  String _ownerName = 'Owner';
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwner();
+  }
+
+  Future<void> _loadOwner() async {
+    try {
+      final name = await ShopOwnerService.getCurrentOwnerFirstName();
+      if (mounted) {
+        setState(() {
+          _ownerName = name;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,17 +84,17 @@ class ThreadDetailPage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: tagColor,
+                      color: widget.tagColor,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      tag,
-                      style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: tagTextColor),
+                      widget.tag,
+                      style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: widget.tagTextColor),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    title,
+                    widget.title,
                     style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.espresso),
                   ),
                   const SizedBox(height: 24),
@@ -84,7 +113,7 @@ class ThreadDetailPage extends StatelessWidget {
                   _buildMessage(
                     isMe: true,
                     avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150',
-                    name: 'Minh (Owner)',
+                    name: _loading ? '... (Owner)' : '$_ownerName (Owner)',
                     time: '1 hour ago',
                     message: "45mm sounds a bit bulky. Can we bevel the bottom edge so it looks thinner from the customer's POV while maintaining structural integrity for the brass?",
                   ),

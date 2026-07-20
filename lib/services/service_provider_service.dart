@@ -108,6 +108,31 @@ class ShopOwnerService {
     return created.id;
   }
 
+  /// Returns the shop-owner profile for the currently logged-in account.
+  static ShopOwnerResponse? _cachedCurrentProfile;
+
+  static Future<ShopOwnerResponse> getCurrentShopOwner({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedCurrentProfile != null) return _cachedCurrentProfile!;
+    final id = await ensureShopOwnerId();
+    _cachedCurrentProfile = await getShopOwner(id);
+    return _cachedCurrentProfile!;
+  }
+
+  static void clearCache() {
+    _cachedCurrentProfile = null;
+  }
+
+  static String firstNameFrom(String fullName) {
+    final trimmed = fullName.trim();
+    if (trimmed.isEmpty) return 'Owner';
+    return trimmed.split(RegExp(r'\s+')).last;
+  }
+
+  static Future<String> getCurrentOwnerFirstName() async {
+    final owner = await getCurrentShopOwner();
+    return firstNameFrom(owner.fullName);
+  }
+
   static Future<ShopOwnerResponse> getShopOwner(int id) async {
     final response = await ApiClient.authGet('/shop-owners/$id');
     ApiClient.throwIfError(response);

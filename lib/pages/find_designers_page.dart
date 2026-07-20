@@ -15,6 +15,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
 
   final List<Map<String, dynamic>> _designers = [
     {
+      'id': 1,
       'name': 'TROP Studio',
       'type': 'DESIGN STUDIO',
       'rating': '4.9',
@@ -29,6 +30,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
       ],
     },
     {
+      'id': 2,
       'name': 'Mộc Space',
       'type': 'INDIVIDUAL DESIGNER',
       'rating': '4.8',
@@ -43,6 +45,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
       ],
     },
     {
+      'id': 3,
       'name': 'ArchiForm',
       'type': 'DESIGN STUDIO',
       'rating': '5.0',
@@ -334,7 +337,9 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const DesignerDetailPage(),
+                      builder: (context) => DesignerDetailPage(
+                        serviceProviderProfileId: data['id'] as int,
+                      ),
                     ),
                   );
                 },

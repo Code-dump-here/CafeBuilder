@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/service_provider_service.dart';
+import '../services/api_client.dart';
+import '../models/responses/api_responses.dart';
 import 'ai_advice_page.dart';
 
 class DashboardTab extends StatefulWidget {
@@ -11,6 +14,37 @@ class DashboardTab extends StatefulWidget {
 }
 
 class _DashboardTabState extends State<DashboardTab> {
+  ShopOwnerResponse? _shopOwner;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final owner = await ShopOwnerService.getCurrentShopOwner();
+      if (mounted) {
+        setState(() {
+          _shopOwner = owner;
+          _loading = false;
+        });
+      }
+    } on ApiException catch (_) {
+      if (mounted) setState(() => _loading = false);
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String get _greetingName {
+    final fullName = _shopOwner?.fullName;
+    if (fullName == null || fullName.trim().isEmpty) return 'Owner';
+    return ShopOwnerService.firstNameFrom(fullName);
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -38,7 +72,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Hello, Alexander',
+                  _loading ? 'Hello, ...' : 'Hello, $_greetingName',
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,

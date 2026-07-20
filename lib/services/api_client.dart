@@ -7,6 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiClient {
   static const String _baseUrl =
       'https://smartcoffeebuilder-be-295284732683.asia-southeast1.run.app/api';
+
+  /// Public access to the base URL for multipart requests in services.
+  static String get baseUrl => _baseUrl;
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _accountIdKey = 'account_id';

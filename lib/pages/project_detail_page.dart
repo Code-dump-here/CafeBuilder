@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../services/project_service.dart';
 import '../services/api_client.dart';
+import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
 import 'design_packages_page.dart';
 import 'collaboration_page.dart';
@@ -18,6 +19,7 @@ class ProjectDetailPage extends StatefulWidget {
 
 class _ProjectDetailPageState extends State<ProjectDetailPage> {
   ProjectResponse? _project;
+  String _ownerFirstName = 'Owner';
   bool _loading = true;
   String? _error;
 
@@ -33,10 +35,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       _error = null;
     });
     try {
-      final project = await ProjectService.getProject(widget.projectId);
+      final results = await Future.wait([
+        ProjectService.getProject(widget.projectId),
+        ShopOwnerService.getCurrentOwnerFirstName(),
+      ]);
       if (mounted) {
         setState(() {
-          _project = project;
+          _project = results[0] as ProjectResponse;
+          _ownerFirstName = results[1] as String;
           _loading = false;
         });
       }
@@ -469,7 +475,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           const SizedBox(height: 20),
           _buildActivityItem('Designer uploaded revised render', '2 hours ago', const Color(0xFFD9EAA3)),
           _buildActivityItem('Contractor submitted quotation', 'Yesterday', const Color(0xFFD9EAA3)),
-          _buildActivityItem('Minh approved Floor Layout v.2', 'Oct 24', AppColors.outlineVariant, hasLine: false),
+          _buildActivityItem('$_ownerFirstName approved Floor Layout v.2', 'Oct 24', AppColors.outlineVariant, hasLine: false),
         ],
       )
     );
