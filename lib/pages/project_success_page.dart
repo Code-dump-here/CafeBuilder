@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
+import '../services/post_service.dart';
 
 class ProjectSuccessPage extends StatefulWidget {
   final String cafeName;
@@ -51,31 +52,82 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     _budgetTier = '\$${(lowEstimate / 1000).toStringAsFixed(0)}k – \$${(highEstimate / 1000).toStringAsFixed(0)}k';
   }
 
-  void _onBroadcastToMarketplace() {
-    // Generate a unique ID
-    final id = 'AT-${100 + Random().nextInt(899)}-XC';
-    final newBroadcast = BroadcastProject(
-      id: id,
-      title: widget.cafeName,
-      location: widget.location,
-      style: widget.style,
-      budgetTier: _budgetTier,
-      description: 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.',
-      requirements: _reqs,
-      date: _expectedStart,
-      proposalsCount: 0,
-      commentsCount: 0,
-      status: 'Open for Proposals',
-      imageUrl: 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
+  Future<void> _onBroadcastToMarketplace() async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
     );
 
-    // Save to global list and notify MarketplacePage to rebuild
-    MarketplaceState.activeProject = newBroadcast;
-    MarketplaceState.addBroadcast(newBroadcast);
+    try {
+      // API call to create post
+      final request = CreatePostRequest(
+        title: widget.cafeName,
+        description: 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.',
+        location: widget.location,
+        style: widget.style,
+        budgetTier: _budgetTier,
+        expectedStart: _expectedStart,
+        requirements: _reqs,
+      );
+      
+      final post = await PostService.createPost(request);
+      
+      if (mounted) {
+        Navigator.pop(context); // hide loading
+        
+        final newBroadcast = BroadcastProject(
+          id: post.id.toString(),
+          title: post.title,
+          location: post.location,
+          style: post.style,
+          budgetTier: post.budgetTier,
+          description: post.description,
+          requirements: post.requirements,
+          date: post.expectedStart,
+          proposalsCount: 0,
+          commentsCount: 0,
+          status: 'Open for Proposals',
+          imageUrl: 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
+        );
 
-    setState(() {
-      _flowSubStep = 2;
-    });
+        // Save to global list and notify MarketplacePage to rebuild
+        MarketplaceState.activeProject = newBroadcast;
+        MarketplaceState.addBroadcast(newBroadcast);
+
+        setState(() {
+          _flowSubStep = 2;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // hide loading
+        // Fallback to local logic if API fails
+        final id = 'AT-${100 + Random().nextInt(899)}-XC';
+        final newBroadcast = BroadcastProject(
+          id: id,
+          title: widget.cafeName,
+          location: widget.location,
+          style: widget.style,
+          budgetTier: _budgetTier,
+          description: 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.',
+          requirements: _reqs,
+          date: _expectedStart,
+          proposalsCount: 0,
+          commentsCount: 0,
+          status: 'Open for Proposals',
+          imageUrl: 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
+        );
+
+        MarketplaceState.activeProject = newBroadcast;
+        MarketplaceState.addBroadcast(newBroadcast);
+
+        setState(() {
+          _flowSubStep = 2;
+        });
+      }
+    }
   }
 
   @override

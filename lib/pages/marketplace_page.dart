@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
+import '../services/post_service.dart';
 
 class MarketplacePage extends StatefulWidget {
   final bool showBackButton;
@@ -18,10 +19,44 @@ class _MarketplacePageState extends State<MarketplacePage> {
   @override
   void initState() {
     super.initState();
+    _fetchPosts();
     // Rebuild whenever a new project is broadcast to the marketplace
     MarketplaceState.onBroadcastsChanged = () {
       if (mounted) setState(() {});
     };
+  }
+
+  Future<void> _fetchPosts() async {
+    try {
+      final response = await PostService.getPosts(pageNumber: 1, pageSize: 10);
+      if (!mounted) return;
+      setState(() {
+        final serverBroadcasts = response.items.map((post) => BroadcastProject(
+          id: post.id.toString(),
+          title: post.title.isNotEmpty ? post.title : 'Marketplace Project',
+          location: post.location.isNotEmpty ? post.location : 'Remote',
+          style: post.style.isNotEmpty ? post.style : 'Concept',
+          budgetTier: post.budgetTier.isNotEmpty ? post.budgetTier : '\$TBD',
+          description: post.description.isNotEmpty ? post.description : 'A beautiful architecture project.',
+          requirements: post.requirements.isNotEmpty ? post.requirements : ['Interior Design'],
+          date: post.expectedStart.isNotEmpty ? post.expectedStart : post.createdAt.toString().substring(0, 10),
+          proposalsCount: 0,
+          commentsCount: 0,
+          status: 'Open for Proposals',
+          imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
+        )).toList();
+
+        // Optional: Replace or append to static initial dummy entries
+        // MarketplaceState.broadcasts.insertAll(0, serverBroadcasts);
+        // Let's replace dummy ones with real ones if there are any
+        if (serverBroadcasts.isNotEmpty) {
+           MarketplaceState.broadcasts.clear();
+           MarketplaceState.broadcasts.addAll(serverBroadcasts);
+        }
+      });
+    } catch (e) {
+      debugPrint('Error fetching posts: $e');
+    }
   }
 
   @override
