@@ -303,3 +303,99 @@ class ShopOwnerResponse {
         createdAt: DateTime.parse(json['createdAt']),
       );
 }
+
+class PostResponse {
+  final int id;
+  final int projectShopOwnerId;
+  final String? projectName;
+  final String? projectAddress;
+  final double? projectBudget;
+  final double? projectAreaM2;
+  final String serviceKind; // design | construction | both
+  final String title;
+  final String description;
+  final String status; // open | closed | cancelled
+  final DateTime? submissionDeadline;
+  final bool isBoosted;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  PostResponse({
+    required this.id,
+    required this.projectShopOwnerId,
+    this.projectName,
+    this.projectAddress,
+    this.projectBudget,
+    this.projectAreaM2,
+    required this.serviceKind,
+    required this.title,
+    required this.description,
+    required this.status,
+    this.submissionDeadline,
+    required this.isBoosted,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory PostResponse.fromJson(Map<String, dynamic> json) => PostResponse(
+        id: json['id'],
+        projectShopOwnerId: json['projectShopOwnerId'],
+        projectName: json['projectName'],
+        projectAddress: json['projectAddress'],
+        projectBudget: json['projectBudget'] != null ? (json['projectBudget'] as num).toDouble() : null,
+        projectAreaM2: json['projectAreaM2'] != null ? (json['projectAreaM2'] as num).toDouble() : null,
+        serviceKind: json['serviceKind'],
+        title: json['title'],
+        description: json['description'] ?? '',
+        status: json['status'],
+        submissionDeadline: json['submissionDeadline'] != null ? DateTime.parse(json['submissionDeadline']) : null,
+        isBoosted: json['isBoosted'] ?? false,
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+      );
+}
+
+class ApplyResponse {
+  final int id;
+  final int postId;
+  final String? postTitle;
+  final int? projectShopOwnerId;
+  final int serviceProviderProfileId;
+  final String? providerDisplayName;
+  final String proposal;
+  final int? estimatedDurationDays;
+  final String status; // pending | accepted | rejected
+  final DateTime? submittedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  ApplyResponse({
+    required this.id,
+    required this.postId,
+    this.postTitle,
+    this.projectShopOwnerId,
+    required this.serviceProviderProfileId,
+    this.providerDisplayName,
+    required this.proposal,
+    this.estimatedDurationDays,
+    required this.status,
+    this.submittedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory ApplyResponse.fromJson(Map<String, dynamic> json) => ApplyResponse(
+        id: json['id'],
+        postId: json['postId'],
+        postTitle: json['postTitle'],
+        projectShopOwnerId: json['projectShopOwnerId'],
+        serviceProviderProfileId: json['serviceProviderProfileId'],
+        providerDisplayName: json['providerDisplayName'],
+        proposal: json['proposal'] ?? '',
+        estimatedDurationDays: json['estimatedDurationDays'],
+        status: json['status'],
+        submittedAt: json['submittedAt'] != null ? DateTime.parse(json['submittedAt']) : null,
+        createdAt: DateTime.parse(json['createdAt']),
+        updatedAt: DateTime.parse(json['updatedAt']),
+      );
+}

@@ -8,6 +8,7 @@ import '../models/responses/api_responses.dart';
 import '../models/marketplace_state.dart';
 import 'marketplace_page.dart';
 import 'project_detail_page.dart';
+import 'project_applicants_page.dart';
 
 class MyProjectsPage extends StatefulWidget {
   const MyProjectsPage({super.key});
@@ -139,6 +140,23 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
               ],
             ),
             const SizedBox(height: 24),
+            if (_projects.isNotEmpty) ...[
+              Text(
+                'YOUR PROJECTS',
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                  color: AppColors.placeholder,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ..._projects.map((p) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildRealProjectCard(p),
+                  )),
+              const SizedBox(height: 20),
+            ],
             // Only showing Active content for now based on screenshot
             Text(
               'CURRENT FOCUS',
@@ -184,6 +202,66 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
             const SizedBox(height: 48), // Bottom space
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRealProjectCard(ProjectResponse project) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  project.name,
+                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.outlineVariant.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  project.status.toUpperCase(),
+                  style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(project.address, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProjectApplicantsPage(projectId: project.id, projectName: project.name),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.people_outline, size: 16, color: AppColors.espresso),
+              label: Text('View Applicants', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: AppColors.outlineVariant.withOpacity(0.6)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
