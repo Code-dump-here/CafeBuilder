@@ -250,6 +250,94 @@ class DesignBriefResponse {
       );
 }
 
+// ── AI Job Zone ─────────────────────────────────────────────────────────────
+
+class AiLayoutZone {
+  final String id;
+  final String label;
+  final String purpose;
+  final double x;
+  final double y;
+  final double w;
+  final double h;
+  final bool isStaffOnly;
+
+  AiLayoutZone({
+    required this.id,
+    required this.label,
+    required this.purpose,
+    required this.x,
+    required this.y,
+    required this.w,
+    required this.h,
+    required this.isStaffOnly,
+  });
+
+  factory AiLayoutZone.fromJson(Map<String, dynamic> json) => AiLayoutZone(
+        id: json['id'] ?? '',
+        label: json['label'] ?? '',
+        purpose: json['purpose'] ?? '',
+        x: (json['x'] as num?)?.toDouble() ?? 0,
+        y: (json['y'] as num?)?.toDouble() ?? 0,
+        w: (json['w'] as num?)?.toDouble() ?? 1,
+        h: (json['h'] as num?)?.toDouble() ?? 1,
+        isStaffOnly: json['is_staff_only'] ?? false,
+      );
+}
+
+class AiRecommendationItem {
+  final String title;
+  final String rationale;
+  final int priority;
+
+  AiRecommendationItem({
+    required this.title,
+    required this.rationale,
+    required this.priority,
+  });
+
+  factory AiRecommendationItem.fromJson(Map<String, dynamic> json) =>
+      AiRecommendationItem(
+        title: json['title'] ?? '',
+        rationale: json['rationale'] ?? '',
+        priority: (json['priority'] as num?)?.toInt() ?? 0,
+      );
+}
+
+class AiRiskNote {
+  final String level;
+  final String title;
+  final String description;
+  final String? mitigation;
+
+  AiRiskNote({
+    required this.level,
+    required this.title,
+    required this.description,
+    this.mitigation,
+  });
+
+  factory AiRiskNote.fromJson(Map<String, dynamic> json) => AiRiskNote(
+        level: json['level'] ?? 'low',
+        title: json['title'] ?? '',
+        description: json['description'] ?? '',
+        mitigation: json['mitigation'],
+      );
+}
+
+class AiCustomerFlowStage {
+  final String stage;
+  final String description;
+
+  AiCustomerFlowStage({required this.stage, required this.description});
+
+  factory AiCustomerFlowStage.fromJson(Map<String, dynamic> json) =>
+      AiCustomerFlowStage(
+        stage: json['stage'] ?? '',
+        description: json['description'] ?? '',
+      );
+}
+
 class AiRecommendationResponse {
   final int id;
   final int briefId;
@@ -258,6 +346,33 @@ class AiRecommendationResponse {
   final double? estimatedDesignCost;
   final double? estimatedConstructionCost;
   final DateTime createdAt;
+  // Job info
+  final String? jobId;
+  final String? state; // queued | processing | completed | failed
+  final String? lastError;
+  // Plan summary
+  final String? planConceptName;
+  final String? planSummary;
+  // Layout
+  final double? layoutWidth;
+  final double? layoutHeight;
+  final String? layoutUnit;
+  final List<AiLayoutZone> layoutZones;
+  // Costs (VND)
+  final double? fitoutMinVnd;
+  final double? fitoutMaxVnd;
+  final double? equipmentMinVnd;
+  final double? equipmentMaxVnd;
+  final double? contingencyPercent;
+  final String? costNotes;
+  // Recommendations & risks
+  final List<AiRecommendationItem> recommendations;
+  final List<AiRiskNote> riskNotes;
+  final List<AiCustomerFlowStage> customerFlow;
+  // Image
+  final String? imageView;
+  final String? imageArtifactUrl;
+  final int? seatCapacityRecommendation;
 
   AiRecommendationResponse({
     required this.id,
@@ -267,12 +382,37 @@ class AiRecommendationResponse {
     this.estimatedDesignCost,
     this.estimatedConstructionCost,
     required this.createdAt,
+    this.jobId,
+    this.state,
+    this.lastError,
+    this.planConceptName,
+    this.planSummary,
+    this.layoutWidth,
+    this.layoutHeight,
+    this.layoutUnit,
+    this.layoutZones = const [],
+    this.fitoutMinVnd,
+    this.fitoutMaxVnd,
+    this.equipmentMinVnd,
+    this.equipmentMaxVnd,
+    this.contingencyPercent,
+    this.costNotes,
+    this.recommendations = const [],
+    this.riskNotes = const [],
+    this.customerFlow = const [],
+    this.imageView,
+    this.imageArtifactUrl,
+    this.seatCapacityRecommendation,
   });
+
+  bool get isCompleted => state == 'completed';
+  bool get isFailed => state == 'failed';
+  bool get isPending => state == 'queued' || state == 'processing';
 
   factory AiRecommendationResponse.fromJson(Map<String, dynamic> json) =>
       AiRecommendationResponse(
         id: json['id'],
-        briefId: json['briefId'],
+        briefId: json['briefId'] ?? 0,
         conceptSummary: json['conceptSummary'] ?? '',
         payload: json['payload'] ?? '',
         estimatedDesignCost: json['estimatedDesignCost'] != null
@@ -282,6 +422,39 @@ class AiRecommendationResponse {
             ? (json['estimatedConstructionCost'] as num).toDouble()
             : null,
         createdAt: DateTime.parse(json['createdAt']),
+        jobId: json['jobId'],
+        state: json['state'],
+        lastError: json['lastError'],
+        planConceptName: json['planConceptName'],
+        planSummary: json['planSummary'],
+        layoutWidth: (json['layoutWidth'] as num?)?.toDouble(),
+        layoutHeight: (json['layoutHeight'] as num?)?.toDouble(),
+        layoutUnit: json['layoutUnit'],
+        layoutZones: (json['layoutZones'] as List?)
+                ?.map((e) => AiLayoutZone.fromJson(e))
+                .toList() ??
+            [],
+        fitoutMinVnd: (json['fitoutMinVnd'] as num?)?.toDouble(),
+        fitoutMaxVnd: (json['fitoutMaxVnd'] as num?)?.toDouble(),
+        equipmentMinVnd: (json['equipmentMinVnd'] as num?)?.toDouble(),
+        equipmentMaxVnd: (json['equipmentMaxVnd'] as num?)?.toDouble(),
+        contingencyPercent: (json['contingencyPercent'] as num?)?.toDouble(),
+        costNotes: json['costNotes'],
+        recommendations: (json['recommendations'] as List?)
+                ?.map((e) => AiRecommendationItem.fromJson(e))
+                .toList() ??
+            [],
+        riskNotes: (json['riskNotes'] as List?)
+                ?.map((e) => AiRiskNote.fromJson(e))
+                .toList() ??
+            [],
+        customerFlow: (json['customerFlow'] as List?)
+                ?.map((e) => AiCustomerFlowStage.fromJson(e))
+                .toList() ??
+            [],
+        imageView: json['imageView'],
+        imageArtifactUrl: json['imageArtifactUrl'],
+        seatCapacityRecommendation: (json['seatCapacityRecommendation'] as num?)?.toInt(),
       );
 }
 

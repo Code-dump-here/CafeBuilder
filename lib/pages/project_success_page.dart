@@ -63,13 +63,11 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     try {
       // API call to create post
       final request = CreatePostRequest(
+        projectShopOwnerId: 0,
+        serviceKind: _reqs.isNotEmpty ? _reqs.join(', ') : 'Interior Design',
         title: widget.cafeName,
-        description: 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.',
-        location: widget.location,
-        style: widget.style,
-        budgetTier: _budgetTier,
-        expectedStart: _expectedStart,
-        requirements: _reqs,
+        description: 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.\nLocation: ${widget.location}\nStyle: ${widget.style}\nBudget: $_budgetTier\nExpected Start: $_expectedStart',
+        submissionDeadline: DateTime.now().add(const Duration(days: 30)),
       );
       
       final post = await PostService.createPost(request);
