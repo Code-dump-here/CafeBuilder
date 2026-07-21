@@ -253,6 +253,8 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
                           builder: (context) => SelectProjectPage(
                             designerName: _displayName,
                             isConstructor: true,
+                            serviceProviderProfileId: _provider!.id,
+                            contractType: _provider!.capability,
                           ),
                         ),
                       );

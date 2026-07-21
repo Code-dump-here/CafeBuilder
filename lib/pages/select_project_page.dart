@@ -4,6 +4,7 @@ import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/api_client.dart';
 import '../services/project_service.dart';
+import '../services/project_working_service.dart';
 import '../services/service_provider_service.dart';
 import 'booking_confirmed_page.dart';
 import 'hire_request_confirmed_page.dart';
@@ -12,10 +13,14 @@ import 'project_onboarding_page.dart';
 class SelectProjectPage extends StatefulWidget {
   final String designerName;
   final bool isConstructor;
+  final int serviceProviderProfileId;
+  final String contractType;
 
   const SelectProjectPage({
     super.key,
     required this.designerName,
+    required this.serviceProviderProfileId,
+    required this.contractType,
     this.isConstructor = false,
   });
 
@@ -215,26 +220,63 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
             child: ElevatedButton(
               onPressed: _projects.isEmpty || _loading
                   ? null
-                  : () {
+                  : () async {
                       final project = _selectedProject!;
-                      if (widget.isConstructor) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => HireRequestConfirmedPage(
-                              constructorName: widget.designerName,
-                            ),
-                          ),
+                      
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
+                      );
+                      
+                      try {
+                        String mappedContractType = widget.contractType;
+                        if (mappedContractType == 'designer') mappedContractType = 'design';
+                        if (mappedContractType == 'constructor') mappedContractType = 'construction';
+
+                        await ProjectWorkingService.directRequest(
+                          projectShopOwnerId: project.id,
+                          serviceProviderProfileId: widget.serviceProviderProfileId,
+                          contractType: mappedContractType,
+                          requestMessage: 'I would like to discuss my project brief with you.',
                         );
-                      } else {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BookingConfirmedPage(
-                              projectTitle: project.name,
-                            ),
-                          ),
-                        );
+                        
+                        if (mounted) {
+                          Navigator.pop(context); // hide loading
+                          if (widget.isConstructor) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => HireRequestConfirmedPage(
+                                  constructorName: widget.designerName,
+                                ),
+                              ),
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => BookingConfirmedPage(
+                                  projectTitle: project.name,
+                                  designerName: widget.designerName,
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                         if (mounted) {
+                           Navigator.pop(context);
+                           String errorMessage = e.toString();
+                           if (errorMessage.contains('409')) {
+                             errorMessage = 'You have already sent a request or hired this provider for the selected project. Please try a different project.';
+                           } else {
+                             errorMessage = 'Failed to book: \${e.toString()}';
+                           }
+                           ScaffoldMessenger.of(context).showSnackBar(
+                             SnackBar(content: Text(errorMessage, style: const TextStyle(color: Colors.white))),
+                           );
+                         }
                       }
                     },
               style: ElevatedButton.styleFrom(

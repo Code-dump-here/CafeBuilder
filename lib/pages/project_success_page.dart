@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
 import '../services/post_service.dart';
+import '../services/service_provider_service.dart';
 
 class ProjectSuccessPage extends StatefulWidget {
   final String cafeName;
@@ -62,9 +63,21 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
 
     try {
       // API call to create post
+      final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
+
+      // Map UI requirements to backend serviceKind enum
+      bool hasDesign = _reqs.contains('Interior Design') || _reqs.contains('Branding & Identity');
+      bool hasBuild = _reqs.contains('Construction & Build') || _reqs.contains('MEP Engineering');
+      String mappedServiceKind = 'design';
+      if (hasDesign && hasBuild) {
+        mappedServiceKind = 'both';
+      } else if (hasBuild) {
+        mappedServiceKind = 'construction';
+      }
+
       final request = CreatePostRequest(
-        projectShopOwnerId: 0,
-        serviceKind: _reqs.isNotEmpty ? _reqs.join(', ') : 'Interior Design',
+        projectShopOwnerId: shopOwnerId,
+        serviceKind: mappedServiceKind,
         title: widget.cafeName,
         description: 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.\nLocation: ${widget.location}\nStyle: ${widget.style}\nBudget: $_budgetTier\nExpected Start: $_expectedStart',
         submissionDeadline: DateTime.now().add(const Duration(days: 30)),

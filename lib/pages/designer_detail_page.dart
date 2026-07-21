@@ -224,7 +224,11 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => SelectProjectPage(designerName: _displayName),
+                                builder: (context) => SelectProjectPage(
+                                  designerName: _displayName,
+                                  serviceProviderProfileId: _provider!.id,
+                                  contractType: _provider!.capability,
+                                ),
                               ),
                             );
                           },

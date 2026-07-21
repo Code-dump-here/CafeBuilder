@@ -5,7 +5,13 @@ import '../models/marketplace_state.dart';
 
 class BookingConfirmedPage extends StatelessWidget {
   final String projectTitle;
-  const BookingConfirmedPage({super.key, required this.projectTitle});
+  final String designerName;
+  
+  const BookingConfirmedPage({
+    super.key,
+    required this.projectTitle,
+    required this.designerName,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +125,7 @@ class BookingConfirmedPage extends StatelessWidget {
                               style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso),
                             ),
                             Text(
-                              'Design Lead: Julian Vane',
+                              'Design Lead: $designerName',
                               style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
                             ),
                           ],
