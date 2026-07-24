@@ -7,6 +7,10 @@ import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
 import 'design_packages_page.dart';
 import 'collaboration_page.dart';
+import 'proposals_page.dart';
+import 'contract_otp_page.dart';
+import '../services/contract_service.dart';
+import '../services/project_working_service.dart';
 
 class ProjectDetailPage extends StatefulWidget {
   final int projectId;
@@ -494,27 +498,57 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         children: [
           Text('Pending Approvals', style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso)),
           const SizedBox(height: 16),
-          _buildApprovalItem('Approve 3D Layout'),
+          _buildApprovalItem('Sign Pending Contract', onTap: () async {
+            // Find the project working and contract
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
+            );
+            try {
+              final workings = await ProjectWorkingService.getProjectWorkings(projectShopOwnerId: _project!.id, pageSize: 1);
+              if (workings.items.isEmpty) throw Exception('No active engagement found.');
+              
+              final contracts = await ContractService.getContracts(projectWorkingId: workings.items.first.id, pageSize: 1);
+              if (contracts.items.isEmpty) throw Exception('No pending contract found for this engagement.');
+              
+              if (mounted) {
+                Navigator.pop(context); // close dialog
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ContractOtpPage(contract: contracts.items.first)),
+                ).then((_) => _loadProject());
+              }
+            } catch (e) {
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
+            }
+          }),
           const SizedBox(height: 8),
-          _buildApprovalItem('Approve Materials'),
+          _buildApprovalItem('Approve 3D Layout'),
         ],
       )
     );
   }
   
-  Widget _buildApprovalItem(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF6F3F2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(text, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
-          const Icon(Icons.chevron_right, size: 16, color: AppColors.placeholder),
-        ],
+  Widget _buildApprovalItem(String text, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F3F2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(text, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+            const Icon(Icons.chevron_right, size: 16, color: AppColors.placeholder),
+          ],
+        ),
       ),
     );
   }
@@ -686,7 +720,12 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           const SizedBox(height: 8),
           Center(
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProposalsPage(openPosts: posts)),
+                ).then((_) => _loadProject());
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.espresso,
                 foregroundColor: Colors.white,
