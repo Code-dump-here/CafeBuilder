@@ -272,6 +272,42 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     );
   }
 
+  void _showContractDetails(ContractResponse contract) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Contract: ${contract.title}'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Status: ${contract.status.toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('Agreed Value: \$${contract.agreedValue.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              if (contract.partyInfo != null) ...[
+                const Text('Parties Involved:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(contract.partyInfo!),
+                const SizedBox(height: 16),
+              ],
+              const Text('Terms & Conditions:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(contract.terms ?? 'No terms specified.'),
+              if (contract.documentUrl != null) ...[
+                const SizedBox(height: 16),
+                Text('Document URL: ${contract.documentUrl}', style: const TextStyle(color: Colors.blue)),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
