@@ -81,22 +81,7 @@ class DesignService {
       request.headers['Authorization'] = 'Bearer $token';
     }
 
-    final stream = http.ByteStream(file.openRead());
-    final length = await file.length();
     final filename = file.path.split('/').last;
-
-    // Detect media/file type
-    final fileExtension = filename.split('.').last.toLowerCase();
-    String mimeType;
-    if (fileExtension == 'pdf') {
-      mimeType = 'application/pdf';
-    } else if (fileExtension == 'jpg' || fileExtension == 'jpeg') {
-      mimeType = 'image/jpeg';
-    } else if (fileExtension == 'png') {
-      mimeType = 'image/png';
-    } else {
-      mimeType = 'application/octet-stream';
-    }
 
     final multipartFile = http.MultipartFile.fromBytes(
       'file',

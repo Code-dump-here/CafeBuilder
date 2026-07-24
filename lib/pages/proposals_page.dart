@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/apply_service.dart';
+import 'collaboration_workspace_page.dart';
 
 class ProposalsPage extends StatefulWidget {
   final List<OpenPostResponse> openPosts;
@@ -61,14 +62,19 @@ class _ProposalsPageState extends State<ProposalsPage> {
     );
 
     try {
-      await ApplyService.acceptApply(apply.id);
+      final working = await ApplyService.acceptApply(apply.id);
       if (mounted) {
         Navigator.pop(context); // close dialog
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Proposal accepted successfully!')),
+          const SnackBar(content: Text('Proposal accepted successfully! Navigation to workspace...')),
         );
-        // Refresh
-        _fetchApplies();
+        // Navigate to the newly created engagement
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CollaborationWorkspacePage(projectWorkingId: working.id),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

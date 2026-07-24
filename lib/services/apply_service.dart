@@ -23,15 +23,19 @@ class ApplyService {
 
     final queryStr = queryParams.entries.map((e) => '${e.key}=${e.value}').join('&');
     final response = await ApiClient.authGet('/applies?$queryStr');
+    ApiClient.throwIfError(response);
+    final body = ApiClient.parseBody(response);
     
     return PaginationResponse.fromJson(
-      response,
+      body,
       (json) => ApplyResponse.fromJson(json),
     );
   }
 
   static Future<ProjectWorkingResponse> acceptApply(int applyId) async {
     final response = await ApiClient.authPost('/applies/$applyId/accept', {});
-    return ProjectWorkingResponse.fromJson(response);
+    ApiClient.throwIfError(response);
+    final body = ApiClient.parseBody(response);
+    return ProjectWorkingResponse.fromJson(body);
   }
 }

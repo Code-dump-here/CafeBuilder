@@ -9,6 +9,7 @@ import 'design_packages_page.dart';
 import 'collaboration_page.dart';
 import 'proposals_page.dart';
 import 'contract_otp_page.dart';
+import 'collaboration_workspace_page.dart';
 import '../services/contract_service.dart';
 import '../services/project_working_service.dart';
 
@@ -604,7 +605,16 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         Expanded(
           child: Column(
             children: [
-              _buildActionCard(Icons.check_circle_outline, 'Approve', onTap: () {}),
+              _buildActionCard(
+                Icons.check_circle_outline,
+                'Approve',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
+                  );
+                },
+              ),
               const SizedBox(height: 12),
               _buildActionCard(
                 Icons.design_services_outlined,
@@ -629,12 +639,21 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const CollaborationPage()),
+                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
                   );
                 },
               ),
               const SizedBox(height: 12),
-              _buildActionCard(Icons.construction_outlined, 'Constructor', onTap: () {}),
+              _buildActionCard(
+                Icons.construction_outlined,
+                'Constructor',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
+                  );
+                },
+              ),
             ],
           ),
         ),

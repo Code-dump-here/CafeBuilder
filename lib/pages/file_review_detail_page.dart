@@ -3,18 +3,24 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../services/service_provider_service.dart';
 
+import '../services/design_service.dart';
+
 enum ReviewItemStatus { needReview, revision, approved }
 
 class FileReviewDetailPage extends StatefulWidget {
   final String title;
   final String imageUrl;
   final ReviewItemStatus status;
+  final int? designId;
+  final VoidCallback? onUpdated;
 
   const FileReviewDetailPage({
     super.key,
     required this.title,
     required this.imageUrl,
     required this.status,
+    this.designId,
+    this.onUpdated,
   });
 
   @override
@@ -612,14 +618,101 @@ class _FileReviewDetailPageState extends State<FileReviewDetailPage> {
     );
   }
 
+  bool _isUpdating = false;
+
+  Future<void> _approveDesign() async {
+    if (widget.designId == null) {
+      Navigator.pop(context, true);
+      return;
+    }
+    setState(() => _isUpdating = true);
+    try {
+      await DesignService.approveDesign(widget.designId!);
+      widget.onUpdated?.call();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Design version approved successfully!')),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUpdating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Approval failed: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _requestRevision() async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Request Revision'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'Specify what changes are needed...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.espresso),
+            child: const Text('Submit', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (reason == null || reason.isEmpty) return;
+
+    if (widget.designId == null) {
+      Navigator.pop(context, true);
+      return;
+    }
+
+    setState(() => _isUpdating = true);
+    try {
+      await DesignService.requestRevision(widget.designId!, reason: reason);
+      widget.onUpdated?.call();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Revision request submitted to Designer.')),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUpdating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit revision: $e')),
+        );
+      }
+    }
+  }
+
   Widget _buildNeedReviewActions() {
+    if (_isUpdating) {
+      return _buildActionBottomBar(
+        children: [
+          const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
+        ],
+      );
+    }
+
     return _buildActionBottomBar(
       children: [
         SizedBox(
           width: double.infinity,
           height: 50,
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: _approveDesign,
             icon: const Icon(Icons.check_circle_outline, size: 18),
             label: Text('Approve Version', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
@@ -635,7 +728,7 @@ class _FileReviewDetailPageState extends State<FileReviewDetailPage> {
           width: double.infinity,
           height: 50,
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: _requestRevision,
             icon: const Icon(Icons.refresh, size: 18),
             label: Text('Request Another Revision', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(

@@ -47,6 +47,20 @@ class ConstructionService {
     return PaginationResponse.fromJson(body, ConstructionItemResponse.fromJson);
   }
 
+  static Future<PaginationResponse<ConstructionItemResponse>> getConstructionItems({
+    int pageNumber = 1,
+    int pageSize = 10,
+    int? projectWorkingId,
+    int? parentId,
+    String? status,
+  }) => getMilestones(
+        pageNumber: pageNumber,
+        pageSize: pageSize,
+        projectWorkingId: projectWorkingId,
+        parentId: parentId,
+        status: status,
+      );
+
   static Future<ConstructionItemResponse> updateMilestone(
     int id, {
     String? name,
