@@ -62,7 +62,7 @@ class StyleDetailPage extends StatelessWidget {
               ),
             ),
             Text(
-              'Atelier Cafe',
+              'Design Cafe',
               style: GoogleFonts.playfairDisplay(
                 fontSize: 24,
                 fontWeight: FontWeight.w600,

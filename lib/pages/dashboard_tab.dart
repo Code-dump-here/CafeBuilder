@@ -242,7 +242,7 @@ class _DashboardTabState extends State<DashboardTab> {
               ),
               const SizedBox(width: 16),
               Text(
-                'Atelier Cafe',
+                'Design Cafe',
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
@@ -259,7 +259,7 @@ class _DashboardTabState extends State<DashboardTab> {
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.primaryFixed, width: 2),
               image: const DecorationImage(
-                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuCdRocndzSsN-UYAyAdDehJe5iER8FIYMiE35WxCJBErozOUf2B3yLChgipuBhVB2ygfuMi7dPypKlDSHVvpvWUNEwx8C9H199dSCEp1Tu738oOGnNuAe3tyDtyMBfFBo0DrDvijOS7KW3cFo5vI8z6GhSGAKWUlR0QnpCnGtGNj6-lhHHKxFyfYkRe1xA8mCEpLYpwWtG1LxWP0NA4RwzOLw-qHhhmkGrZtqHn__ZXAvz-Cz47e0qey8ZAZ_4keMq0p93ycyXaXlbg'),
+                image: NetworkImage('https://cdn3.iconfinder.com/data/icons/avatars-flat/33/man_5-512.png'),
                 fit: BoxFit.cover,
               ),
             ),

@@ -83,7 +83,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   image: const DecorationImage(
-                    image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuCQ9n5813tEwMv9R67Xv7A8qR1963283283283283283283283283283283283283283283283283283283283283283283283283283283283283283283'),
+                    image: NetworkImage('https://cdn3.iconfinder.com/data/icons/avatars-flat/33/man_5-512.png'),
                     fit: BoxFit.cover,
                   ),
                   border: Border.all(color: AppColors.primaryFixed, width: 2),
@@ -134,7 +134,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   image: const DecorationImage(
-                    image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuCQ9n5813tEwMv9R67Xv7A8qR1963283283283283283283283283283283283283283283283283283283283283283283283283283283283283283'),
+                    image: NetworkImage('https://cdn3.iconfinder.com/data/icons/avatars-flat/33/man_5-512.png'),
                     fit: BoxFit.cover,
                   ),
                 ),

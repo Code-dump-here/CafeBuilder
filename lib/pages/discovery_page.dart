@@ -93,7 +93,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
               ),
               const SizedBox(width: 16),
               Text(
-                'Atelier Cafe',
+                'Design Cafe',
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
@@ -110,7 +110,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.primaryFixed, width: 2),
               image: const DecorationImage(
-                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuBl6TFsIkZee7xiVk-tTK6DuXY6PJRgAVcQIn7VGlqLQ52OtqPF6321PmUBiK2XtSyHByhwx9AeeQeqLqhxhvqDlsiwdAOrNwW-EihCYgN6W3iXujYvgZbBx-m8KvOfa6oYXUYkiXDQNV7Y1wXsaDk6SVIPmWAzvhafPC6z9HWaz9OstcRvnEMZgz1eoQD2JU17Oei3fHXprQc1dFa8RSTR6Uo3xcv3XaR4cWJCCkfSAsAPv1hAtyevryuyceQnbCdlspXfakQqfvYy'),
+                image: NetworkImage('https://cdn3.iconfinder.com/data/icons/avatars-flat/33/man_5-512.png'),
                 fit: BoxFit.cover,
               ),
             ),
