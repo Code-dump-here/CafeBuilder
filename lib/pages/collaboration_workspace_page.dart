@@ -63,15 +63,13 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
 
       final results = await Future.wait([
         ProjectWorkingService.getProjectWorking(workingId),
-        ContractService.getContracts(projectWorkingId: workingId, pageSize: 1),
         DesignService.getDesigns(projectWorkingId: workingId, pageSize: 50),
         ConstructionService.getConstructionItems(projectWorkingId: workingId, pageSize: 50),
       ]);
 
       final workingRes = results[0] as ProjectWorkingResponse;
-      final contractsRes = results[1] as PaginationResponse<ContractResponse>;
-      final designsRes = results[2] as PaginationResponse<DesignResponse>;
-      final itemsRes = results[3] as PaginationResponse<ConstructionItemResponse>;
+      final designsRes = results[1] as PaginationResponse<DesignResponse>;
+      final itemsRes = results[2] as PaginationResponse<ConstructionItemResponse>;
 
       // Load tasks for construction items
       List<ConstructionTaskResponse> tasks = [];
@@ -85,7 +83,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       if (mounted) {
         setState(() {
           _working = workingRes;
-          _contract = contractsRes.items.isNotEmpty ? contractsRes.items.first : null;
+          _contract = workingRes.contract;
           _designs = designsRes.items;
           _constructionItems = itemsRes.items;
           _allTasks = tasks;

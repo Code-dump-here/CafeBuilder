@@ -592,6 +592,8 @@ class ProjectWorkingResponse {
   final DateTime? startedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final ContractResponse? contract;
+  final bool? hasConfirmedContract;
 
   ProjectWorkingResponse({
     required this.id,
@@ -606,6 +608,8 @@ class ProjectWorkingResponse {
     this.startedAt,
     required this.createdAt,
     required this.updatedAt,
+    this.contract,
+    this.hasConfirmedContract,
   });
 
   factory ProjectWorkingResponse.fromJson(Map<String, dynamic> json) => ProjectWorkingResponse(
@@ -621,6 +625,8 @@ class ProjectWorkingResponse {
         startedAt: json['startedAt'] != null ? DateTime.parse(json['startedAt']) : null,
         createdAt: DateTime.parse(json['createdAt']),
         updatedAt: DateTime.parse(json['updatedAt']),
+        contract: json['contract'] != null ? ContractResponse.fromJson(json['contract']) : null,
+        hasConfirmedContract: json['hasConfirmedContract'],
       );
 }
 
@@ -728,7 +734,7 @@ class ContractResponse {
 
   factory ContractResponse.fromJson(Map<String, dynamic> json) => ContractResponse(
         id: json['id'],
-        projectWorkingId: json['projectWorkingId'],
+        projectWorkingId: json['projectWorkingId'] ?? 0,
         title: json['title'] ?? '',
         partyInfo: json['partyInfo'],
         terms: json['terms'],
@@ -739,7 +745,7 @@ class ContractResponse {
         confirmedBy: json['confirmedBy'],
         status: json['status'] ?? '',
         createdAt: DateTime.parse(json['createdAt']),
-        updatedAt: DateTime.parse(json['updatedAt']),
+        updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.parse(json['createdAt']),
       );
 }
 
