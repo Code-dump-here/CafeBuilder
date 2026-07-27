@@ -69,7 +69,7 @@ class ServicesTab extends StatelessWidget {
                 
                 // Card 2: Hire a Contractor
                 _buildWhiteServiceCard(
-                  imageUrl: 'https://images.unsplash.com/photo-1541888081622-15d2a2a5d249?auto=format&fit=crop&q=80&w=600',
+                  imageUrl: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&q=80&w=800',
                   icon: Icons.construction_rounded,
                   title: 'Hire a Contractor',
                   desc: 'Professional construction team, ensuring progress and the most sophisticated finishing quality.',
@@ -145,81 +145,81 @@ class ServicesTab extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black.withOpacity(0.06)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (c, e, s) => Container(color: Colors.grey[100]),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(icon, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    desc,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Text(
+                        actionText,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.arrow_right_alt, size: 18, color: AppColors.primary),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            child: Image.network(
-              imageUrl,
-              height: 240,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (c, e, s) => Container(height: 240, color: Colors.grey[200]),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF6F3F2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, color: AppColors.primary, size: 20),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  title,
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  desc,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Text(
-                      actionText,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward, size: 14, color: AppColors.primary),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
-    ));
+    );
   }
 
   Widget _buildDarkProjectCard(BuildContext context) {
