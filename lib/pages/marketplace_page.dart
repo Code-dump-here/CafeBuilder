@@ -28,7 +28,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
 
   Future<void> _fetchPosts() async {
     try {
-      final response = await PostService.getPosts(pageNumber: 1, pageSize: 10);
+      final response = await PostService.getPosts(pageNumber: 1, pageSize: 100);
       if (!mounted) return;
       setState(() {
         final serverBroadcasts = response.items.map((post) => BroadcastProject(
@@ -49,6 +49,13 @@ class _MarketplacePageState extends State<MarketplacePage> {
         // Optional: Replace or append to static initial dummy entries
         // MarketplaceState.broadcasts.insertAll(0, serverBroadcasts);
         // Let's replace dummy ones with real ones if there are any
+        // Sort by ID descending so newest posts appear first
+        serverBroadcasts.sort((a, b) {
+          final idA = int.tryParse(a.id) ?? 0;
+          final idB = int.tryParse(b.id) ?? 0;
+          return idB.compareTo(idA);
+        });
+
         if (serverBroadcasts.isNotEmpty) {
            MarketplaceState.broadcasts.clear();
            MarketplaceState.broadcasts.addAll(serverBroadcasts);

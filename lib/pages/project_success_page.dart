@@ -15,6 +15,7 @@ class ProjectSuccessPage extends StatefulWidget {
   final String mood;
   final String role;
   final double area;
+  final int projectId;
   final int initialStep;
 
   const ProjectSuccessPage({
@@ -27,6 +28,7 @@ class ProjectSuccessPage extends StatefulWidget {
     required this.mood,
     required this.role,
     required this.area,
+    this.projectId = 0,
     this.initialStep = 0,
   });
 
@@ -76,7 +78,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
       }
 
       final request = CreatePostRequest(
-        projectShopOwnerId: shopOwnerId,
+        projectShopOwnerId: widget.projectId > 0 ? widget.projectId : shopOwnerId,
         serviceKind: mappedServiceKind,
         title: widget.cafeName,
         description: 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.\nLocation: ${widget.location}\nStyle: ${widget.style}\nBudget: $_budgetTier\nExpected Start: $_expectedStart',
@@ -114,6 +116,15 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // hide loading
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('API Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        
         // Fallback to local logic if API fails
         final id = 'AT-${100 + Random().nextInt(899)}-XC';
         final newBroadcast = BroadcastProject(

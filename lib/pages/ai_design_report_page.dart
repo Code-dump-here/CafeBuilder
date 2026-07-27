@@ -18,6 +18,7 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
   final String role;
   final double area;
   final int briefId;
+  final int projectId;
   final List<String> mustHaveZones;
   final List<String> niceToHaveZones;
   final String notes;
@@ -34,6 +35,7 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
     required this.role,
     required this.area,
     this.briefId = 0,
+    this.projectId = 0,
     this.mustHaveZones = const [],
     this.niceToHaveZones = const [],
     this.notes = '',
@@ -183,6 +185,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
           mood: widget.mood,
           role: widget.role,
           area: widget.area,
+          projectId: widget.projectId,
           report: _report,
         ),
       ),
@@ -302,6 +305,7 @@ class AiDesignReportPage extends StatelessWidget {
   final String mood;
   final String role;
   final double area;
+  final int projectId;
   final AiRecommendationResponse? report;
 
   const AiDesignReportPage({
@@ -314,6 +318,7 @@ class AiDesignReportPage extends StatelessWidget {
     required this.mood,
     required this.role,
     required this.area,
+    this.projectId = 0,
     this.report,
   });
 
@@ -461,6 +466,7 @@ class AiDesignReportPage extends StatelessWidget {
                               mood: mood,
                               role: role,
                               area: area,
+                              projectId: projectId,
                               initialStep: 1,
                             ),
                           ),
@@ -498,6 +504,7 @@ class AiDesignReportPage extends StatelessWidget {
                                     mood: mood,
                                     role: role,
                                     area: area,
+                                    projectId: projectId,
                                     initialStep: 0,
                                   ),
                                 ),

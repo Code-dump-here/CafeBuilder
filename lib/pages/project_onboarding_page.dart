@@ -153,6 +153,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   Future<void> _startDesignSynthesis() async {
     setState(() => _isSaving = true);
     int briefId = 0;
+    int projectId = 0;
     String? errorMessage;
 
     // Resolve address – never send an empty string
@@ -179,6 +180,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
       dev.log('[Onboarding] Step 2: createProject payload=${projectPayload.toJson()}', name: 'onboarding');
       final project = await ProjectService.createProject(projectPayload);
       dev.log('[Onboarding] project.id=${project.id}', name: 'onboarding');
+      projectId = project.id;
 
       // ── Step 3: Create design brief ────────────────────────────────────────
       final briefPayload = CreateDesignBriefRequest(
@@ -237,6 +239,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           role: _selectedRole,
           area: _totalArea > 0 ? _totalArea : 1.0,
           briefId: briefId,
+          projectId: projectId,
           mustHaveZones: List<String>.from(_selectedFunctionalAreas),
           niceToHaveZones: _niceToHaveZones,
           notes: _buildAiNotes(),

@@ -26,6 +26,7 @@ class ProjectDetailPage extends StatefulWidget {
 class _ProjectDetailPageState extends State<ProjectDetailPage> {
   ProjectResponse? _project;
   String _ownerFirstName = 'Owner';
+  List<ProjectWorkingResponse> _projectWorkings = [];
   bool _loading = true;
   String? _error;
 
@@ -44,11 +45,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       final results = await Future.wait([
         ProjectService.getProject(widget.projectId),
         ShopOwnerService.getCurrentOwnerFirstName(),
+        ProjectWorkingService.getProjectWorkings(projectShopOwnerId: widget.projectId, pageSize: 50),
       ]);
       if (mounted) {
         setState(() {
           _project = results[0] as ProjectResponse;
           _ownerFirstName = results[1] as String;
+          _projectWorkings = (results[2] as PaginationResponse<ProjectWorkingResponse>).items;
           _loading = false;
         });
       }
@@ -569,10 +572,26 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         children: [
           Text('Project Team', style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso)),
           const SizedBox(height: 16),
-          _buildTeamMember('Elena Vo', 'Lead Designer', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150'),
-          const SizedBox(height: 12),
-          _buildTeamMember('Trung Nguyen', 'General Contractor', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150'),
-          const SizedBox(height: 20),
+          if (_projectWorkings.isEmpty)
+            Text('No providers or requests yet.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary))
+          else
+            ..._projectWorkings.map((pw) {
+              final name = pw.providerDisplayName.isNotEmpty ? pw.providerDisplayName : 'Unknown';
+              // E.g. "Designer (Pending)"
+              final statusCap = pw.status.isNotEmpty ? (pw.status[0].toUpperCase() + pw.status.substring(1).toLowerCase()) : '';
+              final typeCap = pw.contractType.isNotEmpty ? (pw.contractType[0].toUpperCase() + pw.contractType.substring(1).toLowerCase()) : '';
+              final roleAndStatus = '$typeCap ${statusCap.isNotEmpty ? '($statusCap)' : ''}'.trim();
+              
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildTeamMember(
+                  name, 
+                  roleAndStatus, 
+                  'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=random&color=fff',
+                ),
+              );
+            }),
+          const SizedBox(height: 8),
           Center(
             child: TextButton.icon(
               onPressed: () {},
