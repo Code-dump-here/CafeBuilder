@@ -776,10 +776,8 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
           // Primary: Go see project on Marketplace
           ElevatedButton.icon(
             onPressed: () {
-              // Switch to service-provider view so Marketplace tab is visible
-              MarketplaceState.isServiceProvider = true;
-              MarketplaceState.initialIndex = 2;
-              // Fire listener so HomePage rebuilds tabs and switches to index 2
+              // Navigate to the Marketplace tab (index 3)
+              MarketplaceState.initialIndex = 3;
               if (MarketplaceState.onRoleChanged != null) {
                 MarketplaceState.onRoleChanged!();
               }

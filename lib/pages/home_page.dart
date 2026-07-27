@@ -10,7 +10,8 @@ import 'marketplace_page.dart';
 import '../models/marketplace_state.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final int? initialIndex;
+  const HomePage({super.key, this.initialIndex});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -22,7 +23,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = MarketplaceState.initialIndex;
+    _currentIndex = widget.initialIndex ?? MarketplaceState.initialIndex;
     MarketplaceState.onRoleChanged = () {
       if (mounted) {
         setState(() {
@@ -88,8 +89,7 @@ class _HomePageState extends State<HomePage> {
           _buildNavItem(0, Icons.architecture,              'HOME'),
           _buildNavItem(1, Icons.collections_outlined,      'GALLERY'),
           _buildNavItem(2, Icons.design_services_outlined,  'SERVICES'),
-          if (MarketplaceState.isServiceProvider)
-            _buildNavItem(3, Icons.store_mall_directory_rounded, 'MARKET'),
+          _buildNavItem(3, Icons.store_mall_directory_rounded, 'MARKET'),
           _buildNavItem(4, Icons.person_outline,            'PROFILE'),
         ],
       ),

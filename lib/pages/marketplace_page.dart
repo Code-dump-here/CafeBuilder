@@ -70,11 +70,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
   Widget build(BuildContext context) {
     // Filter marketplace based on search and user role
     final items = MarketplaceState.broadcasts.where((item) {
-      if (!MarketplaceState.isServiceProvider) {
-        if (MarketplaceState.activeProject == null || item.id != MarketplaceState.activeProject!.id) {
-          return false;
-        }
-      }
+
 
       final matchesSearch = item.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           item.location.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -459,13 +455,15 @@ class _MarketplacePageState extends State<MarketplacePage> {
                           child: Text(req, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.espresso)),
                         )).toList(),
                       ),
-                      const SizedBox(height: 32),
-                      _SubmitProposalForm(
-                        project: project,
-                        onSubmitted: () {
-                          setState(() {}); // Refresh counter
-                        },
-                      ),
+                      if (MarketplaceState.isServiceProvider) ...[
+                        const SizedBox(height: 32),
+                        _SubmitProposalForm(
+                          project: project,
+                          onSubmitted: () {
+                            setState(() {}); // Refresh counter
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),
