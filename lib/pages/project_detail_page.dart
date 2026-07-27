@@ -601,6 +601,58 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     );
   }
 
+  Future<void> _navigateToWorkspace(BuildContext context, String targetContractType) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
+    );
+
+    try {
+      final workings = await ProjectWorkingService.getProjectWorkings(
+        projectShopOwnerId: widget.projectId,
+        pageSize: 50,
+      );
+      
+      ProjectWorkingResponse? matchedWorking;
+      for (final w in workings.items) {
+        final type = w.contractType.toLowerCase();
+        if (type == targetContractType.toLowerCase() || type == 'company') {
+          matchedWorking = w;
+          break;
+        }
+      }
+
+      if (matchedWorking == null && workings.items.isNotEmpty) {
+        // Fallback to first available if we are looking for a generic one
+        matchedWorking = workings.items.first;
+      }
+
+      if (mounted) {
+        Navigator.pop(context); // close dialog
+        if (matchedWorking != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CollaborationWorkspacePage(projectWorkingId: matchedWorking!.id),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No active engagement found for $targetContractType.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // close dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
   Widget _buildQuickActions(BuildContext context) {
     return Row(
       children: [
@@ -611,10 +663,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 Icons.check_circle_outline,
                 'Approve',
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
-                  );
+                  _navigateToWorkspace(context, 'designer');
                 },
               ),
               const SizedBox(height: 12),
@@ -639,10 +688,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 Icons.group_outlined, 
                 'Collab', 
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
-                  );
+                  _navigateToWorkspace(context, 'designer');
                 },
               ),
               const SizedBox(height: 12),
@@ -650,10 +696,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 Icons.construction_outlined,
                 'Constructor',
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
-                  );
+                  _navigateToWorkspace(context, 'constructor');
                 },
               ),
             ],
@@ -662,6 +705,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       ],
     );
   }
+
   
   Widget _buildActionCard(IconData icon, String label, {VoidCallback? onTap}) {
     return GestureDetector(
