@@ -27,6 +27,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   ProjectResponse? _project;
   String _ownerFirstName = '';
   ContractResponse? _pendingContract;
+  int? _activeWorkingId;
   bool _loading = true;
   String? _error;
 
@@ -52,7 +53,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           _project = results[0] as ProjectResponse;
           _ownerFirstName = results[1] as String;
           final workings = results[2] as PaginationResponse<ProjectWorkingResponse>;
-          _pendingContract = workings.items.isNotEmpty ? workings.items.first.contract : null;
+          if (workings.items.isNotEmpty) {
+            _activeWorkingId = workings.items.first.id;
+            _pendingContract = workings.items.first.contract;
+          } else {
+            _activeWorkingId = null;
+            _pendingContract = null;
+          }
           _loading = false;
         });
       }
@@ -613,7 +620,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
+                    MaterialPageRoute(builder: (context) => CollaborationWorkspacePage(projectWorkingId: _activeWorkingId)),
                   );
                 },
               ),
@@ -641,7 +648,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
+                    MaterialPageRoute(builder: (context) => CollaborationWorkspacePage(projectWorkingId: _activeWorkingId)),
                   );
                 },
               ),
@@ -652,7 +659,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
+                    MaterialPageRoute(builder: (context) => CollaborationWorkspacePage(projectWorkingId: _activeWorkingId)),
                   );
                 },
               ),
