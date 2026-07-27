@@ -13,6 +13,7 @@ class ProjectWorkingService {
       'pageNumber': pageNumber,
       'pageSize': pageSize,
       if (projectShopOwnerId != null) 'projectShopOwnerId': projectShopOwnerId,
+      if (projectShopOwnerId != null) 'projectId': projectShopOwnerId,
       if (serviceProviderProfileId != null) 'serviceProviderProfileId': serviceProviderProfileId,
       if (status != null) 'status': status,
     };

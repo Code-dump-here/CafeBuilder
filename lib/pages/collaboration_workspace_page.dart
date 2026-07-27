@@ -45,16 +45,9 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     try {
       int? workingId = widget.projectWorkingId;
       if (workingId == null) {
-        final workings = await ProjectWorkingService.getProjectWorkings(pageSize: 1);
-        if (workings.items.isNotEmpty) {
-          workingId = workings.items.first.id;
-        }
-      }
-
-      if (workingId == null) {
         setState(() {
           _loading = false;
-          _error = 'No active project engagement found.';
+          _error = 'Please select a specific project workspace to view.';
         });
         return;
       }

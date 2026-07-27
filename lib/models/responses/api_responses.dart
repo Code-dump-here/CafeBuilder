@@ -614,7 +614,7 @@ class ProjectWorkingResponse {
 
   factory ProjectWorkingResponse.fromJson(Map<String, dynamic> json) => ProjectWorkingResponse(
         id: json['id'],
-        projectShopOwnerId: json['projectShopOwnerId'],
+        projectShopOwnerId: json['projectShopOwnerId'] ?? json['projectId'] ?? 0,
         projectName: json['projectName'] ?? '',
         serviceProviderProfileId: json['serviceProviderProfileId'],
         providerDisplayName: json['providerDisplayName'] ?? '',

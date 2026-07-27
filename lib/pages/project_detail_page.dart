@@ -43,22 +43,30 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       _error = null;
     });
     try {
+      String? workingsError;
       final results = await Future.wait([
         ProjectService.getProject(widget.projectId),
         ShopOwnerService.getCurrentOwnerFirstName(),
-        ProjectWorkingService.getProjectWorkings(projectShopOwnerId: widget.projectId, pageSize: 1).catchError((_) => PaginationResponse<ProjectWorkingResponse>(items: [], totalItems: 0, pageNumber: 1, pageSize: 1, totalPages: 0, hasPrevious: false, hasNext: false)),
+        ProjectWorkingService.getProjectWorkings(projectShopOwnerId: widget.projectId, pageSize: 50).catchError((e) {
+          workingsError = e.toString();
+          return PaginationResponse<ProjectWorkingResponse>(items: [], totalItems: 0, pageNumber: 1, pageSize: 50, totalPages: 0, hasPrevious: false, hasNext: false);
+        }),
       ]);
       if (mounted) {
         setState(() {
           _project = results[0] as ProjectResponse;
           _ownerFirstName = results[1] as String;
           final workings = results[2] as PaginationResponse<ProjectWorkingResponse>;
-          if (workings.items.isNotEmpty) {
-            _activeWorkingId = workings.items.first.id;
-            _pendingContract = workings.items.first.contract;
+          final matchedWorkings = workings.items.where((w) => w.projectShopOwnerId == widget.projectId).toList();
+          if (matchedWorkings.isNotEmpty) {
+            _activeWorkingId = matchedWorkings.first.id;
+            _pendingContract = matchedWorkings.first.contract;
           } else {
             _activeWorkingId = null;
             _pendingContract = null;
+          }
+          if (workingsError != null && _error == null) {
+            // Optional: don't break the whole page, but we can log it
           }
           _loading = false;
         });
