@@ -25,9 +25,7 @@ class ProjectDetailPage extends StatefulWidget {
 
 class _ProjectDetailPageState extends State<ProjectDetailPage> {
   ProjectResponse? _project;
-  String _ownerFirstName = '';
-  ContractResponse? _pendingContract;
-  int? _activeWorkingId;
+  String _ownerFirstName = 'Owner';
   bool _loading = true;
   String? _error;
 
@@ -43,31 +41,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       _error = null;
     });
     try {
-      String? workingsError;
       final results = await Future.wait([
         ProjectService.getProject(widget.projectId),
         ShopOwnerService.getCurrentOwnerFirstName(),
-        ProjectWorkingService.getProjectWorkings(projectShopOwnerId: widget.projectId, pageSize: 50).catchError((e) {
-          workingsError = e.toString();
-          return PaginationResponse<ProjectWorkingResponse>(items: [], totalItems: 0, pageNumber: 1, pageSize: 50, totalPages: 0, hasPrevious: false, hasNext: false);
-        }),
       ]);
       if (mounted) {
         setState(() {
           _project = results[0] as ProjectResponse;
           _ownerFirstName = results[1] as String;
-          final workings = results[2] as PaginationResponse<ProjectWorkingResponse>;
-          final matchedWorkings = workings.items.where((w) => w.projectShopOwnerId == widget.projectId).toList();
-          if (matchedWorkings.isNotEmpty) {
-            _activeWorkingId = matchedWorkings.first.id;
-            _pendingContract = matchedWorkings.first.contract;
-          } else {
-            _activeWorkingId = null;
-            _pendingContract = null;
-          }
-          if (workingsError != null && _error == null) {
-            // Optional: don't break the whole page, but we can log it
-          }
           _loading = false;
         });
       }
@@ -519,32 +500,36 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         children: [
           Text('Pending Approvals', style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso)),
           const SizedBox(height: 16),
-          if (_pendingContract != null) ...[
-            _buildApprovalItem('Sign Pending Contract', onTap: () async {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
-              );
-              try {
-                if (_pendingContract == null) throw Exception('No pending contract found for this engagement.');
-                
-                if (mounted) {
-                  Navigator.pop(context); // close dialog
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ContractOtpPage(contract: _pendingContract!)),
-                  ).then((_) => _loadProject());
-                }
+          _buildApprovalItem('Sign Pending Contract', onTap: () async {
+            // Find the project working and contract
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
+            );
+            try {
+              final workings = await ProjectWorkingService.getProjectWorkings(projectShopOwnerId: _project!.id, pageSize: 1);
+              if (workings.items.isEmpty) throw Exception('No active engagement found.');
+              
+              final contracts = await ContractService.getContracts(projectWorkingId: workings.items.first.id, pageSize: 50);
+              final pendingContracts = contracts.items.where((c) => c.status == 'pending_otp').toList();
+              if (pendingContracts.isEmpty) throw Exception('No pending contract found for this engagement.');
+              
+              if (mounted) {
+                Navigator.pop(context); // close dialog
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ContractOtpPage(contract: pendingContracts.first)),
+                ).then((_) => _loadProject());
+              }
             } catch (e) {
               if (mounted) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-                }
               }
-            }),
-            const SizedBox(height: 8),
-          ],
+            }
+          }),
+          const SizedBox(height: 8),
           _buildApprovalItem('Approve 3D Layout'),
         ],
       )
@@ -628,7 +613,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => CollaborationWorkspacePage(projectWorkingId: _activeWorkingId)),
+                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
                   );
                 },
               ),
@@ -656,7 +641,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => CollaborationWorkspacePage(projectWorkingId: _activeWorkingId)),
+                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
                   );
                 },
               ),
@@ -667,7 +652,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => CollaborationWorkspacePage(projectWorkingId: _activeWorkingId)),
+                    MaterialPageRoute(builder: (context) => const CollaborationWorkspacePage()),
                   );
                 },
               ),

@@ -25,7 +25,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
 
   int? _activeWorkingId;
   ProjectWorkingResponse? _working;
-  ContractResponse? _contract;
+  List<ContractResponse> _contracts = [];
   List<DesignResponse> _designs = [];
   List<ConstructionItemResponse> _constructionItems = [];
   List<ConstructionTaskResponse> _allTasks = [];
@@ -45,9 +45,16 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     try {
       int? workingId = widget.projectWorkingId;
       if (workingId == null) {
+        final workings = await ProjectWorkingService.getProjectWorkings(pageSize: 1);
+        if (workings.items.isNotEmpty) {
+          workingId = workings.items.first.id;
+        }
+      }
+
+      if (workingId == null) {
         setState(() {
           _loading = false;
-          _error = 'Please select a specific project workspace to view.';
+          _error = 'No active project engagement found.';
         });
         return;
       }
@@ -56,13 +63,15 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
 
       final results = await Future.wait([
         ProjectWorkingService.getProjectWorking(workingId),
+        ContractService.getContracts(projectWorkingId: workingId, pageSize: 50),
         DesignService.getDesigns(projectWorkingId: workingId, pageSize: 50),
         ConstructionService.getConstructionItems(projectWorkingId: workingId, pageSize: 50),
       ]);
 
       final workingRes = results[0] as ProjectWorkingResponse;
-      final designsRes = results[1] as PaginationResponse<DesignResponse>;
-      final itemsRes = results[2] as PaginationResponse<ConstructionItemResponse>;
+      final contractsRes = results[1] as PaginationResponse<ContractResponse>;
+      final designsRes = results[2] as PaginationResponse<DesignResponse>;
+      final itemsRes = results[3] as PaginationResponse<ConstructionItemResponse>;
 
       // Load tasks for construction items
       List<ConstructionTaskResponse> tasks = [];
@@ -76,7 +85,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       if (mounted) {
         setState(() {
           _working = workingRes;
-          _contract = workingRes.contract;
+          _contracts = contractsRes.items;
           _designs = designsRes.items;
           _constructionItems = itemsRes.items;
           _allTasks = tasks;
@@ -371,13 +380,16 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                         ),
                         const SizedBox(height: 20),
 
-                        // 1. Contract OTP Sign-off Banner
-                        if (_contract != null && _contract!.status == 'pending_otp') ...[
-                          _buildContractOtpBanner(_contract!),
-                          const SizedBox(height: 20),
-                        ] else if (_contract != null && _contract!.status == 'confirmed') ...[
-                          _buildContractConfirmedBanner(_contract!),
-                          const SizedBox(height: 20),
+                        // 1. Contracts Section
+                        if (_contracts.isNotEmpty) ...[
+                          for (final contract in _contracts) ...[
+                            if (contract.status == 'pending_otp')
+                              _buildContractOtpBanner(contract)
+                            else if (contract.status == 'confirmed')
+                              _buildContractConfirmedBanner(contract),
+                            const SizedBox(height: 12),
+                          ],
+                          const SizedBox(height: 8),
                         ],
 
                         // 2. Designs Section (Designer Deliverables & Approvals)
