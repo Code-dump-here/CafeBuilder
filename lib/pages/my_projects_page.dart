@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../services/project_service.dart';
+import '../services/post_service.dart';
 import '../services/api_client.dart';
 import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
 import '../models/marketplace_state.dart';
 import 'project_detail_page.dart';
 import 'marketplace_page.dart';
+import 'project_success_page.dart';
 
 class MyProjectsPage extends StatefulWidget {
   const MyProjectsPage({super.key});
@@ -22,6 +24,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
   List<ProjectResponse> _projects = [];
   bool _loading = true;
   String? _error;
+  final Set<int> _postedProjectIds = {};
 
   static const _coverImages = [
     'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
@@ -39,6 +42,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
     });
     _searchController.addListener(() => setState(() {}));
     _loadProjects();
+    _loadPostedProjectIds();
   }
 
   Future<void> _loadProjects() async {
@@ -72,6 +76,22 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
           _error = 'Failed to load projects';
         });
       }
+    }
+  }
+
+  Future<void> _loadPostedProjectIds() async {
+    try {
+      final response = await PostService.getPosts(pageNumber: 1, pageSize: 100);
+      if (mounted) {
+        setState(() {
+          _postedProjectIds.clear();
+          for (final post in response.items) {
+            _postedProjectIds.add(post.projectShopOwnerId);
+          }
+        });
+      }
+    } catch (_) {
+      // silently ignore – just won't show "already posted" badge
     }
   }
 
@@ -490,27 +510,68 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      onPressed: () => _openProject(project),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.espresso,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-                        minimumSize: const Size(120, 40),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _openProject(project),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.espresso,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                            minimumSize: const Size(0, 40),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Continue', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              SizedBox(width: 8),
+                              Icon(Icons.arrow_forward, size: 14),
+                            ],
+                          ),
+                        ),
                       ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('Continue', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward, size: 14),
-                        ],
-                      ),
-                    ),
+                      if (!_postedProjectIds.contains(project.id)) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _postToMarketplace(project),
+                            icon: const Icon(Icons.podcasts_rounded, size: 14),
+                            label: const Text('Post', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.espresso,
+                              side: const BorderSide(color: AppColors.espresso),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              minimumSize: const Size(0, 40),
+                            ),
+                          ),
+                        ),
+                      ] else ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Container(
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD9EAA3).withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFF56642B).withOpacity(0.3)),
+                            ),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFF56642B)),
+                                  const SizedBox(width: 6),
+                                  Text('Posted', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF56642B))),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -631,10 +692,34 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                           ),
                         ],
                       ),
-                      Text(
-                        _formatUpdated(project.updatedAt),
-                        style: GoogleFonts.inter(fontSize: 9, color: AppColors.placeholder),
-                      ),
+                      if (!_postedProjectIds.contains(project.id))
+                        GestureDetector(
+                          onTap: () => _postToMarketplace(project),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.espresso,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.podcasts_rounded, size: 10, color: Colors.white),
+                                const SizedBox(width: 4),
+                                Text('Post', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.check_circle_outline, size: 11, color: Color(0xFF56642B)),
+                            const SizedBox(width: 4),
+                            Text('Posted', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF56642B))),
+                          ],
+                        ),
                     ],
                   ),
                 ],
@@ -645,5 +730,28 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
         ),
       ),
     );
+  }
+
+  void _postToMarketplace(ProjectResponse project) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProjectSuccessPage(
+          cafeName: project.name,
+          location: project.address,
+          style: '',
+          budgetLevel: '',
+          totalBudget: project.budget,
+          mood: '',
+          role: 'cafe_owner',
+          area: project.areaM2,
+          projectId: project.id,
+          initialStep: 1,
+        ),
+      ),
+    ).then((_) {
+      // Refresh posted IDs after returning from the broadcast screen
+      _loadPostedProjectIds();
+    });
   }
 }
