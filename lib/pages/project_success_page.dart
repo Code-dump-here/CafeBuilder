@@ -38,7 +38,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
   late int _flowSubStep;
 
   // Broadcast settings
-  final List<String> _reqs = ['Interior Design', 'MEP Engineering'];
+  final List<String> _reqs = ['Designer'];
   String _visibility = 'Public'; // Public or Restricted
   String _expectedStart = 'Oct 2024';
   late String _budgetTier;
@@ -66,8 +66,8 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
       final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
 
       // Map UI requirements to backend serviceKind enum
-      bool hasDesign = _reqs.contains('Interior Design') || _reqs.contains('Branding & Identity');
-      bool hasBuild = _reqs.contains('Construction & Build') || _reqs.contains('MEP Engineering');
+      bool hasDesign = _reqs.contains('Designer') || _reqs.contains('Both');
+      bool hasBuild = _reqs.contains('Constructor') || _reqs.contains('Both');
       String mappedServiceKind = 'design';
       if (hasDesign && hasBuild) {
         mappedServiceKind = 'both';
@@ -451,16 +451,15 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                       style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.placeholder, letterSpacing: 1.0),
                     ),
                     Text(
-                      'Select multiple',
+                      'Select one',
                       style: GoogleFonts.inter(fontSize: 11, color: AppColors.placeholder),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                _buildServiceCheckbox('Interior Design', 'Concept to 3D execution'),
-                _buildServiceCheckbox('Construction & Build', 'Full project management'),
-                _buildServiceCheckbox('MEP Engineering', 'Mechanical, electrical, plumbing'),
-                _buildServiceCheckbox('Branding & Identity', 'Signage and menu design'),
+                _buildServiceCheckbox('Designer', 'Interior and architectural design'),
+                _buildServiceCheckbox('Constructor', 'Full project construction and build'),
+                _buildServiceCheckbox('Both', 'End-to-end design and construction'),
                 const SizedBox(height: 28),
                 Text(
                   'VISIBILITY SETTINGS',
@@ -551,9 +550,8 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
       child: GestureDetector(
         onTap: () {
           setState(() {
-            if (isChecked) {
-              _reqs.remove(title);
-            } else {
+            if (!isChecked) {
+              _reqs.clear();
               _reqs.add(title);
             }
           });

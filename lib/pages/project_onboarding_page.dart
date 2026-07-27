@@ -1774,10 +1774,6 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
             ),
           ],
         ),
-        const SizedBox(height: 28),
-        _buildTextFieldLabel('Attachments'),
-        _buildAttachmentTile('Sketch/Floor Plan', 'Sketch.jpg - Sketch outline for AI interpolation', '3.2 MB'),
-        _buildAttachmentTile('Walk-through Video', 'Video.mp4 - Panoramic view of the site', '45.0 MB'),
       ],
     );
   }
@@ -1805,44 +1801,6 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     );
   }
 
-  Widget _buildAttachmentTile(String label, String fileName, String size) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.4)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: AppColors.espresso.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: const Icon(Icons.attach_file, color: AppColors.espresso, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.placeholder)),
-                Text(
-                  fileName,
-                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary, fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          Text(size, style: GoogleFonts.inter(fontSize: 11, color: AppColors.placeholder)),
-          const SizedBox(width: 8),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.close, size: 18, color: AppColors.outline)),
-        ],
-      ),
-    );
-  }
 
   // --- Base helpers ---
   Widget _buildTextFieldLabel(String text) {
