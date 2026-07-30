@@ -48,13 +48,16 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
         final workings = await ProjectWorkingService.getProjectWorkings(pageSize: 1);
         if (workings.items.isNotEmpty) {
           workingId = workings.items.first.id;
+        } else {
+          workingId = 0;
         }
       }
 
-      if (workingId == null) {
+      if (workingId == 0) {
         setState(() {
           _loading = false;
-          _error = 'No active project engagement found.';
+          _activeWorkingId = 0;
+          _error = null;
         });
         return;
       }
@@ -342,16 +345,53 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.espresso))
-          : _error != null
-              ? Center(
+          : (_error != null || _activeWorkingId == 0)
+              ? SingleChildScrollView(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 80),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_error!, textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.textSecondary)),
-                        const SizedBox(height: 16),
-                        ElevatedButton(onPressed: _loadWorkspaceData, child: const Text('Retry')),
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF6F3F1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.construction, size: 64, color: AppColors.espresso),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'No Active Workspace',
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.espresso,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _activeWorkingId == 0 
+                              ? 'No active engagement or contract found for this project yet. Once a provider is selected and approved, your workspace will appear here.'
+                              : _error!,
+                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (_activeWorkingId != 0) ...[
+                          const SizedBox(height: 32),
+                          ElevatedButton.icon(
+                            onPressed: _loadWorkspaceData,
+                            icon: const Icon(Icons.refresh, size: 18, color: Colors.white),
+                            label: const Text('Try Again'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.espresso,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -543,98 +583,159 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   }
 
   Widget _buildDesignCard(DesignResponse design) {
-    final statusColor = design.status == 'approved'
-        ? Colors.green.shade700
-        : design.status == 'revision'
-            ? Colors.red.shade700
-            : Colors.orange.shade800;
+    final isApproved = design.status == 'approved';
+    final isRevision = design.status == 'revision';
+    final isPending = !isApproved && !isRevision;
+
+    final statusColor = isApproved
+        ? const Color(0xFF2E7D32)
+        : isRevision
+            ? const Color(0xFFC62828)
+            : const Color(0xFFE65100);
+    final statusBg = isApproved
+        ? const Color(0xFFE8F5E9)
+        : isRevision
+            ? const Color(0xFFFFEBEE)
+            : const Color(0xFFFFF3E0);
+    final statusLabel = isApproved ? '✓ Approved' : isRevision ? '↩ Revision' : '⏳ Pending';
 
     final firstImage = design.images.isNotEmpty ? design.images.first.viewUrl : null;
 
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (firstImage != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  firstImage,
-                  height: 140,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 140,
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.broken_image, color: Colors.grey),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image hero
+          if (firstImage != null)
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Stack(
+                children: [
+                  Image.network(
+                    firstImage,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 160,
+                      color: const Color(0xFFF6F3F1),
+                      child: const Center(child: Icon(Icons.image_not_supported, color: AppColors.outlineVariant, size: 40)),
+                    ),
+                  ),
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: statusBg,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: statusColor.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              height: 80,
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF6F3F1),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: statusColor.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor),
                   ),
                 ),
               ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    design.title,
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                  child: Text(
-                    design.status.toUpperCase(),
-                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor),
-                  ),
-                ),
-              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Type: ${design.type} · Version ${design.version.toStringAsFixed(1)}',
-              style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            Row(
+
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (design.status == 'submitted' || design.status == 'in_progress') ...[
-                  Expanded(
-                    child: ElevatedButton(
+                Text(
+                  design.title,
+                  style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${design.type} · Version ${design.version.toStringAsFixed(1)}',
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
+                ),
+                const SizedBox(height: 16),
+                if (isPending) ...[
+                  // Approve button (primary, full width)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
                       onPressed: () => _approveDesign(design.id),
+                      icon: const Icon(Icons.check_circle_outline, size: 18, color: Colors.white),
+                      label: const Text('Approve Design'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.espresso,
+                        backgroundColor: const Color(0xFF2E7D32),
                         foregroundColor: Colors.white,
-                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
                       ),
-                      child: const Text('Approve'),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton(
+                  const SizedBox(height: 8),
+                  // Request Revision (secondary)
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
                       onPressed: () => _requestRevision(design.id),
-                      style: OutlinedButton.styleFrom(minimumSize: const Size(0, 36)),
-                      child: const Text('Request Revision'),
+                      icon: const Icon(Icons.edit_note, size: 18, color: AppColors.espresso),
+                      label: const Text('Request Revision'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.espresso,
+                        side: const BorderSide(color: AppColors.outlineVariant),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                   ),
-                ] else ...[
-                  Expanded(
+                ] else
+                  SizedBox(
+                    width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        final statusEnum = design.status == 'approved'
+                        final statusEnum = isApproved
                             ? ReviewItemStatus.approved
-                            : design.status == 'revision'
-                                ? ReviewItemStatus.revision
-                                : ReviewItemStatus.needReview;
+                            : ReviewItemStatus.revision;
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -648,16 +749,21 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                           ),
                         );
                       },
-                      icon: const Icon(Icons.remove_red_eye, size: 14),
-                      label: const Text('View Detail'),
-                      style: OutlinedButton.styleFrom(minimumSize: const Size(0, 36)),
+                      icon: const Icon(Icons.remove_red_eye, size: 18, color: AppColors.espresso),
+                      label: const Text('View Full Detail'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.espresso,
+                        side: const BorderSide(color: AppColors.outlineVariant),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                   ),
-                ]
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -793,58 +899,123 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     final isCompleted = _working?.status == 'completed';
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isCompleted
+              ? [const Color(0xFFE8F5E9), const Color(0xFFF1F8E9)]
+              : [const Color(0xFFFDF6EE), const Color(0xFFFFF3E0)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isCompleted ? const Color(0xFFA5D6A7) : AppColors.outlineVariant.withOpacity(0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Final Acceptance & Review',
-            style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.espresso),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isCompleted
-                ? 'Project completed & accepted. Thank you for building with CafeBuilder!'
-                : 'When all design and construction deliverables meet your expectations, click below to mark project completed and rate provider.',
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 16),
           Row(
             children: [
-              if (!isCompleted)
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _completeProject,
-                    icon: const Icon(Icons.verified, size: 16),
-                    label: const Text('Accept & Complete'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.espresso,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 44),
-                    ),
-                  ),
-                )
-              else ...[
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _showReviewDialog,
-                    icon: const Icon(Icons.star_rate, size: 16),
-                    label: const Text('Write Provider Review'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber.shade800,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 44),
-                    ),
-                  ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isCompleted ? const Color(0xFF2E7D32) : AppColors.espresso,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
+                child: Icon(
+                  isCompleted ? Icons.verified : Icons.handshake_outlined,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isCompleted ? 'Project Completed!' : 'Final Acceptance',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: isCompleted ? const Color(0xFF2E7D32) : AppColors.espresso,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isCompleted
+                          ? 'Congratulations! This project has been signed off.'
+                          : 'Ready to finalize? Review all deliverables first.',
+                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
+          const SizedBox(height: 20),
+          if (!isCompleted) ...[
+            Text(
+              'When all designs and construction milestones meet your expectations, tap below to complete the project and rate your provider.',
+              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _completeProject,
+                icon: const Icon(Icons.check_circle, size: 20, color: Colors.white),
+                label: const Text('Accept & Complete Project'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.espresso,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.coffee, color: AppColors.espresso, size: 32),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Your cafe project is now complete. Thank you for building with CafeBuilder!',
+                      style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _showReviewDialog,
+                icon: const Icon(Icons.star, size: 20, color: Colors.white),
+                label: const Text('Rate Your Provider'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF9A825),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

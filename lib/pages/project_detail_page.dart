@@ -13,6 +13,7 @@ import 'collaboration_workspace_page.dart';
 import '../services/contract_service.dart';
 import '../services/project_working_service.dart';
 import 'home_page.dart';
+import 'chat_thread_page.dart';
 
 class ProjectDetailPage extends StatefulWidget {
   final int projectId;
@@ -620,7 +621,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     );
   }
 
-  Future<void> _navigateToWorkspace(BuildContext context, String targetContractType) async {
+  Future<void> _navigateToWorkspace(BuildContext context, String targetContractType, {bool isChat = false}) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -650,24 +651,66 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       if (mounted) {
         Navigator.pop(context); // close dialog
         if (matchedWorking != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CollaborationWorkspacePage(projectWorkingId: matchedWorking!.id),
-            ),
-          );
+          if (isChat) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatThreadPage(
+                  conversationId: matchedWorking!.id,
+                  title: matchedWorking.providerDisplayName.isNotEmpty ? 'Chat with ${matchedWorking.providerDisplayName}' : 'Chat',
+                ),
+              ),
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CollaborationWorkspacePage(projectWorkingId: matchedWorking!.id),
+              ),
+            );
+          }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('No active engagement found for $targetContractType.')),
-          );
+          if (isChat) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ChatThreadPage(
+                  conversationId: 0,
+                  title: 'Chat',
+                ),
+              ),
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CollaborationWorkspacePage(projectWorkingId: 0),
+              ),
+            );
+          }
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // close dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        if (isChat) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ChatThreadPage(
+                conversationId: 0,
+                title: 'Chat',
+              ),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CollaborationWorkspacePage(projectWorkingId: 0),
+            ),
+          );
+        }
       }
     }
   }
@@ -707,7 +750,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 Icons.group_outlined, 
                 'Collab', 
                 onTap: () {
-                  _navigateToWorkspace(context, 'designer');
+                  _navigateToWorkspace(context, 'designer', isChat: true);
                 },
               ),
               const SizedBox(height: 12),

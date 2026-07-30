@@ -215,6 +215,33 @@ class ApiClient {
     );
   }
 
+  static Future<http.Response> authMultipart(
+    String path,
+    Map<String, String> body, {
+    List<String>? filePaths,
+    String fileField = 'files',
+  }) async {
+    return _retryRequest(() async {
+      final request = http.MultipartRequest('POST', _uri(path));
+      
+      final token = await getAccessToken();
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      request.fields.addAll(body);
+
+      if (filePaths != null && filePaths.isNotEmpty) {
+        for (var filePath in filePaths) {
+          request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
+        }
+      }
+
+      final streamedResponse = await request.send();
+      return await http.Response.fromStream(streamedResponse);
+    });
+  }
+
   // ── Response helpers ─────────────────────────────────────────────────────────
 
   static Map<String, dynamic> parseBody(http.Response response) {

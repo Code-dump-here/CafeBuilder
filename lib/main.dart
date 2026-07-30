@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'pages/splash_screen.dart';
 import 'pages/login_page.dart';
@@ -18,7 +19,18 @@ import 'pages/collaboration_workspace_page.dart';
 import 'widgets/page_navigator.dart';
 import 'services/api_client.dart';
 
+/// Bypass SSL certificate verification in debug builds.
+/// Remove or gate behind !kReleaseMode before publishing to production.
+class _DevHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (cert, host, port) => true;
+  }
+}
+
 void main() {
+  HttpOverrides.global = _DevHttpOverrides();
   runApp(const CafeBuilderApp());
 }
 
