@@ -44,6 +44,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
   String _visibility = 'Public'; // Public or Restricted
   String _expectedStart = 'Oct 2024';
   late String _budgetTier;
+  late DateTime _submissionDeadline;
 
   @override
   void initState() {
@@ -53,6 +54,42 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     double lowEstimate = widget.totalBudget * 0.9;
     double highEstimate = widget.totalBudget * 1.15;
     _budgetTier = '\$${(lowEstimate / 1000).toStringAsFixed(0)}k – \$${(highEstimate / 1000).toStringAsFixed(0)}k';
+    
+    final now = DateTime.now().add(const Duration(days: 30));
+    _submissionDeadline = DateTime(now.year, now.month, now.day, 23, 59, 59);
+  }
+
+  Future<void> _selectDeadline(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _submissionDeadline,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.espresso, // header background color
+              onPrimary: Colors.white, // header text color
+              onSurface: AppColors.espresso, // body text color
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _submissionDeadline = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          23,
+          59,
+          59,
+        );
+      });
+    }
   }
 
   Future<void> _onBroadcastToMarketplace() async {
@@ -82,7 +119,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
         serviceKind: mappedServiceKind,
         title: widget.cafeName,
         description: 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.\nLocation: ${widget.location}\nStyle: ${widget.style}\nBudget: $_budgetTier\nExpected Start: $_expectedStart',
-        submissionDeadline: DateTime.now().add(const Duration(days: 30)),
+        submissionDeadline: _submissionDeadline,
       );
       
       final post = await PostService.createPost(request);
@@ -517,6 +554,23 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () => _selectDeadline(context),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(color: const Color(0xFFF6F3F1), borderRadius: BorderRadius.circular(10)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Submission Deadline (Tap to change)', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.placeholder)),
+                        const SizedBox(height: 4),
+                        Text('${_submissionDeadline.day.toString().padLeft(2, '0')}/${_submissionDeadline.month.toString().padLeft(2, '0')}/${_submissionDeadline.year}', style: GoogleFonts.playfairDisplay(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),

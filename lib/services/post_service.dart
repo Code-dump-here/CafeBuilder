@@ -32,7 +32,7 @@ class CreatePostRequest {
         if (serviceKind != null) 'serviceKind': serviceKind,
         'title': title,
         'description': description,
-        if (submissionDeadline != null) 'submissionDeadline': submissionDeadline!.toIso8601String(),
+        if (submissionDeadline != null) 'submissionDeadline': submissionDeadline!.toIso8601String().split('T')[0],
         if (location != null) 'location': location,
         if (style != null) 'style': style,
         if (budgetTier != null) 'budgetTier': budgetTier,
@@ -61,7 +61,7 @@ class UpdatePostRequest {
         if (description != null) 'description': description,
         if (serviceKind != null) 'serviceKind': serviceKind,
         if (status != null) 'status': status,
-        if (submissionDeadline != null) 'submissionDeadline': submissionDeadline!.toIso8601String(),
+        if (submissionDeadline != null) 'submissionDeadline': submissionDeadline!.toIso8601String().split('T')[0],
       };
 }
 
