@@ -188,7 +188,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     if (confirm != true) return;
 
     try {
-      await ProjectWorkingService.updateProjectWorkingStatus(_activeWorkingId!, 'completed');
+      await ProjectWorkingService.completeEngagement(_activeWorkingId!);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Project marked as completed! You can now write a review.')),
@@ -199,7 +199,47 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to complete project: $e')),
+          SnackBar(
+            content: Text(e.toString()), // Show backend message directly
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _terminateEngagement() async {
+    if (_activeWorkingId == null) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Terminate Engagement'),
+        content: const Text('Are you sure you want to terminate this engagement? This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Terminate', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await ProjectWorkingService.terminateEngagement(_activeWorkingId!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Engagement terminated.')),
+        );
+        _loadWorkspaceData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())), // Show backend message directly
         );
       }
     }
@@ -962,22 +1002,41 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
             ),
             const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _completeProject,
-                icon: const Icon(Icons.check_circle, size: 20, color: Colors.white),
-                label: const Text('Accept & Complete Project'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.espresso,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 0,
+            if (_working?.status == 'accepted' && _working?.hasConfirmedContract == true)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _completeProject,
+                  icon: const Icon(Icons.check_circle, size: 20, color: Colors.white),
+                  label: Text(_working?.isAwaitingAcceptance == true ? 'Accept & Complete Project (Requested)' : 'Accept & Complete Project'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _working?.isAwaitingAcceptance == true ? Colors.green.shade700 : AppColors.espresso,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: _working?.isAwaitingAcceptance == true ? 4 : 0,
+                  ),
                 ),
               ),
-            ),
+            if (_working?.status == 'accepted') ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _terminateEngagement,
+                  icon: const Icon(Icons.cancel, size: 20, color: Colors.red),
+                  label: const Text('Terminate Engagement'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ],
           ] else ...[
             Container(
               padding: const EdgeInsets.all(16),

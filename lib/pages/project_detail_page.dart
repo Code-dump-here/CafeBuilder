@@ -233,6 +233,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                         ),
                         const SizedBox(height: 16),
                         _buildQuickActions(context),
+                        const SizedBox(height: 24),
+                        _buildProjectActions(project),
                         const SizedBox(height: 80),
                       ],
                     ),
@@ -788,6 +790,142 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _completeProject() async {
+    final engagements = _projectWorkings;
+    final conMo = engagements.where((e) => ["requested", "accepted"].contains(e.status)).toList();
+    final daNghiemThu = engagements.where((e) => e.status == "completed").toList();
+
+    if (conMo.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Còn ${conMo.length} hợp tác chưa đóng, hãy nghiệm thu hoặc huỷ trước.')),
+      );
+      return;
+    }
+
+    if (daNghiemThu.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cần ít nhất một hợp tác đã nghiệm thu để đóng dự án.')),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Complete Project'),
+        content: const Text('Are you sure you want to complete this project?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.espresso),
+            child: const Text('Complete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await ProjectService.completeProject(widget.projectId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Project completed successfully.')),
+        );
+        _loadProject();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())), // Backend handles message
+        );
+      }
+    }
+  }
+
+  Future<void> _cancelProject() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Project'),
+        content: const Text('Are you sure you want to cancel this project? This will terminate all active collaborations.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep Project')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Cancel Project', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await ProjectService.cancelProject(widget.projectId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Project cancelled successfully.')),
+        );
+        _loadProject();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
+  Widget _buildProjectActions(ProjectResponse project) {
+    final canCancel = ["briefed", "in_progress"].contains(project.status.toLowerCase());
+    final isCompleted = project.status.toLowerCase() == "completed";
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (project.status.toLowerCase() == 'in_progress') ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _completeProject,
+              icon: const Icon(Icons.verified, size: 20, color: Colors.white),
+              label: const Text('Mark Project as Completed'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.espresso,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (canCancel) ...[
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _cancelProject,
+              icon: const Icon(Icons.cancel, size: 20, color: Colors.red),
+              label: const Text('Cancel Project'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

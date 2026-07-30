@@ -87,4 +87,14 @@ class ProjectWorkingService {
     final body = ApiClient.parseBody(response);
     return ProjectWorkingResponse.fromJson(body);
   }
+
+  static Future<void> completeEngagement(int id) async {
+    final response = await ApiClient.authPost('/project-workings/$id/complete', {});
+    ApiClient.throwIfError(response);
+  }
+
+  static Future<void> terminateEngagement(int id) async {
+    final response = await ApiClient.authPost('/project-workings/$id/terminate', {});
+    ApiClient.throwIfError(response);
+  }
 }

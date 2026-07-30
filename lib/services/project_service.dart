@@ -44,4 +44,14 @@ class ProjectService {
     final response = await ApiClient.authDelete('/project-shop-owners/$id');
     ApiClient.throwIfError(response);
   }
+
+  static Future<void> completeProject(int id) async {
+    final response = await ApiClient.authPost('/project-shop-owners/$id/complete', {});
+    ApiClient.throwIfError(response);
+  }
+
+  static Future<void> cancelProject(int id) async {
+    final response = await ApiClient.authPost('/project-shop-owners/$id/cancel', {});
+    ApiClient.throwIfError(response);
+  }
 }

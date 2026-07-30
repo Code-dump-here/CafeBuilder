@@ -592,6 +592,10 @@ class ProjectWorkingResponse {
   final DateTime? startedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool hasConfirmedContract;
+  final DateTime? completionRequestedAt;
+  final String? completionRequestNote;
+  final bool isAwaitingAcceptance;
 
   ProjectWorkingResponse({
     required this.id,
@@ -606,6 +610,10 @@ class ProjectWorkingResponse {
     this.startedAt,
     required this.createdAt,
     required this.updatedAt,
+    this.hasConfirmedContract = false,
+    this.completionRequestedAt,
+    this.completionRequestNote,
+    this.isAwaitingAcceptance = false,
   });
 
   factory ProjectWorkingResponse.fromJson(Map<String, dynamic> json) => ProjectWorkingResponse(
@@ -621,6 +629,10 @@ class ProjectWorkingResponse {
         startedAt: json['startedAt'] != null ? DateTime.parse(json['startedAt']) : null,
         createdAt: DateTime.parse(json['createdAt']),
         updatedAt: DateTime.parse(json['updatedAt']),
+        hasConfirmedContract: json['hasConfirmedContract'] ?? false,
+        completionRequestedAt: json['completionRequestedAt'] != null ? DateTime.parse(json['completionRequestedAt']) : null,
+        completionRequestNote: json['completionRequestNote'],
+        isAwaitingAcceptance: json['isAwaitingAcceptance'] ?? false,
       );
 }
 
