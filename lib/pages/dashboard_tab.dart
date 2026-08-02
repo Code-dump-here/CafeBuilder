@@ -232,25 +232,14 @@ class _DashboardTabState extends State<DashboardTab> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.menu, color: AppColors.espresso, size: 28),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                'Design Cafe',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.espresso,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
+          Text(
+            'Design Cafe',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: AppColors.espresso,
+              letterSpacing: -0.5,
+            ),
           ),
           Container(
             width: 40,

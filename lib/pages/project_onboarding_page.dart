@@ -1,5 +1,6 @@
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../services/project_service.dart';
@@ -80,7 +81,6 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     'Industrial': 'https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&q=80&w=400',
     'Vintage': 'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?auto=format&fit=crop&q=80&w=400',
   };
-  final _addressCtrl = TextEditingController();
   final List<_FloorItem> _floors = [_FloorItem('Ground Floor')];
   double _ceilingHeight = 3.2;
   double _storefrontWidth = 8.0;
@@ -93,7 +93,6 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     _locationCtrl.dispose();
     _conceptNarrativeCtrl.dispose();
     _differentiatorsCtrl.dispose();
-    _addressCtrl.dispose();
     for (var f in _floors) {
       f.dispose();
     }
@@ -157,11 +156,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     String? errorMessage;
 
     // Resolve address – never send an empty string
-    final address = _addressCtrl.text.isNotEmpty
-        ? _addressCtrl.text
-        : _locationCtrl.text.isNotEmpty
-            ? _locationCtrl.text
-            : 'Vietnam';
+    final address = _locationCtrl.text.isNotEmpty
+        ? _locationCtrl.text
+        : 'Vietnam';
 
     try {
       // ── Step 1: Ensure shop owner profile ──────────────────────────────────
@@ -983,15 +980,19 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         _buildTextFieldLabel('Total Investment Budget (VND)'),
         TextField(
           keyboardType: TextInputType.number,
-          decoration: _buildInputDec('e.g., 1500000000'),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9,]')),
+            _ThousandsFormatter(),
+          ],
+          decoration: _buildInputDec('e.g., 1,500,000,000'),
           style: GoogleFonts.inter(color: AppColors.textPrimary),
           onChanged: (val) {
-            final parsed = double.tryParse(val);
+            final parsed = double.tryParse(val.replaceAll(',', ''));
             if (parsed != null) {
               setState(() => _totalBudget = parsed);
             }
           },
-          controller: TextEditingController()..text = _totalBudget.toStringAsFixed(0),
+          controller: TextEditingController()..text = _formatVND(_totalBudget),
         ),
         const SizedBox(height: 36),
         _buildTextFieldLabel('Budget Allocation'),
@@ -1613,13 +1614,6 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           ),
         ),
         const SizedBox(height: 24),
-        _buildTextFieldLabel('Address'),
-        TextField(
-          controller: _addressCtrl,
-          decoration: _buildInputDec('Enter site address...'),
-          style: GoogleFonts.inter(color: AppColors.textPrimary),
-        ),
-        const SizedBox(height: 20),
         _buildTextFieldLabel('Floor Measurements'),
         ..._floors.asMap().entries.map((entry) {
           int index = entry.key;
@@ -1887,7 +1881,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                     _currentStep == _totalSteps - 1 ? 'Generate Synthesis' : 'Continue',
                     style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(width: 8),
+                   const SizedBox(width: 8),
                   const Icon(Icons.arrow_forward, size: 16),
                 ],
               ],
@@ -1895,6 +1889,36 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ThousandsFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) return newValue;
+
+    final digitsOnly = newValue.text.replaceAll(',', '');
+    if (digitsOnly.isEmpty) {
+      return newValue.copyWith(
+        text: '',
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    }
+
+    if (double.tryParse(digitsOnly) == null) return oldValue;
+
+    final formatted = digitsOnly.replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
