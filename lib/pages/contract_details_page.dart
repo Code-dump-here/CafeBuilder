@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -450,7 +451,68 @@ class _OtpBottomSheet extends StatefulWidget {
 
 class _OtpBottomSheetState extends State<_OtpBottomSheet> {
   bool _isLoading = false;
+  bool _isResending = false;
   String? _error;
+
+  // Countdown timer — 3 minutes = 180 seconds
+  static const int _cooldownSeconds = 180;
+  int _secondsLeft = 0;
+  Timer? _countdownTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    setState(() => _secondsLeft = _cooldownSeconds);
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) { timer.cancel(); return; }
+      setState(() {
+        if (_secondsLeft > 0) {
+          _secondsLeft--;
+        } else {
+          timer.cancel();
+        }
+      });
+    });
+  }
+
+  String get _countdownText {
+    final m = (_secondsLeft ~/ 60).toString().padLeft(2, '0');
+    final s = (_secondsLeft % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  Future<void> _resendOtp() async {
+    setState(() { _isResending = true; _error = null; });
+    try {
+      await ContractService.sendOtp(widget.contractId);
+      if (mounted) {
+        _startCountdown();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('New OTP has been sent to your email.'),
+            backgroundColor: Color(0xFF4CAF50),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _isResending = false);
+    }
+  }
 
   Future<void> _confirm() async {
     final code = widget.otpController.text.trim();
@@ -482,6 +544,8 @@ class _OtpBottomSheetState extends State<_OtpBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final canResend = _secondsLeft == 0 && !_isResending;
+
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
@@ -561,7 +625,32 @@ class _OtpBottomSheetState extends State<_OtpBottomSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+
+            // Resend OTP row
+            Center(
+              child: _isResending
+                  ? const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.espresso),
+                    )
+                  : canResend
+                      ? TextButton.icon(
+                          onPressed: _resendOtp,
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: Text(
+                            'Resend OTP',
+                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                          style: TextButton.styleFrom(foregroundColor: AppColors.espresso),
+                        )
+                      : Text(
+                          'Resend OTP in $_countdownText',
+                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.placeholder),
+                        ),
+            ),
+
+            const SizedBox(height: 16),
             _isLoading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.espresso))
                 : ElevatedButton(
