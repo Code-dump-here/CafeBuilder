@@ -67,11 +67,11 @@ class ServicesTab extends StatelessWidget {
                 
                 const SizedBox(height: 24),
                 
-                // Card 2: Hire a Contractor
+                // Card 2: Hire a Constructor
                 _buildWhiteServiceCard(
                   imageUrl: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&q=80&w=800',
                   icon: Icons.construction_rounded,
-                  title: 'Hire a Contractor',
+                  title: 'Hire a Constructor',
                   desc: 'Professional construction team, ensuring progress and the most sophisticated finishing quality.',
                   actionText: 'VIEW PARTNERS',
                   onTap: () {

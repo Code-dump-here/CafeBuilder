@@ -715,6 +715,7 @@ class ContractResponse {
   final String? terms;
   final double agreedValue;
   final String? documentUrl;
+  final String? documentViewUrl;
   final DateTime? otpExpiresAt;
   final DateTime? confirmedAt;
   final int? confirmedBy;
@@ -730,6 +731,7 @@ class ContractResponse {
     this.terms,
     required this.agreedValue,
     this.documentUrl,
+    this.documentViewUrl,
     this.otpExpiresAt,
     this.confirmedAt,
     this.confirmedBy,
@@ -746,6 +748,7 @@ class ContractResponse {
         terms: json['terms'],
         agreedValue: (json['agreedValue'] as num?)?.toDouble() ?? 0.0,
         documentUrl: json['documentUrl'],
+        documentViewUrl: json['documentViewUrl'],
         otpExpiresAt: json['otpExpiresAt'] != null ? DateTime.parse(json['otpExpiresAt']) : null,
         confirmedAt: json['confirmedAt'] != null ? DateTime.parse(json['confirmedAt']) : null,
         confirmedBy: json['confirmedBy'],

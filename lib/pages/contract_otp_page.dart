@@ -3,8 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/contract_service.dart';
-import '../services/api_client.dart';
-import '../services/service_provider_service.dart'; // for ShopOwnerService
+
 
 class ContractOtpPage extends StatefulWidget {
   final ContractResponse contract;
@@ -30,14 +29,9 @@ class _ContractOtpPageState extends State<ContractOtpPage> {
 
     setState(() => _isLoading = true);
     try {
-      final accountId = await ApiClient.getAccountId();
-      if (accountId == null) {
-        throw Exception('User account ID not found. Please log in again.');
-      }
       await ContractService.confirmOtp(
         widget.contract.id,
         otpCode: code,
-        confirmedBy: accountId,
       );
 
       if (mounted) {

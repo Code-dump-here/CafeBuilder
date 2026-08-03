@@ -9,6 +9,7 @@ import 'design_packages_page.dart';
 import 'collaboration_page.dart';
 import 'proposals_page.dart';
 import 'contract_otp_page.dart';
+import 'contract_details_page.dart';
 import 'collaboration_workspace_page.dart';
 import '../services/contract_service.dart';
 import '../services/project_working_service.dart';
@@ -719,6 +720,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
   Widget _buildQuickActions(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Column(
@@ -740,6 +742,12 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     MaterialPageRoute(builder: (context) => const DesignPackagesPage()),
                   );
                 },
+              ),
+              const SizedBox(height: 12),
+              _buildActionCard(
+                Icons.description_outlined,
+                'Contract',
+                onTap: () => _checkContract(context),
               ),
             ],
           ),
@@ -768,6 +776,42 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         ),
       ],
     );
+  }
+
+  Future<void> _checkContract(BuildContext context) async {
+    if (_projectWorkings.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No project workings found for this project.')));
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
+    );
+
+    try {
+      final contracts = await ContractService.getContracts(projectWorkingId: _projectWorkings.first.id, pageSize: 1);
+      if (mounted) {
+        Navigator.pop(context); // close loading
+        if (contracts.items.isNotEmpty) {
+          final contract = contracts.items.first;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ContractDetailsPage(contract: contract),
+            ),
+          ).then((_) => _loadProject());
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No contracts found.')));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // close loading
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
   

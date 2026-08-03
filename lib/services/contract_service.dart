@@ -53,11 +53,9 @@ class ContractService {
   static Future<ContractResponse> confirmOtp(
     int id, {
     required String otpCode,
-    required int confirmedBy,
   }) async {
     final response = await ApiClient.authPost('/contracts/$id/confirm-otp', {
       'otpCode': otpCode,
-      'confirmedBy': confirmedBy,
     });
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
