@@ -463,10 +463,11 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                         // 1. Contracts Section
                         if (_contracts.isNotEmpty) ...[
                           for (final contract in _contracts) ...[
-                            if (contract.status == 'pending_otp')
-                              _buildContractOtpBanner(contract)
-                            else if (contract.status == 'confirmed')
-                              _buildContractConfirmedBanner(contract),
+                            if (contract.status == 'confirmed')
+                              _buildContractConfirmedBanner(contract)
+                            else if (contract.status == 'pending_otp' &&
+                                !_contracts.any((c) => c.status == 'confirmed'))
+                              _buildContractOtpBanner(contract),
                             const SizedBox(height: 12),
                           ],
                           const SizedBox(height: 8),
