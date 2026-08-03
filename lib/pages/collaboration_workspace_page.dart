@@ -64,34 +64,45 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
 
       _activeWorkingId = workingId;
 
-      final results = await Future.wait([
-        ProjectWorkingService.getProjectWorking(workingId),
-        ContractService.getContracts(projectWorkingId: workingId, pageSize: 50),
-        DesignService.getDesigns(projectWorkingId: workingId, pageSize: 50),
-        ConstructionService.getConstructionItems(projectWorkingId: workingId, pageSize: 50),
-      ]);
+      final workingRes = await ProjectWorkingService.getProjectWorking(workingId);
+      final projectId = workingRes.projectShopOwnerId;
 
-      final workingRes = results[0] as ProjectWorkingResponse;
-      final contractsRes = results[1] as PaginationResponse<ContractResponse>;
-      final designsRes = results[2] as PaginationResponse<DesignResponse>;
-      final itemsRes = results[3] as PaginationResponse<ConstructionItemResponse>;
+      // Fetch all workings for this project to aggregate everything
+      final workingsPage = await ProjectWorkingService.getProjectWorkings(projectShopOwnerId: projectId, pageSize: 50);
+      final allWorkingIds = workingsPage.items.map((w) => w.id).toList();
 
-      // Load tasks for construction items
-      List<ConstructionTaskResponse> tasks = [];
-      for (final item in itemsRes.items) {
-        try {
-          final tList = await ConstructionService.getTasks(constructionItemId: item.id);
-          tasks.addAll(tList.items);
-        } catch (_) {}
+      List<ContractResponse> allContracts = [];
+      List<DesignResponse> allDesigns = [];
+      List<ConstructionItemResponse> allItems = [];
+      List<ConstructionTaskResponse> allTasks = [];
+
+      for (int wId in allWorkingIds) {
+        final results = await Future.wait([
+          ContractService.getContracts(projectWorkingId: wId, pageSize: 50),
+          DesignService.getDesigns(projectWorkingId: wId, pageSize: 50),
+          ConstructionService.getConstructionItems(projectWorkingId: wId, pageSize: 50),
+        ]);
+        
+        allContracts.addAll((results[0] as PaginationResponse<ContractResponse>).items);
+        allDesigns.addAll((results[1] as PaginationResponse<DesignResponse>).items);
+        final itemsRes = (results[2] as PaginationResponse<ConstructionItemResponse>);
+        allItems.addAll(itemsRes.items);
+
+        for (final item in itemsRes.items) {
+          try {
+            final tList = await ConstructionService.getTasks(constructionItemId: item.id);
+            allTasks.addAll(tList.items);
+          } catch (_) {}
+        }
       }
 
       if (mounted) {
         setState(() {
           _working = workingRes;
-          _contracts = contractsRes.items;
-          _designs = designsRes.items;
-          _constructionItems = itemsRes.items;
-          _allTasks = tasks;
+          _contracts = allContracts;
+          _designs = allDesigns;
+          _constructionItems = allItems;
+          _allTasks = allTasks;
           _loading = false;
         });
       }
@@ -910,15 +921,19 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                     IconButton(
                       icon: const Icon(Icons.photo, size: 16, color: AppColors.espresso),
                       onPressed: () {
-                        final imgUrl = task.imageUrl;
+                        String? imgUrl = task.imageUrl;
                         if (imgUrl != null) {
+                          if (!imgUrl.startsWith('http')) {
+                            if (imgUrl.startsWith('/')) imgUrl = imgUrl.substring(1);
+                            imgUrl = 'https://storage.googleapis.com/smartcoffeebuilder_bucket/$imgUrl';
+                          }
                           showDialog(
                             context: context,
                             builder: (ctx) => Dialog(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Image.network(imgUrl, fit: BoxFit.cover),
+                                  Image.network(imgUrl!, fit: BoxFit.cover),
                                   TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
                                 ],
                               ),
