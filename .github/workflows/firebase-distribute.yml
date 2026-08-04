@@ -39,6 +39,12 @@ jobs:
 
       # google-services.json is committed to the repo, so no secret is needed
       # to inject it here. The google-services Gradle plugin reads it at build.
+
+      # Remove any stale auto-generated plugin registrant that may exist from
+      # a previous Flutter version; Flutter will regenerate the correct file.
+      - name: Remove stale GeneratedPluginRegistrant
+        run: rm -f android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+
       - name: Build release APK
         run: flutter build apk --release
 
