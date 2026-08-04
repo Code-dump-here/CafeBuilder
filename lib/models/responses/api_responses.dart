@@ -1064,3 +1064,42 @@ class PostResponse {
         updatedAt: DateTime.parse(json['updatedAt']),
       );
 }
+
+class NotificationResponse {
+  final int id;
+  final int accountId;
+  final String type;
+  final String title;
+  final String content;
+  final String? referenceType;
+  final int? referenceId;
+  bool isRead;
+  final DateTime? emailSentAt;
+  final DateTime createdAt;
+
+  NotificationResponse({
+    required this.id,
+    required this.accountId,
+    required this.type,
+    required this.title,
+    required this.content,
+    this.referenceType,
+    this.referenceId,
+    required this.isRead,
+    this.emailSentAt,
+    required this.createdAt,
+  });
+
+  factory NotificationResponse.fromJson(Map<String, dynamic> json) => NotificationResponse(
+        id: json['id'],
+        accountId: json['accountId'],
+        type: json['type'] ?? '',
+        title: json['title'] ?? '',
+        content: json['content'] ?? '',
+        referenceType: json['referenceType'],
+        referenceId: json['referenceId'],
+        isRead: json['isRead'] ?? false,
+        emailSentAt: json['emailSentAt'] != null ? DateTime.parse(json['emailSentAt']) : null,
+        createdAt: DateTime.parse(json['createdAt']),
+      );
+}

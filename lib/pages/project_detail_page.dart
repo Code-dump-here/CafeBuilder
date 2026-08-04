@@ -5,7 +5,7 @@ import '../services/project_service.dart';
 import '../services/api_client.dart';
 import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
-import 'design_packages_page.dart';
+import 'designer_workspace_page.dart';
 import 'collaboration_page.dart';
 import 'proposals_page.dart';
 import 'contract_otp_page.dart';
@@ -739,7 +739,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const DesignPackagesPage()),
+                    MaterialPageRoute(builder: (context) => const DesignerWorkspacePage(projectWorkingId: 0)),
                   );
                 },
               ),
@@ -791,19 +791,56 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     );
 
     try {
-      final contracts = await ContractService.getContracts(projectWorkingId: _projectWorkings.first.id, pageSize: 1);
+      final allContracts = <ContractResponse>[];
+      for (final working in _projectWorkings) {
+        final res = await ContractService.getContracts(projectWorkingId: working.id, pageSize: 1);
+        if (res.items.isNotEmpty) {
+          allContracts.addAll(res.items);
+        }
+      }
+
       if (mounted) {
         Navigator.pop(context); // close loading
-        if (contracts.items.isNotEmpty) {
-          final contract = contracts.items.first;
+        if (allContracts.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No contracts found.')));
+        } else if (allContracts.length == 1) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ContractDetailsPage(contract: contract),
+              builder: (context) => ContractDetailsPage(contract: allContracts.first),
             ),
           ).then((_) => _loadProject());
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No contracts found.')));
+          showModalBottomSheet(
+            context: context,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            builder: (ctx) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    'Select Contract',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ),
+                ...allContracts.map((c) => ListTile(
+                  leading: const Icon(Icons.description_outlined, color: AppColors.espresso),
+                  title: Text(c.title.isNotEmpty ? c.title : 'Contract #${c.id}'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ContractDetailsPage(contract: c)),
+                    ).then((_) => _loadProject());
+                  },
+                )),
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
         }
       }
     } catch (e) {
@@ -859,14 +896,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Complete Project'),
-        content: const Text('Are you sure you want to complete this project?'),
+        title: const Text('Đóng dự án'),
+        content: const Text('Bạn có chắc chắn muốn đóng dự án này?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Không')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.espresso),
-            child: const Text('Complete', style: TextStyle(color: Colors.white)),
+            child: const Text('Đóng dự án', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -895,14 +932,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cancel Project'),
-        content: const Text('Are you sure you want to cancel this project? This will terminate all active collaborations.'),
+        title: const Text('Huỷ dự án'),
+        content: const Text('Bạn có chắc chắn muốn huỷ dự án này? Thao tác này sẽ huỷ tất cả hợp tác đang mở.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep Project')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Không')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Cancel Project', style: TextStyle(color: Colors.white)),
+            child: const Text('Huỷ dự án', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -940,7 +977,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             child: ElevatedButton.icon(
               onPressed: _completeProject,
               icon: const Icon(Icons.verified, size: 20, color: Colors.white),
-              label: const Text('Mark Project as Completed'),
+              label: const Text('Đóng dự án'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.espresso,
                 foregroundColor: Colors.white,
@@ -958,7 +995,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             child: OutlinedButton.icon(
               onPressed: _cancelProject,
               icon: const Icon(Icons.cancel, size: 20, color: Colors.red),
-              label: const Text('Cancel Project'),
+              label: const Text('Huỷ dự án'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.red,
                 side: const BorderSide(color: Colors.red),

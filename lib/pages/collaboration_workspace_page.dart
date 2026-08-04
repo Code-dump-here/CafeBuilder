@@ -183,14 +183,14 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Accept & Finalize Project'),
-        content: const Text('Are you sure you want to mark this project engagement as completed?'),
+        title: const Text('Nghiệm thu hợp tác'),
+        content: const Text('Bạn có chắc chắn muốn nghiệm thu và kết thúc hợp tác với nhà cung cấp này không?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.espresso),
-            child: const Text('Confirm Acceptance', style: TextStyle(color: Colors.white)),
+            child: const Text('Nghiệm thu', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -224,14 +224,14 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Terminate Engagement'),
-        content: const Text('Are you sure you want to terminate this engagement? This action cannot be undone.'),
+        title: const Text('Huỷ ngang hợp tác'),
+        content: const Text('Bạn có chắc chắn muốn huỷ ngang hợp tác này? Hành động này không thể hoàn tác.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Không')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Terminate', style: TextStyle(color: Colors.white)),
+            child: const Text('Huỷ hợp tác', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1024,7 +1024,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                 child: ElevatedButton.icon(
                   onPressed: _completeProject,
                   icon: const Icon(Icons.check_circle, size: 20, color: Colors.white),
-                  label: Text(_working?.isAwaitingAcceptance == true ? 'Accept & Complete Project (Requested)' : 'Accept & Complete Project'),
+                  label: Text(_working?.isAwaitingAcceptance == true ? 'Nghiệm thu (Đang chờ)' : 'Nghiệm thu'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _working?.isAwaitingAcceptance == true ? Colors.green.shade700 : AppColors.espresso,
                     foregroundColor: Colors.white,
@@ -1042,7 +1042,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                 child: OutlinedButton.icon(
                   onPressed: _terminateEngagement,
                   icon: const Icon(Icons.cancel, size: 20, color: Colors.red),
-                  label: const Text('Terminate Engagement'),
+                  label: const Text('Huỷ ngang'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),

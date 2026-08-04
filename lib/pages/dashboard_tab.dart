@@ -7,6 +7,7 @@ import '../services/project_working_service.dart';
 import '../services/design_service.dart';
 import '../services/api_client.dart';
 import '../models/responses/api_responses.dart';
+import '../services/notification_service.dart';
 import 'ai_advice_page.dart';
 import 'project_detail_page.dart';
 import 'project_onboarding_page.dart';
@@ -23,6 +24,7 @@ class _DashboardTabState extends State<DashboardTab> {
   ProjectResponse? _latestProject;
   List<DesignResponse> _recentDesigns = [];
   bool _loading = true;
+  int _unreadCount = 0;
 
   @override
   void initState() {
@@ -51,11 +53,20 @@ class _DashboardTabState extends State<DashboardTab> {
         designs = await _loadRecentDesigns(latest.id);
       }
 
+      int unread = 0;
+      final accountId = await ApiClient.getAccountId();
+      if (accountId != null) {
+        try {
+          unread = await NotificationService.getUnreadCount(accountId);
+        } catch (_) {}
+      }
+
       if (mounted) {
         setState(() {
           _shopOwner = shopOwner;
           _latestProject = latest;
           _recentDesigns = designs;
+          _unreadCount = unread;
           _loading = false;
         });
       }
@@ -241,17 +252,23 @@ class _DashboardTabState extends State<DashboardTab> {
               letterSpacing: -0.5,
             ),
           ),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.primaryFixed, width: 2),
-              image: const DecorationImage(
-                image: NetworkImage('https://cdn3.iconfinder.com/data/icons/avatars-flat/33/man_5-512.png'),
-                fit: BoxFit.cover,
+          Row(
+            children: [
+              _buildNotificationBell(),
+              const SizedBox(width: 16),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primaryFixed, width: 2),
+                  image: const DecorationImage(
+                    image: NetworkImage('https://cdn3.iconfinder.com/data/icons/avatars-flat/33/man_5-512.png'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
@@ -930,6 +947,184 @@ class _DashboardTabState extends State<DashboardTab> {
             ),
           ),
           const Icon(Icons.more_vert, color: AppColors.outline, size: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationBell() {
+    return GestureDetector(
+      onTap: _showNotificationsSheet,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.notifications_none_rounded, color: AppColors.espresso, size: 28),
+          if (_unreadCount > 0)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.redAccent,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  _unreadCount > 9 ? '9+' : '$_unreadCount',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showNotificationsSheet() async {
+    final accountId = await ApiClient.getAccountId();
+    if (accountId == null) return;
+
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _NotificationsSheet(
+        accountId: accountId,
+        onNotificationRead: () {
+          if (mounted) {
+            setState(() {
+              if (_unreadCount > 0) _unreadCount--;
+            });
+          }
+        },
+      ),
+    );
+  }
+}
+
+class _NotificationsSheet extends StatefulWidget {
+  final int accountId;
+  final VoidCallback onNotificationRead;
+  const _NotificationsSheet({required this.accountId, required this.onNotificationRead});
+
+  @override
+  State<_NotificationsSheet> createState() => _NotificationsSheetState();
+}
+
+class _NotificationsSheetState extends State<_NotificationsSheet> {
+  List<NotificationResponse> _notifications = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    try {
+      final res = await NotificationService.getNotifications(widget.accountId);
+      if (mounted) {
+        setState(() {
+          _notifications = res.items;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5))),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Notifications',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.espresso,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _notifications.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No notifications',
+                          style: GoogleFonts.inter(color: AppColors.textSecondary),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _notifications.length,
+                        itemBuilder: (context, index) {
+                          final noti = _notifications[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: noti.isRead ? Colors.grey.shade200 : AppColors.primaryFixed,
+                              child: Icon(
+                                Icons.notifications,
+                                color: noti.isRead ? Colors.grey : AppColors.espresso,
+                                size: 18,
+                              ),
+                            ),
+                            title: Text(
+                              noti.title,
+                              style: GoogleFonts.inter(
+                                fontWeight: noti.isRead ? FontWeight.normal : FontWeight.bold,
+                                fontSize: 14,
+                                color: AppColors.espresso,
+                              ),
+                            ),
+                            subtitle: Text(
+                              noti.content,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                            onTap: () async {
+                              if (!noti.isRead) {
+                                setState(() {
+                                  noti.isRead = true;
+                                });
+                                widget.onNotificationRead();
+                                try {
+                                  await NotificationService.markAsRead(noti.id);
+                                } catch (_) {}
+                              }
+                            },
+                          );
+                        },
+                      ),
+          ),
         ],
       ),
     );

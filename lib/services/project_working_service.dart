@@ -97,4 +97,13 @@ class ProjectWorkingService {
     final response = await ApiClient.authPost('/project-workings/$id/terminate', {});
     ApiClient.throwIfError(response);
   }
+
+  static Future<ProjectWorkingResponse> requestCompletion(int id, {String? note}) async {
+    final response = await ApiClient.authPost('/project-workings/$id/request-completion', {
+      if (note != null && note.isNotEmpty) 'note': note,
+    });
+    ApiClient.throwIfError(response);
+    final body = ApiClient.parseBody(response);
+    return ProjectWorkingResponse.fromJson(body);
+  }
 }
