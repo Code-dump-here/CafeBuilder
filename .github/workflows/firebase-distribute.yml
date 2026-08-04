@@ -78,7 +78,7 @@ jobs:
         run: flutter pub get
 
       - name: Build web (release)
-        run: flutter build web --web-renderer html --release
+        run: flutter build web --release
 
       # Deploy build/web to Firebase Hosting via the Firebase CLI. We pin
       # firebase-tools to a major that still accepts FIREBASE_TOKEN, since
