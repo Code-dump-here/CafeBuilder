@@ -15,6 +15,21 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+
+    // Some plugins (e.g. file_picker) apply their own, older Kotlin Gradle
+    // Plugin instead of using Flutter's built-in Kotlin support. Loading two
+    // different KGP versions in the same build breaks Java/Kotlin interop
+    // across modules ("cannot find symbol" for classes that do exist) —
+    // force every module to resolve the same KGP version as the app.
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "org.jetbrains.kotlin.android" ||
+                requested.id.id == "org.jetbrains.kotlin.jvm"
+            ) {
+                useVersion("2.3.20")
+            }
+        }
+    }
 }
 
 plugins {
