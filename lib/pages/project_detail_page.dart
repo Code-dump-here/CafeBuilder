@@ -13,7 +13,7 @@ import 'contract_details_page.dart';
 import 'collaboration_workspace_page.dart';
 import '../services/contract_service.dart';
 import '../services/project_working_service.dart';
-import 'dashboard_tab.dart' show NotificationsSheet;
+import '../widgets/notifications_sheet.dart';
 import 'home_page.dart';
 import 'chat_thread_page.dart';
 

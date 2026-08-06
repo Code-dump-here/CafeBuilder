@@ -45,7 +45,6 @@ class _ProfileTabState extends State<ProfileTab> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          _buildHeader(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -63,46 +62,6 @@ class _ProfileTabState extends State<ProfileTab> {
                 const SizedBox(height: 100), // Bottom nav space
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: const DecorationImage(
-                    image: NetworkImage('https://cdn3.iconfinder.com/data/icons/avatars-flat/33/man_5-512.png'),
-                    fit: BoxFit.cover,
-                  ),
-                  border: Border.all(color: AppColors.primaryFixed, width: 2),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Design Cafe',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
-            onPressed: () {},
           ),
         ],
       ),

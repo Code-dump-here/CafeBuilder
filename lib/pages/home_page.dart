@@ -8,6 +8,7 @@ import 'ai_advice_page.dart';
 import 'services_tab.dart';
 import 'marketplace_page.dart';
 import '../models/marketplace_state.dart';
+import '../widgets/top_nav.dart';
 
 class HomePage extends StatefulWidget {
   final int? initialIndex;
@@ -43,7 +44,11 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      // Persistent top nav — the top-level counterpart to bottomNavigationBar
+      // below. Same on every tab instead of each tab building its own header.
+      appBar: TopNav(onProfileTap: () => setState(() => _currentIndex = 4)),
       body: SafeArea(
+        top: false,
         child: IndexedStack(
           index: _currentIndex,
           children: const [

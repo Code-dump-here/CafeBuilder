@@ -67,54 +67,10 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTopAppBar(),
           _buildHeader(),
           _buildCategoryScroll(),
           _buildMasonryGrid(),
           const SizedBox(height: 100), // Pushing content above bottom nav
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopAppBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.menu, color: AppColors.primary, size: 28),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                'Design Cafe',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.primaryFixed, width: 2),
-              image: const DecorationImage(
-                image: NetworkImage('https://cdn3.iconfinder.com/data/icons/avatars-flat/33/man_5-512.png'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
         ],
       ),
     );

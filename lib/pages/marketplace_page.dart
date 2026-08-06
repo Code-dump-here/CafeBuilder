@@ -90,7 +90,10 @@ class _MarketplacePageState extends State<MarketplacePage> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
+            // Only needed when pushed standalone (with a back button) — as a
+            // bottom-nav tab, HomePage's persistent TopNav already covers
+            // title/notifications, so skip this to avoid a duplicate header.
+            if (widget.showBackButton) _buildHeader(),
             _buildSearchBar(),
             Expanded(
               child: items.isEmpty
