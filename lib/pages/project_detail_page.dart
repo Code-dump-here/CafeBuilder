@@ -673,47 +673,17 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             );
           }
         } else {
-          if (isChat) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ChatThreadPage(
-                  conversationId: 0,
-                  title: 'Chat',
-                ),
-              ),
-            );
-          } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CollaborationWorkspacePage(projectWorkingId: 0),
-              ),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No active collaboration found for this project yet.')),
+          );
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // close dialog
-        if (isChat) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ChatThreadPage(
-                conversationId: 0,
-                title: 'Chat',
-              ),
-            ),
-          );
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CollaborationWorkspacePage(projectWorkingId: 0),
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open workspace: $e')),
+        );
       }
     }
   }
