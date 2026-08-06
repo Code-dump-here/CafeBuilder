@@ -11,6 +11,7 @@ import '../services/notification_service.dart';
 import 'ai_advice_page.dart';
 import 'project_detail_page.dart';
 import 'project_onboarding_page.dart';
+import 'profile_tab.dart';
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});
@@ -256,15 +257,23 @@ class _DashboardTabState extends State<DashboardTab> {
             children: [
               _buildNotificationBell(),
               const SizedBox(width: 16),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primaryFixed, width: 2),
-                  image: const DecorationImage(
-                    image: NetworkImage('https://cdn3.iconfinder.com/data/icons/avatars-flat/33/man_5-512.png'),
-                    fit: BoxFit.cover,
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfileTab()),
+                  );
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primaryFixed, width: 2),
+                    image: const DecorationImage(
+                      image: NetworkImage('https://cdn3.iconfinder.com/data/icons/avatars-flat/33/man_5-512.png'),
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
@@ -993,7 +1002,7 @@ class _DashboardTabState extends State<DashboardTab> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _NotificationsSheet(
+      builder: (context) => NotificationsSheet(
         accountId: accountId,
         onNotificationRead: () {
           if (mounted) {
@@ -1007,16 +1016,16 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 }
 
-class _NotificationsSheet extends StatefulWidget {
+class NotificationsSheet extends StatefulWidget {
   final int accountId;
   final VoidCallback onNotificationRead;
-  const _NotificationsSheet({required this.accountId, required this.onNotificationRead});
+  const NotificationsSheet({required this.accountId, required this.onNotificationRead});
 
   @override
-  State<_NotificationsSheet> createState() => _NotificationsSheetState();
+  State<NotificationsSheet> createState() => NotificationsSheetState();
 }
 
-class _NotificationsSheetState extends State<_NotificationsSheet> {
+class NotificationsSheetState extends State<NotificationsSheet> {
   List<NotificationResponse> _notifications = [];
   bool _loading = true;
 

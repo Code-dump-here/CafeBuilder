@@ -10,6 +10,7 @@ import '../models/marketplace_state.dart';
 import 'project_detail_page.dart';
 import 'marketplace_page.dart';
 import 'project_success_page.dart';
+import 'project_onboarding_page.dart';
 
 class MyProjectsPage extends StatefulWidget {
   const MyProjectsPage({super.key});
@@ -295,10 +296,22 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
               else if (filtered.isEmpty)
                 _buildMessageState(
                   icon: Icons.folder_open_outlined,
-                  title: _tabController.index == 1 ? 'No completed projects' : 'No active projects',
+                  title: _projects.isEmpty
+                      ? 'Start your first project'
+                      : (_tabController.index == 1 ? 'No completed projects' : 'No active projects'),
                   subtitle: _projects.isEmpty
-                      ? 'Create a project from onboarding to see it here.'
+                      ? 'Set up your café details and we\'ll help you find a designer or constructor.'
                       : 'Try another tab or clear your search.',
+                  actionLabel: _projects.isEmpty ? 'Create a project' : null,
+                  onAction: _projects.isEmpty
+                      ? () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ProjectOnboardingPage()),
+                          );
+                          if (mounted) _loadProjects();
+                        }
+                      : null,
                 )
               else ...[
                 if (focus != null) ...[

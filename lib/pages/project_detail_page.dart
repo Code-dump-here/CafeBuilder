@@ -13,6 +13,7 @@ import 'contract_details_page.dart';
 import 'collaboration_workspace_page.dart';
 import '../services/contract_service.dart';
 import '../services/project_working_service.dart';
+import 'dashboard_tab.dart' show NotificationsSheet;
 import 'home_page.dart';
 import 'chat_thread_page.dart';
 
@@ -36,6 +37,20 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   void initState() {
     super.initState();
     _loadProject();
+  }
+
+  void _showNotifications() async {
+    final accountId = await ApiClient.getAccountId();
+    if (accountId == null || !mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => NotificationsSheet(
+        accountId: accountId,
+        onNotificationRead: () {},
+      ),
+    );
   }
 
   Future<void> _loadProject() async {
@@ -137,7 +152,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none_rounded, color: AppColors.espresso),
-            onPressed: () {},
+            onPressed: _showNotifications,
           ),
         ],
       ),
