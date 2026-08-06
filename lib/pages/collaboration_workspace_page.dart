@@ -9,6 +9,8 @@ import '../services/construction_service.dart';
 import '../services/review_service.dart';
 import 'contract_otp_page.dart';
 import 'file_review_detail_page.dart';
+import 'design_deliverables_detail_page.dart';
+import 'construction_progress_detail_page.dart';
 
 class CollaborationWorkspacePage extends StatefulWidget {
   final int? projectWorkingId;
@@ -614,10 +616,29 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                 'Design Deliverables',
                 style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.espresso),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(6)),
-                child: Text('${_designs.length} Items', style: GoogleFonts.inter(fontSize: 11, color: Colors.blue.shade800, fontWeight: FontWeight.bold)),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DesignDeliverablesDetailPage(
+                        designs: _designs,
+                        onUpdated: _loadWorkspaceData,
+                      ),
+                    ),
+                  ).then((_) => _loadWorkspaceData());
+                },
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(6)),
+                      child: Text('${_designs.length} Items', style: GoogleFonts.inter(fontSize: 11, color: Colors.blue.shade800, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.chevron_right, size: 18, color: AppColors.placeholder),
+                  ],
+                ),
               ),
             ],
           ),
@@ -628,7 +649,42 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               child: Text('No design deliverables uploaded by designer yet.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder)),
             )
           else
-            ..._designs.map((design) => _buildDesignCard(design)),
+            ..._designs.take(2).map((design) => _buildDesignCard(design)),
+          if (_designs.length > 2) ...[  
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DesignDeliverablesDetailPage(
+                      designs: _designs,
+                      onUpdated: _loadWorkspaceData,
+                    ),
+                  ),
+                ).then((_) => _loadWorkspaceData());
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0EBE6),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'See all ${_designs.length} designs',
+                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward, size: 14, color: AppColors.espresso),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -838,10 +894,29 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                 'Construction Progress',
                 style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.espresso),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(6)),
-                child: Text('${_constructionItems.length} Milestones', style: GoogleFonts.inter(fontSize: 11, color: Colors.green.shade800, fontWeight: FontWeight.bold)),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ConstructionProgressDetailPage(
+                        items: _constructionItems,
+                        allTasks: _allTasks,
+                      ),
+                    ),
+                  );
+                },
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(6)),
+                      child: Text('${_constructionItems.length} Milestones', style: GoogleFonts.inter(fontSize: 11, color: Colors.green.shade800, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.chevron_right, size: 18, color: AppColors.placeholder),
+                  ],
+                ),
               ),
             ],
           ),
@@ -852,7 +927,42 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               child: Text('No construction milestones created by constructor yet.', style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder)),
             )
           else
-            ..._constructionItems.map((item) => _buildConstructionItemCard(item)),
+            ..._constructionItems.take(2).map((item) => _buildConstructionItemCard(item)),
+          if (_constructionItems.length > 2) ...[  
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ConstructionProgressDetailPage(
+                      items: _constructionItems,
+                      allTasks: _allTasks,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0EBE6),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'See all ${_constructionItems.length} milestones',
+                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward, size: 14, color: AppColors.espresso),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
