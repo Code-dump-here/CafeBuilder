@@ -6,9 +6,7 @@ import '../services/post_service.dart';
 import '../services/api_client.dart';
 import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
-import '../models/marketplace_state.dart';
 import 'project_detail_page.dart';
-import 'marketplace_page.dart';
 import 'project_success_page.dart';
 import 'project_onboarding_page.dart';
 
@@ -203,23 +201,6 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
             color: AppColors.espresso,
           ),
         ),
-        actions: [
-          if (!MarketplaceState.isServiceProvider)
-            TextButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => MarketplacePage(showBackButton: true)),
-                );
-              },
-              icon: const Icon(Icons.store_mall_directory_outlined, color: AppColors.espresso, size: 18),
-              label: Text(
-                'Marketplace',
-                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
-              ),
-            ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: RefreshIndicator(
         color: AppColors.espresso,

@@ -17,6 +17,10 @@ import '../widgets/notifications_sheet.dart';
 import 'home_page.dart';
 import 'chat_thread_page.dart';
 import '../services/chat_service.dart';
+import '../services/post_service.dart';
+import 'edit_project_page.dart';
+import 'find_designers_page.dart';
+import 'find_constructors_page.dart';
 
 class ProjectDetailPage extends StatefulWidget {
   final int projectId;
@@ -151,6 +155,17 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         ),
         centerTitle: true,
         actions: [
+          if (project != null)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: AppColors.espresso),
+              onPressed: () async {
+                final updated = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => EditProjectPage(project: project)),
+                );
+                if (updated != null) _loadProject();
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.notifications_none_rounded, color: AppColors.espresso),
             onPressed: _showNotifications,
@@ -611,16 +626,309 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 ),
               );
             }),
-          const SizedBox(height: 8),
-          Center(
-            child: TextButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.add_circle_outline, size: 14, color: AppColors.espresso),
-              label: Text('Invite Stakeholder', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+          if (_project != null && _project!.openPosts.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text('Recruiting', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: AppColors.outline)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _project!.openPosts.map((post) {
+                final label = post.serviceKind == 'both'
+                    ? 'Designer + Constructor'
+                    : (post.serviceKind.isNotEmpty ? (post.serviceKind[0].toUpperCase() + post.serviceKind.substring(1)) : 'Provider');
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryFixed.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '$label · ${post.status}',
+                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.espresso),
+                  ),
+                );
+              }).toList(),
             ),
-          ),
+          ],
+          const SizedBox(height: 8),
+          if (_designTaken && _constructionTaken)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  'Team complete — a designer and a constructor are on this project.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary),
+                ),
+              ),
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton.icon(
+                  onPressed: _showRecruitProviderSheet,
+                  icon: const Icon(Icons.add_circle_outline, size: 14, color: AppColors.espresso),
+                  label: Text('Post Opening', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                ),
+                TextButton.icon(
+                  onPressed: _browseProvidersForProject,
+                  icon: const Icon(Icons.person_search_outlined, size: 14, color: AppColors.espresso),
+                  label: Text('Find Provider', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                ),
+              ],
+            ),
         ],
       ),
+    );
+  }
+
+  /// A project holds one designer slot and one constructor slot. A slot is
+  /// taken once a provider is actually on the project — a pending invite
+  /// ('requested') doesn't hold one, and a rejected/terminated engagement
+  /// releases it. A 'both' engagement is one provider filling both slots.
+  static const _engagedStatuses = {'accepted', 'completed'};
+
+  bool _roleTaken(String role) {
+    return _projectWorkings.any((pw) {
+      if (!_engagedStatuses.contains(pw.status.toLowerCase())) return false;
+      final type = pw.contractType.toLowerCase();
+      return type == role || type == 'both';
+    });
+  }
+
+  bool get _designTaken => _roleTaken('design');
+  bool get _constructionTaken => _roleTaken('construction');
+
+  /// Browse providers with the project already known. Only roles the project
+  /// still has an open slot for are offered.
+  void _browseProvidersForProject() {
+    final project = _project;
+    if (project == null) return;
+
+    final needsDesign = !_designTaken;
+    final needsConstruction = !_constructionTaken;
+
+    if (!needsDesign && !needsConstruction) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This project already has a designer and a constructor.')),
+      );
+      return;
+    }
+
+    // With only one slot left, pin the engagement to that role so a provider
+    // who can do both doesn't silently claim the slot that's already filled.
+    final onlyOneSlotLeft = needsDesign != needsConstruction;
+
+    void open(bool constructor) {
+      final forcedType = onlyOneSlotLeft ? (constructor ? 'construction' : 'design') : null;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => constructor
+              ? FindConstructorsPage(
+                  contextProjectId: project.id,
+                  contextProjectName: project.name,
+                  contextContractType: forcedType,
+                )
+              : FindDesignersPage(
+                  contextProjectId: project.id,
+                  contextProjectName: project.name,
+                  contextContractType: forcedType,
+                ),
+        ),
+      ).then((_) => _loadProject());
+    }
+
+    if (needsDesign && !needsConstruction) return open(false);
+    if (needsConstruction && !needsDesign) return open(true);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 20),
+            Text(
+              'Who are you looking for?',
+              style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.espresso),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.architecture_rounded, color: AppColors.espresso),
+              title: Text('Designers', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.espresso)),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                open(false);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.handyman_outlined, color: AppColors.espresso),
+              title: Text('Constructors', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.espresso)),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                open(true);
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showRecruitProviderSheet() {
+    if (_project == null) return;
+
+    final designOpen = !_designTaken;
+    final constructionOpen = !_constructionTaken;
+    // 'both' is a single provider covering both roles — only offer it while
+    // neither slot is taken.
+    final bothOpen = designOpen && constructionOpen;
+
+    if (!designOpen && !constructionOpen) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This project already has a designer and a constructor.')),
+      );
+      return;
+    }
+
+    String selectedKind = designOpen ? 'design' : 'construction';
+    final descriptionController = TextEditingController(
+      text: 'Looking for a provider to work on ${_project!.name}.',
+    );
+    bool submitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            Widget kindOption(String value, String label) {
+              final selected = selectedKind == value;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setSheetState(() => selectedKind = value),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: selected ? AppColors.espresso : const Color(0xFFF6F3F2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: selected ? Colors.white : AppColors.espresso,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 24,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Recruit a Provider', style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                  const SizedBox(height: 4),
+                  Text(
+                    bothOpen
+                        ? 'Post an opening so designers and constructors can apply to this project.'
+                        : 'Post an opening for the role this project still needs.',
+                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('WHO ARE YOU LOOKING FOR', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: AppColors.outline)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      if (designOpen) kindOption('design', 'Designer'),
+                      if (constructionOpen) kindOption('construction', 'Constructor'),
+                      if (bothOpen) kindOption('both', 'Both'),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Text('DESCRIPTION', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: AppColors.outline)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: descriptionController,
+                    maxLines: 3,
+                    style: GoogleFonts.inter(fontSize: 14, color: AppColors.espresso),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xFFF6F3F2),
+                      contentPadding: const EdgeInsets.all(12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: submitting
+                          ? null
+                          : () async {
+                              setSheetState(() => submitting = true);
+                              try {
+                                await PostService.createPost(CreatePostRequest(
+                                  projectShopOwnerId: _project!.id,
+                                  serviceKind: selectedKind,
+                                  title: _project!.name,
+                                  description: descriptionController.text.trim().isEmpty
+                                      ? 'Looking for a provider to work on ${_project!.name}.'
+                                      : descriptionController.text.trim(),
+                                ));
+                                if (sheetContext.mounted) Navigator.pop(sheetContext);
+                                await _loadProject();
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Opening posted')),
+                                  );
+                                }
+                              } catch (e) {
+                                setSheetState(() => submitting = false);
+                                if (sheetContext.mounted) {
+                                  ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                    SnackBar(content: Text('Failed to post opening: $e')),
+                                  );
+                                }
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.espresso,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: submitting
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : Text('Post Opening', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

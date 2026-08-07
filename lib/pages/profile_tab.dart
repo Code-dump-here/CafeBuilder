@@ -6,6 +6,8 @@ import '../services/service_provider_service.dart';
 import '../services/api_client.dart';
 import '../models/responses/api_responses.dart';
 import 'my_projects_page.dart';
+import 'account_settings_page.dart';
+import 'help_page.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -263,8 +265,27 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
           ),
         ),
-        _buildMenuItem(Icons.settings_outlined, 'Account Settings', onTap: () => _showComingSoon(context)),
-        _buildMenuItem(Icons.help_outline_rounded, 'Help', onTap: () => _showComingSoon(context)),
+        _buildMenuItem(
+          Icons.settings_outlined,
+          'Account Settings',
+          onTap: () async {
+            final updated = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AccountSettingsPage()),
+            );
+            if (updated == true) _loadProfile();
+          },
+        ),
+        _buildMenuItem(
+          Icons.help_outline_rounded,
+          'Help',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HelpPage()),
+            );
+          },
+        ),
       ],
     );
   }

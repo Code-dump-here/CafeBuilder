@@ -8,7 +8,20 @@ import '../services/service_provider_service.dart';
 import 'designer_detail_page.dart';
 
 class FindDesignersPage extends StatefulWidget {
-  const FindDesignersPage({super.key});
+  /// When browsing for a specific project, the project is already known —
+  /// carried through so the hire request skips project selection.
+  final int? contextProjectId;
+  final String? contextProjectName;
+  /// Forces the engagement's contract type when the project only has one
+  /// role slot left. Null lets the provider's own capability decide.
+  final String? contextContractType;
+
+  const FindDesignersPage({
+    super.key,
+    this.contextProjectId,
+    this.contextProjectName,
+    this.contextContractType,
+  });
 
   @override
   State<FindDesignersPage> createState() => _FindDesignersPageState();
@@ -120,7 +133,9 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Connect with architects and interior designers specialized in high-end café aesthetics.',
+              widget.contextProjectName != null
+                  ? 'Browsing designers for "${widget.contextProjectName}". Your hire request will go straight to this project.'
+                  : 'Connect with architects and interior designers specialized in high-end café aesthetics.',
               style: GoogleFonts.inter(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -399,6 +414,9 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
                     MaterialPageRoute(
                       builder: (context) => DesignerDetailPage(
                         serviceProviderProfileId: provider.id,
+                        contextProjectId: widget.contextProjectId,
+                        contextProjectName: widget.contextProjectName,
+                        contextContractType: widget.contextContractType,
                       ),
                     ),
                   );
