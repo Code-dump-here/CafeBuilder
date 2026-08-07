@@ -36,10 +36,13 @@ class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});
 
   @override
-  State<DashboardTab> createState() => _DashboardTabState();
+  State<DashboardTab> createState() => DashboardTabState();
 }
 
-class _DashboardTabState extends State<DashboardTab> {
+/// Public so [HomePage] can hold a key to it and refetch when the Home tab is
+/// re-selected — the tabs live in an IndexedStack, so this state is created
+/// once and would otherwise keep showing whatever it loaded at startup.
+class DashboardTabState extends State<DashboardTab> {
   ShopOwnerResponse? _shopOwner;
   ProjectResponse? _latestProject;
   List<_DocItem> _recentDocs = [];
@@ -52,10 +55,23 @@ class _DashboardTabState extends State<DashboardTab> {
     _loadDashboard();
   }
 
-  Future<void> _loadDashboard() async {
-    setState(() => _loading = true);
+  /// Refetches everything. Call when returning to the Home tab or after an
+  /// action elsewhere may have changed the data.
+  ///
+  /// [showSkeleton] false keeps the current content on screen while reloading,
+  /// which is what pull-to-refresh and tab-switching want — the skeleton is
+  /// only right on first load.
+  Future<void> reload({bool showSkeleton = false}) =>
+      _loadDashboard(showSkeleton: showSkeleton, forceRefreshOwner: true);
+
+  Future<void> _loadDashboard({
+    bool showSkeleton = true,
+    bool forceRefreshOwner = false,
+  }) async {
+    if (showSkeleton) setState(() => _loading = true);
     try {
-      final shopOwner = await ShopOwnerService.getCurrentShopOwner();
+      final shopOwner =
+          await ShopOwnerService.getCurrentShopOwner(forceRefresh: forceRefreshOwner);
       final shopOwnerId = shopOwner.id;
 
       final projectsResult = await ProjectService.getProjects(
@@ -257,10 +273,16 @@ class _DashboardTabState extends State<DashboardTab> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return RefreshIndicator(
+      color: AppColors.espresso,
+      onRefresh: () => reload(),
+      child: SingleChildScrollView(
+        // Always scrollable so the pull gesture works even when the content
+        // is shorter than the viewport.
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -313,10 +335,11 @@ class _DashboardTabState extends State<DashboardTab> {
                 _buildRecentDocuments(),
                 
                 const SizedBox(height: 100), // Space for bottom nav
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -518,10 +541,14 @@ class _DashboardTabState extends State<DashboardTab> {
                     SizedBox(
                       height: 36,
                       width: providers.length > 2 ? 100 : (providers.isEmpty ? 36 : 72),
-                      child: providers.isEmpty
-                          ? _buildInitialAvatar(0, '?')
-                          : Stack(
-                              children: [
+                      // _buildInitialAvatar returns a Positioned, so it must
+                      // always sit directly under a Stack — including the
+                      // no-providers case, which otherwise throws a
+                      // ParentData/StackParentData error and blanks the page.
+                      child: Stack(
+                        children: providers.isEmpty
+                            ? [_buildInitialAvatar(0, '?')]
+                            : [
                                 for (var i = 0; i < providers.length && i < 2; i++)
                                   _buildInitialAvatar(
                                     i,
@@ -551,7 +578,7 @@ class _DashboardTabState extends State<DashboardTab> {
                                     ),
                                   ),
                               ],
-                            ),
+                      ),
                     ),
                     ElevatedButton(
                       onPressed: () {

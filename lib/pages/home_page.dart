@@ -20,6 +20,14 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
+  // The tabs live in an IndexedStack, so DashboardTab's state is built once and
+  // never refetches on its own. This key lets us refresh it whenever the user
+  // comes back to Home or finishes creating a project.
+  final GlobalKey<DashboardTabState> _dashboardKey = GlobalKey<DashboardTabState>();
+
+  void _refreshDashboard() {
+    _dashboardKey.currentState?.reload();
+  }
 
   @override
   void initState() {
@@ -51,19 +59,21 @@ class _HomePageState extends State<HomePage> {
         top: false,
         child: IndexedStack(
           index: _currentIndex,
-          children: const [
-            DashboardTab(),    // 0
-            DiscoveryPage(),   // 1
-            ServicesTab(),     // 2 — always present
-            MarketplacePage(), // 3 — always present
-            ProfileTab(),      // 4
+          children: [
+            DashboardTab(key: _dashboardKey), // 0
+            const DiscoveryPage(),            // 1
+            const ServicesTab(),              // 2 — always present
+            const MarketplacePage(),          // 3 — always present
+            const ProfileTab(),               // 4
           ],
         ),
       ),
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/project-onboarding');
+                // Creating a project changes what Home shows, so refetch on return.
+                Navigator.pushNamed(context, '/project-onboarding')
+                    .then((_) => _refreshDashboard());
               },
               backgroundColor: AppColors.espresso,
               shape: const CircleBorder(),
@@ -107,7 +117,12 @@ class _HomePageState extends State<HomePage> {
     final bool hasBadge = index == 3 && MarketplaceState.activeProject != null;
 
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        setState(() => _currentIndex = index);
+        // Returning to Home should show current data, not whatever was loaded
+        // when the tab was first built.
+        if (index == 0) _refreshDashboard();
+      },
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

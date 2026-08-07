@@ -18,6 +18,7 @@ import 'pages/chat_page.dart';
 import 'pages/collaboration_workspace_page.dart';
 import 'widgets/page_navigator.dart';
 import 'services/api_client.dart';
+import 'services/ai_chat_service.dart';
 
 /// Bypass SSL certificate verification in debug builds.
 /// Remove or gate behind !kReleaseMode before publishing to production.
@@ -29,8 +30,11 @@ class _DevHttpOverrides extends HttpOverrides {
   }
 }
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _DevHttpOverrides();
+  // Never fatal: leaves the AI assistant disabled if Firebase isn't configured.
+  await AiChatService.init();
   runApp(const CafeBuilderApp());
 }
 
