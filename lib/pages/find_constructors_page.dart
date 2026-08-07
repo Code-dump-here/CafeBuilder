@@ -8,7 +8,20 @@ import '../services/service_provider_service.dart';
 import 'constructor_detail_page.dart';
 
 class FindConstructorsPage extends StatefulWidget {
-  const FindConstructorsPage({super.key});
+  /// When browsing for a specific project, the project is already known —
+  /// carried through so the hire request skips project selection.
+  final int? contextProjectId;
+  final String? contextProjectName;
+  /// Forces the engagement's contract type when the project only has one
+  /// role slot left. Null lets the provider's own capability decide.
+  final String? contextContractType;
+
+  const FindConstructorsPage({
+    super.key,
+    this.contextProjectId,
+    this.contextProjectName,
+    this.contextContractType,
+  });
 
   @override
   State<FindConstructorsPage> createState() => _FindConstructorsPageState();
@@ -130,7 +143,9 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Specialized construction firms for your next F&B masterpiece. From structural integrity to artisan finishing.',
+              widget.contextProjectName != null
+                  ? 'Browsing constructors for "${widget.contextProjectName}". Your hire request will go straight to this project.'
+                  : 'Specialized construction firms for your next F&B masterpiece. From structural integrity to artisan finishing.',
               style: GoogleFonts.inter(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -380,6 +395,9 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
                 MaterialPageRoute(
                   builder: (context) => ConstructorDetailPage(
                     serviceProviderProfileId: provider.id,
+                    contextProjectId: widget.contextProjectId,
+                    contextProjectName: widget.contextProjectName,
+                    contextContractType: widget.contextContractType,
                   ),
                 ),
               );

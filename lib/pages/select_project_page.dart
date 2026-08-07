@@ -15,6 +15,11 @@ class SelectProjectPage extends StatefulWidget {
   final bool isConstructor;
   final int serviceProviderProfileId;
   final String contractType;
+  /// When set (e.g. reached from a specific project's detail page), the
+  /// project is already known — skip the picker and send the request
+  /// straight to this project instead of asking the owner to choose again.
+  final int? preselectedProjectId;
+  final String? preselectedProjectName;
 
   const SelectProjectPage({
     super.key,
@@ -22,6 +27,8 @@ class SelectProjectPage extends StatefulWidget {
     required this.serviceProviderProfileId,
     required this.contractType,
     this.isConstructor = false,
+    this.preselectedProjectId,
+    this.preselectedProjectName,
   });
 
   @override
@@ -33,6 +40,9 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
   int _selectedIndex = 0;
   bool _loading = true;
   String? _error;
+  final _messageController = TextEditingController(
+    text: 'I would like to discuss my project brief with you.',
+  );
 
   static const _coverImages = [
     'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
@@ -49,7 +59,17 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
   @override
   void initState() {
     super.initState();
-    _loadProjects();
+    if (widget.preselectedProjectId != null) {
+      _loading = false;
+    } else {
+      _loadProjects();
+    }
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProjects() async {
@@ -157,7 +177,9 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Choose a project brief to share with ${widget.designerName}. Our $providerLabel will review your selection and respond within 24 hours.',
+                    widget.preselectedProjectId != null
+                        ? 'Send this request to ${widget.designerName} for "${widget.preselectedProjectName}". They will review it and respond within 24 hours.'
+                        : 'Choose a project brief to share with ${widget.designerName}. Our $providerLabel will review your selection and respond within 24 hours.',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       height: 1.5,
@@ -165,7 +187,29 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  if (_loading)
+                  if (widget.preselectedProjectId != null) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.espresso, width: 2),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.architecture_rounded, color: AppColors.espresso, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              widget.preselectedProjectName ?? 'Project',
+                              style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else if (_loading)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 48),
                       child: Center(
@@ -205,6 +249,31 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                     _buildCreateNewCard(),
                   ],
                   const SizedBox(height: 24),
+                  Text(
+                    'MESSAGE TO ${widget.designerName.toUpperCase()}',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: AppColors.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _messageController,
+                    maxLines: 3,
+                    style: GoogleFonts.inter(fontSize: 14, color: AppColors.espresso),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.all(12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -218,29 +287,33 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
               ),
             ),
             child: ElevatedButton(
-              onPressed: _projects.isEmpty || _loading
+              onPressed: (widget.preselectedProjectId == null && (_projects.isEmpty || _loading))
                   ? null
                   : () async {
-                      final project = _selectedProject!;
-                      
+                      final projectId = widget.preselectedProjectId ?? _selectedProject!.id;
+                      final projectTitle = widget.preselectedProjectName ?? _selectedProject!.name;
+
                       showDialog(
                         context: context,
                         barrierDismissible: false,
                         builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
                       );
-                      
+
                       try {
                         String mappedContractType = widget.contractType;
                         if (mappedContractType == 'designer') mappedContractType = 'design';
                         if (mappedContractType == 'constructor') mappedContractType = 'construction';
 
+                        final message = _messageController.text.trim();
                         await ProjectWorkingService.directRequest(
-                          projectShopOwnerId: project.id,
+                          projectShopOwnerId: projectId,
                           serviceProviderProfileId: widget.serviceProviderProfileId,
                           contractType: mappedContractType,
-                          requestMessage: 'I would like to discuss my project brief with you.',
+                          requestMessage: message.isEmpty
+                              ? 'I would like to discuss my project brief with you.'
+                              : message,
                         );
-                        
+
                         if (mounted) {
                           Navigator.pop(context); // hide loading
                           if (widget.isConstructor) {
@@ -257,7 +330,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => BookingConfirmedPage(
-                                  projectTitle: project.name,
+                                  projectTitle: projectTitle,
                                   designerName: widget.designerName,
                                 ),
                               ),

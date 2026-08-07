@@ -10,10 +10,20 @@ import 'select_project_page.dart';
 
 class ConstructorDetailPage extends StatefulWidget {
   final int serviceProviderProfileId;
+  /// When reached from a specific project's detail page, the project is
+  /// already known — skip asking the owner to pick a project again.
+  final int? contextProjectId;
+  final String? contextProjectName;
+  /// Forces the engagement's contract type when the project only has one
+  /// role slot left — a provider who can do both then fills just that slot.
+  final String? contextContractType;
 
   const ConstructorDetailPage({
     super.key,
     required this.serviceProviderProfileId,
+    this.contextProjectId,
+    this.contextProjectName,
+    this.contextContractType,
   });
 
   @override
@@ -254,7 +264,9 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
                             designerName: _displayName,
                             isConstructor: true,
                             serviceProviderProfileId: _provider!.id,
-                            contractType: _provider!.capability,
+                            contractType: widget.contextContractType ?? _provider!.capability,
+                            preselectedProjectId: widget.contextProjectId,
+                            preselectedProjectName: widget.contextProjectName,
                           ),
                         ),
                       );
