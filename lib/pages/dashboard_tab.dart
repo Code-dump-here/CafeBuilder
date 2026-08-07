@@ -518,10 +518,14 @@ class _DashboardTabState extends State<DashboardTab> {
                     SizedBox(
                       height: 36,
                       width: providers.length > 2 ? 100 : (providers.isEmpty ? 36 : 72),
-                      child: providers.isEmpty
-                          ? _buildInitialAvatar(0, '?')
-                          : Stack(
-                              children: [
+                      // _buildInitialAvatar returns a Positioned, so it must
+                      // always sit directly under a Stack — including the
+                      // no-providers case, which otherwise throws a
+                      // ParentData/StackParentData error and blanks the page.
+                      child: Stack(
+                        children: providers.isEmpty
+                            ? [_buildInitialAvatar(0, '?')]
+                            : [
                                 for (var i = 0; i < providers.length && i < 2; i++)
                                   _buildInitialAvatar(
                                     i,
@@ -551,7 +555,7 @@ class _DashboardTabState extends State<DashboardTab> {
                                     ),
                                   ),
                               ],
-                            ),
+                      ),
                     ),
                     ElevatedButton(
                       onPressed: () {
