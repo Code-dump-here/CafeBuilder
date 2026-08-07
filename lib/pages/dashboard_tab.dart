@@ -5,11 +5,32 @@ import '../services/service_provider_service.dart';
 import '../services/project_service.dart';
 import '../services/project_working_service.dart';
 import '../services/design_service.dart';
+import '../services/construction_service.dart';
 import '../services/api_client.dart';
+import '../services/notification_service.dart';
 import '../models/responses/api_responses.dart';
 import 'ai_advice_page.dart';
 import 'project_detail_page.dart';
 import 'project_onboarding_page.dart';
+
+/// Unified document item shown in the "Project documents" section.
+class _DocItem {
+  final int projectId;
+  final String title;
+  final String subtitle;   // formatted updated-at
+  final String source;     // 'Design' | 'Construction'
+  final IconData icon;
+  final DateTime updatedAt;
+
+  const _DocItem({
+    required this.projectId,
+    required this.title,
+    required this.subtitle,
+    required this.source,
+    required this.icon,
+    required this.updatedAt,
+  });
+}
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});
@@ -21,8 +42,9 @@ class DashboardTab extends StatefulWidget {
 class _DashboardTabState extends State<DashboardTab> {
   ShopOwnerResponse? _shopOwner;
   ProjectResponse? _latestProject;
-  List<DesignResponse> _recentDesigns = [];
+  List<_DocItem> _recentDocs = [];
   bool _loading = true;
+  int _unreadCount = 0;
 
   @override
   void initState() {
@@ -44,18 +66,35 @@ class _DashboardTabState extends State<DashboardTab> {
         ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
       ProjectResponse? latest;
-      List<DesignResponse> designs = [];
+      List<_DocItem> docs = [];
 
       if (projects.isNotEmpty) {
         latest = await ProjectService.getProject(projects.first.id);
-        designs = await _loadRecentDesigns(latest.id);
+        
+        // Fetch recent docs across up to 10 most recently updated projects
+        final docFutures = projects.take(10).map((p) => _loadRecentDocs(p.id));
+        final nestedDocs = await Future.wait(docFutures);
+        docs = nestedDocs.expand((e) => e).toList()
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        if (docs.length > 5) {
+          docs = docs.sublist(0, 5);
+        }
+      }
+
+      int unread = 0;
+      final accountId = await ApiClient.getAccountId();
+      if (accountId != null) {
+        try {
+          unread = await NotificationService.getUnreadCount(accountId);
+        } catch (_) {}
       }
 
       if (mounted) {
         setState(() {
           _shopOwner = shopOwner;
           _latestProject = latest;
-          _recentDesigns = designs;
+          _recentDocs = docs;
+          _unreadCount = unread;
           _loading = false;
         });
       }
@@ -66,26 +105,55 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
-  Future<List<DesignResponse>> _loadRecentDesigns(int projectShopOwnerId) async {
+  Future<List<_DocItem>> _loadRecentDocs(int projectShopOwnerId) async {
     final workings = await ProjectWorkingService.getProjectWorkings(
       projectShopOwnerId: projectShopOwnerId,
       pageSize: 50,
     );
     if (workings.items.isEmpty) return [];
 
-    final allDesigns = <DesignResponse>[];
+    final allDocs = <_DocItem>[];
+
     for (final working in workings.items) {
+      // ── Designs ──────────────────────────────────────────
       try {
         final result = await DesignService.getDesigns(
           projectWorkingId: working.id,
           pageSize: 20,
         );
-        allDesigns.addAll(result.items);
+        for (final d in result.items) {
+          allDocs.add(_DocItem(
+            projectId: projectShopOwnerId,
+            title: d.title.isNotEmpty ? d.title : 'Design v${d.version.toStringAsFixed(1)}',
+            subtitle: _formatUpdated(d.updatedAt),
+            source: 'Design',
+            icon: _iconForDesignType(d.type),
+            updatedAt: d.updatedAt,
+          ));
+        }
+      } catch (_) {}
+
+      // ── Construction milestones ───────────────────────────
+      try {
+        final result = await ConstructionService.getMilestones(
+          projectWorkingId: working.id,
+          pageSize: 20,
+        );
+        for (final c in result.items) {
+          allDocs.add(_DocItem(
+            projectId: projectShopOwnerId,
+            title: c.name.isNotEmpty ? c.name : 'Milestone',
+            subtitle: _formatUpdated(c.updatedAt),
+            source: 'Construction',
+            icon: _iconForConstructionCategory(c.category),
+            updatedAt: c.updatedAt,
+          ));
+        }
       } catch (_) {}
     }
 
-    allDesigns.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    return allDesigns.take(2).toList();
+    allDocs.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return allDocs.take(5).toList();
   }
 
   double _progressFor(ProjectResponse project) {
@@ -148,6 +216,23 @@ class _DashboardTabState extends State<DashboardTab> {
         return Icons.draw_outlined;
       default:
         return Icons.description_outlined;
+    }
+  }
+
+  IconData _iconForConstructionCategory(String? category) {
+    switch ((category ?? '').toLowerCase()) {
+      case 'electrical':
+        return Icons.electrical_services_rounded;
+      case 'plumbing':
+        return Icons.plumbing_rounded;
+      case 'flooring':
+        return Icons.grid_view_rounded;
+      case 'furniture':
+        return Icons.chair_outlined;
+      case 'painting':
+        return Icons.format_paint_rounded;
+      default:
+        return Icons.construction_rounded;
     }
   }
 
@@ -774,23 +859,61 @@ class _DashboardTabState extends State<DashboardTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Project documents',
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: AppColors.espresso,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Project documents',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.espresso,
+                ),
+              ),
+            ),
+            if (_recentDocs.isNotEmpty)
+              Text(
+                '${_recentDocs.length} items',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 20),
-        for (var i = 0; i < _recentDesigns.length; i++) ...[
-          if (i > 0) const SizedBox(height: 12),
-          _buildDocumentItem(
-            _recentDesigns[i].title,
-            _formatUpdated(_recentDesigns[i].updatedAt),
-            _iconForDesignType(_recentDesigns[i].type),
-          ),
-        ],
+        if (_loading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: CircularProgressIndicator(color: AppColors.espresso, strokeWidth: 2),
+            ),
+          )
+        else if (_recentDocs.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 28),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.outlineVariant.withOpacity(0.2)),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.folder_open_outlined, color: AppColors.outlineVariant, size: 40),
+                const SizedBox(height: 8),
+                Text(
+                  'No documents yet',
+                  style: GoogleFonts.inter(fontSize: 14, color: AppColors.outline),
+                ),
+              ],
+            ),
+          )
+        else
+          for (var i = 0; i < _recentDocs.length; i++) ...[
+            if (i > 0) const SizedBox(height: 12),
+            _buildDocumentItem(_recentDocs[i]),
+          ],
       ],
     );
   }
@@ -850,41 +973,87 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
-  Widget _buildDocumentItem(String title, String subtitle, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+  Widget _buildDocumentItem(_DocItem doc) {
+    final isConstruction = doc.source == 'Construction';
+    final iconBg = isConstruction
+        ? const Color(0xFF1A4DC7).withOpacity(0.08)
+        : const Color(0xFF4B3621).withOpacity(0.08);
+    final iconBorder = isConstruction
+        ? const Color(0xFF1A4DC7).withOpacity(0.18)
+        : const Color(0xFF4B3621).withOpacity(0.18);
+    final iconColor = isConstruction
+        ? const Color(0xFF1A4DC7)
+        : AppColors.espresso;
+    final badgeBg = isConstruction
+        ? const Color(0xFFDDE8FF)
+        : const Color(0xFFD9EAA3).withOpacity(0.6);
+    final badgeText = isConstruction
+        ? const Color(0xFF1A4DC7)
+        : const Color(0xFF56642B);
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProjectDetailPage(projectId: doc.projectId),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4B3621).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF4B3621).withOpacity(0.2)),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.outlineVariant.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
             ),
-            child: Icon(icon, color: AppColors.espresso, size: 24),
-          ),
-          const SizedBox(width: 16),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: iconBorder),
+              ),
+              child: Icon(doc.icon, color: iconColor, size: 22),
+            ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Source badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    doc.source.toUpperCase(),
+                    style: GoogleFonts.inter(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: badgeText,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Text(
-                  title,
+                  doc.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: AppColors.espresso,
                   ),
@@ -893,18 +1062,18 @@ class _DashboardTabState extends State<DashboardTab> {
                 Row(
                   children: [
                     Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF56642B),
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: iconColor,
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Text(
-                      subtitle,
+                      doc.subtitle,
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -913,10 +1082,11 @@ class _DashboardTabState extends State<DashboardTab> {
               ],
             ),
           ),
-          const Icon(Icons.more_vert, color: AppColors.outline, size: 20),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.outline, size: 20),
         ],
       ),
-    );
+    ));
   }
 
 }
+
