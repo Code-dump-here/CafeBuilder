@@ -468,6 +468,7 @@ class AiDesignReportPage extends StatelessWidget {
                               area: area,
                               projectId: projectId,
                               initialStep: 1,
+                              aiReport: report,
                             ),
                           ),
                         );
@@ -506,6 +507,7 @@ class AiDesignReportPage extends StatelessWidget {
                                     area: area,
                                     projectId: projectId,
                                     initialStep: 0,
+                                    aiReport: report,
                                   ),
                                 ),
                               );

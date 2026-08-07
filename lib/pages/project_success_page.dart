@@ -5,6 +5,7 @@ import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
 import '../services/post_service.dart';
 import '../services/service_provider_service.dart';
+import '../models/responses/api_responses.dart';
 
 class ProjectSuccessPage extends StatefulWidget {
   final String cafeName;
@@ -17,6 +18,7 @@ class ProjectSuccessPage extends StatefulWidget {
   final double area;
   final int projectId;
   final int initialStep;
+  final AiRecommendationResponse? aiReport;
 
   const ProjectSuccessPage({
     super.key,
@@ -30,6 +32,7 @@ class ProjectSuccessPage extends StatefulWidget {
     required this.area,
     this.projectId = 0,
     this.initialStep = 0,
+    this.aiReport,
   });
 
   @override
@@ -114,11 +117,43 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
         mappedServiceKind = 'construction';
       }
 
+      String detailedDescription = 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.\nLocation: ${widget.location}\nStyle: ${widget.style}\nBudget: $_budgetTier\nExpected Start: $_expectedStart';
+
+      if (widget.aiReport != null) {
+        final r = widget.aiReport!;
+        final buffer = StringBuffer();
+        buffer.writeln(detailedDescription);
+        buffer.writeln('\n--- AI DESIGN SYNTHESIS ---');
+        
+        if (r.planConceptName != null) {
+          buffer.writeln('\n✨ CONCEPT: ${r.planConceptName}');
+        }
+        if (r.conceptSummary.isNotEmpty) {
+          buffer.writeln('\n📝 SUMMARY:\n${r.conceptSummary}');
+        }
+        if (r.planSummary != null && r.planSummary!.isNotEmpty) {
+          buffer.writeln('\n📐 PLAN SUMMARY:\n${r.planSummary}');
+        }
+        if (r.layoutZones.isNotEmpty) {
+          buffer.writeln('\n🏢 LAYOUT ZONES:');
+          for (var z in r.layoutZones) {
+            buffer.writeln('• ${z.label}: ${(z.w * z.h).toStringAsFixed(1)}m² (${z.purpose})');
+          }
+        }
+        if (r.seatCapacityRecommendation != null) {
+          buffer.writeln('\n🪑 RECOMMENDED SEATS: ${r.seatCapacityRecommendation}');
+        }
+        if (r.imageArtifactUrl != null && r.imageArtifactUrl!.isNotEmpty) {
+          buffer.writeln('\n🖼️ AI_IMAGE: ${r.imageArtifactUrl}');
+        }
+        detailedDescription = buffer.toString();
+      }
+
       final request = CreatePostRequest(
         projectShopOwnerId: widget.projectId > 0 ? widget.projectId : shopOwnerId,
         serviceKind: mappedServiceKind,
         title: widget.cafeName,
-        description: 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.\nLocation: ${widget.location}\nStyle: ${widget.style}\nBudget: $_budgetTier\nExpected Start: $_expectedStart',
+        description: detailedDescription,
         submissionDeadline: _submissionDeadline,
       );
       
@@ -127,6 +162,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
       if (mounted) {
         Navigator.pop(context); // hide loading
         
+        final aiImageUrl = widget.aiReport?.imageArtifactUrl;
         final newBroadcast = BroadcastProject(
           id: post.id.toString(),
           title: post.title,
@@ -139,7 +175,9 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
           proposalsCount: 0,
           commentsCount: 0,
           status: 'Open for Proposals',
-          imageUrl: 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
+          imageUrl: (aiImageUrl != null && aiImageUrl.isNotEmpty)
+              ? aiImageUrl
+              : 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
         );
 
         // Save to global list and notify MarketplacePage to rebuild
@@ -164,19 +202,22 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
         
         // Fallback to local logic if API fails
         final id = 'AT-${100 + Random().nextInt(899)}-XC';
+        final fallbackAiImage = widget.aiReport?.imageArtifactUrl;
         final newBroadcast = BroadcastProject(
           id: id,
           title: widget.cafeName,
           location: widget.location,
           style: widget.style,
           budgetTier: _budgetTier,
-          description: 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.',
+          description: widget.aiReport != null ? detailedDescription : 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.',
           requirements: _reqs,
           date: _expectedStart,
           proposalsCount: 0,
           commentsCount: 0,
           status: 'Open for Proposals',
-          imageUrl: 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
+          imageUrl: (fallbackAiImage != null && fallbackAiImage.isNotEmpty)
+              ? fallbackAiImage
+              : 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
         );
 
         MarketplaceState.activeProject = newBroadcast;

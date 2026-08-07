@@ -44,7 +44,14 @@ class _MarketplacePageState extends State<MarketplacePage>
       final response = await PostService.getPosts(pageNumber: 1, pageSize: 100);
       if (!mounted) return;
       setState(() {
-        final serverBroadcasts = response.items.map((post) => BroadcastProject(
+        final serverBroadcasts = response.items.map((post) {
+              // Try to extract AI-generated image URL from description
+              String imageUrl = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600';
+              final aiImageMatch = RegExp(r'🖼️ AI_IMAGE: (.+)').firstMatch(post.description);
+              if (aiImageMatch != null && aiImageMatch.group(1)!.trim().isNotEmpty) {
+                imageUrl = aiImageMatch.group(1)!.trim();
+              }
+              return BroadcastProject(
               id: post.id.toString(),
               title: post.title.isNotEmpty ? post.title : 'Marketplace Project',
               location: post.location.isNotEmpty ? post.location : 'Remote',
@@ -63,9 +70,9 @@ class _MarketplacePageState extends State<MarketplacePage>
               proposalsCount: 0,
               commentsCount: 0,
               status: post.status,
-              imageUrl:
-                  'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
-            )).toList();
+              imageUrl: imageUrl,
+            );
+            }).toList();
 
         serverBroadcasts.sort((a, b) {
           final idA = int.tryParse(a.id) ?? 0;
@@ -618,6 +625,52 @@ class _MarketplacePageState extends State<MarketplacePage>
                       Text(project.location,
                           style: GoogleFonts.inter(
                               fontSize: 13, color: AppColors.textSecondary)),
+                      const SizedBox(height: 16),
+                      // Project image (AI-generated 3D visualization)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Stack(
+                          children: [
+                            Image.network(
+                              project.imageUrl,
+                              height: 200,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                height: 200,
+                                color: const Color(0xFFF0EBE6),
+                                child: const Center(
+                                  child: Icon(Icons.image_not_supported_outlined,
+                                      color: AppColors.placeholder, size: 48),
+                                ),
+                              ),
+                            ),
+                            if (project.imageUrl.contains('imageArtifact') ||
+                                !project.imageUrl.contains('unsplash'))
+                              Positioned(
+                                top: 10,
+                                right: 10,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD9EAA3).withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'AI RENDERED',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF56642B),
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       Row(
                         children: [
