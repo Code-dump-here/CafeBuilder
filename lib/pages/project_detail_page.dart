@@ -16,6 +16,7 @@ import '../services/project_working_service.dart';
 import '../widgets/notifications_sheet.dart';
 import 'home_page.dart';
 import 'chat_thread_page.dart';
+import '../services/chat_service.dart';
 
 class ProjectDetailPage extends StatefulWidget {
   final int projectId;
@@ -666,32 +667,41 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         matchedWorking = workings.items.first;
       }
 
-      if (mounted) {
-        Navigator.pop(context); // close dialog
-        if (matchedWorking != null) {
-          if (isChat) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatThreadPage(
-                  conversationId: matchedWorking!.id,
-                  title: matchedWorking.providerDisplayName.isNotEmpty ? 'Chat with ${matchedWorking.providerDisplayName}' : 'Chat',
-                ),
-              ),
-            );
-          } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CollaborationWorkspacePage(projectWorkingId: matchedWorking!.id),
-              ),
-            );
-          }
-        } else {
+      if (matchedWorking == null) {
+        if (mounted) {
+          Navigator.pop(context); // close dialog
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('No active collaboration found for this project yet.')),
           );
         }
+        return;
+      }
+
+      if (isChat) {
+        // conversationId is a separate entity from the engagement id —
+        // find (or create) the real thread before opening it.
+        final conversationId = await ChatService.getOrCreateConversation(matchedWorking.id);
+        if (mounted) {
+          Navigator.pop(context); // close dialog
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatThreadPage(
+                conversationId: conversationId,
+                title: matchedWorking!.providerDisplayName.isNotEmpty ? 'Chat with ${matchedWorking.providerDisplayName}' : 'Chat',
+              ),
+            ),
+          );
+        }
+      } else if (mounted) {
+        final workingId = matchedWorking.id;
+        Navigator.pop(context); // close dialog
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CollaborationWorkspacePage(projectWorkingId: workingId),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

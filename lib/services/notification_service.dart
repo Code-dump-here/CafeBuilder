@@ -33,7 +33,7 @@ class NotificationService {
   }
 
   static Future<void> markAsRead(int notificationId) async {
-    final response = await ApiClient.authPost('/notifications/$notificationId/read', {});
+    final response = await ApiClient.authPatch('/notifications/$notificationId/read', {});
     ApiClient.throwIfError(response);
   }
 

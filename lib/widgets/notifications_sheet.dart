@@ -25,6 +25,17 @@ class NotificationsSheetState extends State<NotificationsSheet> {
     _loadNotifications();
   }
 
+  /// Compact relative time for a notification list — "now", "5m", "3h",
+  /// "2d", then falls back to a short date once it's over a week old.
+  String _relativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inSeconds < 60) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inDays < 7) return '${diff.inDays}d';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
   Future<void> _loadNotifications() async {
     try {
       final res = await NotificationService.getNotifications(widget.accountId);
@@ -95,19 +106,45 @@ class NotificationsSheetState extends State<NotificationsSheet> {
                                 size: 18,
                               ),
                             ),
-                            title: Text(
-                              noti.title,
-                              style: GoogleFonts.inter(
-                                fontWeight: noti.isRead ? FontWeight.normal : FontWeight.bold,
-                                fontSize: 14,
-                                color: AppColors.espresso,
-                              ),
+                            title: Row(
+                              children: [
+                                if (!noti.isRead) ...[
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    margin: const EdgeInsets.only(right: 6),
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.espresso,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ],
+                                Expanded(
+                                  child: Text(
+                                    noti.title,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontWeight: noti.isRead ? FontWeight.normal : FontWeight.bold,
+                                      fontSize: 14,
+                                      color: AppColors.espresso,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             subtitle: Text(
                               noti.content,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                            trailing: Text(
+                              _relativeTime(noti.createdAt),
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: noti.isRead ? AppColors.textSecondary : AppColors.espresso,
+                                fontWeight: noti.isRead ? FontWeight.normal : FontWeight.w600,
+                              ),
                             ),
                             onTap: () async {
                               if (!noti.isRead) {

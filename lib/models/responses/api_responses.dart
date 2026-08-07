@@ -189,19 +189,19 @@ class ProjectResponse {
   });
 
   factory ProjectResponse.fromJson(Map<String, dynamic> json) => ProjectResponse(
-        id: json['id'],
-        ownerId: json['ownerId'],
+        id: json['id'] is num ? (json['id'] as num).toInt() : 0,
+        ownerId: json['ownerId'] is num ? (json['ownerId'] as num).toInt() : 0,
         name: json['name'] ?? '',
         address: json['address'] ?? '',
-        areaM2: (json['areaM2'] as num).toDouble(),
-        budget: (json['budget'] as num).toDouble(),
+        areaM2: json['areaM2'] is num ? (json['areaM2'] as num).toDouble() : 0,
+        budget: json['budget'] is num ? (json['budget'] as num).toDouble() : 0,
         status: json['status'] ?? '',
-        createdAt: DateTime.parse(json['createdAt']),
-        updatedAt: DateTime.parse(json['updatedAt']),
+        createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+        updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now(),
         owner: json['owner'] != null ? ProjectOwnerResponse.fromJson(json['owner']) : null,
         openPosts: (json['openPosts'] as List?)?.map((e) => OpenPostResponse.fromJson(e)).toList() ?? [],
-        openFor: (json['openFor'] as List?)?.map((e) => e as String).toList() ?? [],
-        providers: json['providers'] ?? [],
+        openFor: (json['openFor'] as List?)?.whereType<String>().toList() ?? [],
+        providers: json['providers'] is List ? json['providers'] as List : const [],
       );
 }
 

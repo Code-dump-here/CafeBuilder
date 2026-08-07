@@ -116,9 +116,22 @@ class ApiClient {
 
   // ── Auto token refresh ───────────────────────────────────────────────────────
 
+  /// Guards concurrent 401s from each firing their own refresh call — the
+  /// backend rotates (single-use) refresh tokens, so a second caller reusing
+  /// the same stored token while the first refresh is in flight would get
+  /// rejected and wrongly force a logout. All concurrent callers instead
+  /// await this one shared attempt.
+  static Future<bool>? _refreshInFlight;
+
   /// Attempts to refresh the access token using the stored refresh token.
   /// Saves new tokens on success; clears stored tokens on failure.
-  static Future<bool> _tryRefreshToken() async {
+  static Future<bool> _tryRefreshToken() {
+    return _refreshInFlight ??= _doRefreshToken().whenComplete(() {
+      _refreshInFlight = null;
+    });
+  }
+
+  static Future<bool> _doRefreshToken() async {
     final storedRefresh = await getRefreshToken();
     if (storedRefresh == null || storedRefresh.isEmpty) return false;
 
@@ -202,6 +215,19 @@ class ApiClient {
   ) async {
     return _retryRequest(
       () async => http.put(
+        _uri(path),
+        headers: await _authHeaders(),
+        body: jsonEncode(body),
+      ),
+    );
+  }
+
+  static Future<http.Response> authPatch(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    return _retryRequest(
+      () async => http.patch(
         _uri(path),
         headers: await _authHeaders(),
         body: jsonEncode(body),

@@ -122,7 +122,7 @@ class _DashboardTabState extends State<DashboardTab> {
   List<String> _providerNames(ProjectResponse project) {
     return project.providers
         .whereType<Map>()
-        .map((p) => p['displayName']?.toString() ?? '')
+        .map((p) => p['displayName']?.toString().trim() ?? '')
         .where((name) => name.isNotEmpty)
         .toList();
   }
@@ -438,7 +438,10 @@ class _DashboardTabState extends State<DashboardTab> {
                           : Stack(
                               children: [
                                 for (var i = 0; i < providers.length && i < 2; i++)
-                                  _buildInitialAvatar(i, providers[i][0].toUpperCase()),
+                                  _buildInitialAvatar(
+                                    i,
+                                    providers[i].isNotEmpty ? providers[i][0].toUpperCase() : '?',
+                                  ),
                                 if (providers.length > 2)
                                   Positioned(
                                     left: 56,
