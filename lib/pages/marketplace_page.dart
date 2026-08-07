@@ -12,15 +12,28 @@ class MarketplacePage extends StatefulWidget {
   State<MarketplacePage> createState() => _MarketplacePageState();
 }
 
-class _MarketplacePageState extends State<MarketplacePage> {
+class _MarketplacePageState extends State<MarketplacePage>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  late final TabController _tabController;
+
+  // ──────────────────────────────────────────────────────────────────
+  // Status helpers
+  // ──────────────────────────────────────────────────────────────────
+  static bool _isOpen(BroadcastProject p) {
+    final s = p.status.toLowerCase().replaceAll(RegExp(r'[\s_-]'), '');
+    return s == 'open' ||
+        s == 'openforproposals' ||
+        s == 'pending' ||
+        s == 'active';
+  }
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _fetchPosts();
-    // Rebuild whenever a new project is broadcast to the marketplace
     MarketplaceState.onBroadcastsChanged = () {
       if (mounted) setState(() {});
     };
@@ -32,24 +45,28 @@ class _MarketplacePageState extends State<MarketplacePage> {
       if (!mounted) return;
       setState(() {
         final serverBroadcasts = response.items.map((post) => BroadcastProject(
-          id: post.id.toString(),
-          title: post.title.isNotEmpty ? post.title : 'Marketplace Project',
-          location: post.location.isNotEmpty ? post.location : 'Remote',
-          style: post.style.isNotEmpty ? post.style : 'Concept',
-          budgetTier: post.budgetTier.isNotEmpty ? post.budgetTier : '\$TBD',
-          description: post.description.isNotEmpty ? post.description : 'A beautiful architecture project.',
-          requirements: post.requirements.isNotEmpty ? post.requirements : ['Interior Design'],
-          date: post.expectedStart.isNotEmpty ? post.expectedStart : post.createdAt.toString().substring(0, 10),
-          proposalsCount: 0,
-          commentsCount: 0,
-          status: 'Open for Proposals',
-          imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
-        )).toList();
+              id: post.id.toString(),
+              title: post.title.isNotEmpty ? post.title : 'Marketplace Project',
+              location: post.location.isNotEmpty ? post.location : 'Remote',
+              style: post.style.isNotEmpty ? post.style : 'Concept',
+              budgetTier:
+                  post.budgetTier.isNotEmpty ? post.budgetTier : '\$TBD',
+              description: post.description.isNotEmpty
+                  ? post.description
+                  : 'A beautiful architecture project.',
+              requirements: post.requirements.isNotEmpty
+                  ? post.requirements
+                  : ['Interior Design'],
+              date: post.expectedStart.isNotEmpty
+                  ? post.expectedStart
+                  : post.createdAt.toString().substring(0, 10),
+              proposalsCount: 0,
+              commentsCount: 0,
+              status: post.status,
+              imageUrl:
+                  'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
+            )).toList();
 
-        // Optional: Replace or append to static initial dummy entries
-        // MarketplaceState.broadcasts.insertAll(0, serverBroadcasts);
-        // Let's replace dummy ones with real ones if there are any
-        // Sort by ID descending so newest posts appear first
         serverBroadcasts.sort((a, b) {
           final idA = int.tryParse(a.id) ?? 0;
           final idB = int.tryParse(b.id) ?? 0;
@@ -57,8 +74,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
         });
 
         if (serverBroadcasts.isNotEmpty) {
-           MarketplaceState.broadcasts.clear();
-           MarketplaceState.broadcasts.addAll(serverBroadcasts);
+          MarketplaceState.broadcasts.clear();
+          MarketplaceState.broadcasts.addAll(serverBroadcasts);
         }
       });
     } catch (e) {
@@ -70,44 +87,152 @@ class _MarketplacePageState extends State<MarketplacePage> {
   void dispose() {
     MarketplaceState.onBroadcastsChanged = null;
     _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
+  // ──────────────────────────────────────────────────────────────────
+  // Build
+  // ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    // Filter marketplace based on search and user role
-    final items = MarketplaceState.broadcasts.where((item) {
-
-
-      final matchesSearch = item.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          item.location.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          item.style.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesSearch;
+    final all = MarketplaceState.broadcasts.where((item) {
+      final q = _searchQuery.toLowerCase();
+      return item.title.toLowerCase().contains(q) ||
+          item.location.toLowerCase().contains(q) ||
+          item.style.toLowerCase().contains(q);
     }).toList();
+
+    final openItems = all.where(_isOpen).toList();
+    final completedItems = all.where((p) => !_isOpen(p)).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            // Only needed when pushed standalone (with a back button) — as a
-            // bottom-nav tab, HomePage's persistent TopNav already covers
-            // title/notifications, so skip this to avoid a duplicate header.
             if (widget.showBackButton) _buildHeader(),
             _buildSearchBar(),
+            _buildTabBar(openItems.length, completedItems.length),
             Expanded(
-              child: items.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        return _buildProjectCard(items[index]);
-                      },
-                    ),
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildProjectList(openItems),
+                  _buildProjectList(completedItems, isCompleted: true),
+                ],
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Tab bar
+  // ──────────────────────────────────────────────────────────────────
+  Widget _buildTabBar(int openCount, int completedCount) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0EBE6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          color: AppColors.espresso,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelStyle: GoogleFonts.inter(
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+        ),
+        unselectedLabelStyle: GoogleFonts.inter(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+        labelColor: Colors.white,
+        unselectedLabelColor: AppColors.textSecondary,
+        tabs: [
+          Tab(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.campaign_rounded, size: 16),
+                const SizedBox(width: 6),
+                const Text('Open'),
+                if (openCount > 0) ...[
+                  const SizedBox(width: 6),
+                  _buildBadge(openCount, isSelected: true),
+                ],
+              ],
+            ),
+          ),
+          Tab(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.check_circle_outline_rounded, size: 16),
+                const SizedBox(width: 6),
+                const Text('Completed'),
+                if (completedCount > 0) ...[
+                  const SizedBox(width: 6),
+                  _buildBadge(completedCount, isSelected: false),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(int count, {required bool isSelected}) {
+    return AnimatedBuilder(
+      animation: _tabController,
+      builder: (context, _) {
+        // Determine which tab is currently selected by index
+        final isActiveTab = isSelected
+            ? _tabController.index == 0
+            : _tabController.index == 1;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: isActiveTab
+                ? Colors.white.withValues(alpha: 0.25)
+                : AppColors.espresso.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '$count',
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: isActiveTab ? Colors.white : AppColors.espresso,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Project list
+  // ──────────────────────────────────────────────────────────────────
+  Widget _buildProjectList(List<BroadcastProject> items,
+      {bool isCompleted = false}) {
+    if (items.isEmpty) return _buildEmptyState(isCompleted: isCompleted);
+    return RefreshIndicator(
+      color: AppColors.espresso,
+      onRefresh: _fetchPosts,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        itemCount: items.length,
+        itemBuilder: (context, index) => _buildProjectCard(items[index]),
       ),
     );
   }
@@ -122,14 +247,16 @@ class _MarketplacePageState extends State<MarketplacePage> {
             children: [
               if (widget.showBackButton)
                 IconButton(
-                  icon: const Icon(Icons.arrow_back, color: AppColors.espresso),
+                  icon:
+                      const Icon(Icons.arrow_back, color: AppColors.espresso),
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   splashRadius: 24,
                 ),
               if (widget.showBackButton) const SizedBox(width: 8),
-              const Icon(Icons.store_mall_directory_rounded, color: AppColors.espresso, size: 28),
+              const Icon(Icons.store_mall_directory_rounded,
+                  color: AppColors.espresso, size: 28),
               const SizedBox(width: 8),
               Text(
                 'Market place',
@@ -142,7 +269,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: AppColors.espresso),
+            icon: const Icon(Icons.notifications_none_rounded,
+                color: AppColors.espresso),
             onPressed: () {},
           ),
         ],
@@ -159,7 +287,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -167,20 +295,16 @@ class _MarketplacePageState extends State<MarketplacePage> {
         ),
         child: TextField(
           controller: _searchController,
-          onChanged: (val) {
-            setState(() {
-              _searchQuery = val;
-            });
-          },
+          onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
             hintText: 'Search architectural projects...',
-            hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.placeholder),
-            prefixIcon: const Icon(Icons.search, color: AppColors.placeholder, size: 20),
+            hintStyle:
+                GoogleFonts.inter(fontSize: 13, color: AppColors.placeholder),
+            prefixIcon: const Icon(Icons.search,
+                color: AppColors.placeholder, size: 20),
             suffixIcon: IconButton(
               icon: const Icon(Icons.tune, color: AppColors.espresso, size: 20),
-              onPressed: () {
-                // Quick filter options
-              },
+              onPressed: () {},
             ),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -190,24 +314,38 @@ class _MarketplacePageState extends State<MarketplacePage> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState({bool isCompleted = false}) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.find_in_page_outlined, size: 64, color: AppColors.placeholder),
+            Icon(
+              isCompleted
+                  ? Icons.check_circle_outline_rounded
+                  : Icons.find_in_page_outlined,
+              size: 64,
+              color: AppColors.placeholder,
+            ),
             const SizedBox(height: 16),
             Text(
-              'No projects found',
-              style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.espresso),
+              isCompleted
+                  ? 'No completed projects yet'
+                  : 'No open projects found',
+              style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.espresso),
             ),
             const SizedBox(height: 8),
             Text(
-              'Try adjusting your search criteria or tags.',
+              isCompleted
+                  ? 'Projects that have been assigned will appear here.'
+                  : 'Try adjusting your search criteria.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
+              style:
+                  GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -216,17 +354,27 @@ class _MarketplacePageState extends State<MarketplacePage> {
   }
 
   Widget _buildProjectCard(BroadcastProject project) {
+    final open = _isOpen(project);
+
     Color badgeColor;
     Color textColor;
-    if (project.status == 'Open for Proposals') {
-      badgeColor = const Color(0xFFD9EAA3).withOpacity(0.8);
+
+    if (open) {
+      badgeColor = const Color(0xFFD9EAA3).withValues(alpha: 0.85);
       textColor = const Color(0xFF56642B);
-    } else if (project.status == 'Urgent') {
+    } else if (project.status.toLowerCase() == 'urgent') {
       badgeColor = const Color(0xFFFFDAD9);
       textColor = const Color(0xFFBA1A1A);
     } else {
-      badgeColor = const Color(0xFFF0E5D8);
-      textColor = AppColors.espresso;
+      // Completed / assigned
+      badgeColor = const Color(0xFFDDE8FF);
+      textColor = const Color(0xFF1A4DC7);
+    }
+
+    // Friendly label for completed states
+    String badgeLabel = project.status;
+    if (!open && project.status.toLowerCase() != 'urgent') {
+      badgeLabel = 'Assigned';
     }
 
     return Card(
@@ -235,7 +383,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+        side: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -247,24 +395,48 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
                 ),
-                child: Image.network(
-                  project.imageUrl,
-                  height: 160,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+                child: ColorFiltered(
+                  colorFilter: open
+                      ? const ColorFilter.mode(
+                          Colors.transparent, BlendMode.multiply)
+                      : const ColorFilter.matrix([
+                          0.2126, 0.7152, 0.0722, 0, 0,
+                          0.2126, 0.7152, 0.0722, 0, 0,
+                          0.2126, 0.7152, 0.0722, 0, 0,
+                          0,      0,      0,      1, 0,
+                        ]),
+                  child: Image.network(
+                    project.imageUrl,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
+              // Dim overlay for completed
+              if (!open)
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  child: Container(
+                    height: 160,
+                    color: Colors.black.withValues(alpha: 0.25),
+                  ),
+                ),
               Positioned(
                 top: 12,
                 right: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: badgeColor,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    project.status,
+                    badgeLabel,
                     style: GoogleFonts.inter(
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
@@ -273,6 +445,14 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   ),
                 ),
               ),
+              // Lock icon for completed
+              if (!open)
+                const Positioned(
+                  bottom: 12,
+                  left: 12,
+                  child: Icon(Icons.lock_outline_rounded,
+                      color: Colors.white70, size: 20),
+                ),
             ],
           ),
           Padding(
@@ -285,31 +465,25 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.espresso,
+                    color: open ? AppColors.espresso : AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 12, color: AppColors.placeholder),
+                    const Icon(Icons.location_on,
+                        size: 12, color: AppColors.placeholder),
                     const SizedBox(width: 4),
-                    Text(
-                      project.location,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                    Text(project.location,
+                        style: GoogleFonts.inter(
+                            fontSize: 11, color: AppColors.textSecondary)),
                     const SizedBox(width: 12),
-                    const Icon(Icons.color_lens_outlined, size: 12, color: AppColors.placeholder),
+                    const Icon(Icons.color_lens_outlined,
+                        size: 12, color: AppColors.placeholder),
                     const SizedBox(width: 4),
-                    Text(
-                      project.style,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                    Text(project.style,
+                        style: GoogleFonts.inter(
+                            fontSize: 11, color: AppColors.textSecondary)),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -331,33 +505,41 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.description_outlined, size: 16, color: AppColors.placeholder),
+                        const Icon(Icons.description_outlined,
+                            size: 16, color: AppColors.placeholder),
                         const SizedBox(width: 4),
-                        Text(
-                          '${project.proposalsCount} Proposals',
-                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
-                        ),
+                        Text('${project.proposalsCount} Proposals',
+                            style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AppColors.textSecondary)),
                         const SizedBox(width: 14),
-                        const Icon(Icons.chat_bubble_outline_rounded, size: 15, color: AppColors.placeholder),
+                        const Icon(Icons.chat_bubble_outline_rounded,
+                            size: 15, color: AppColors.placeholder),
                         const SizedBox(width: 4),
-                        Text(
-                          '${project.commentsCount}',
-                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
-                        ),
+                        Text('${project.commentsCount}',
+                            style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AppColors.textSecondary)),
                       ],
                     ),
                     ElevatedButton(
-                      onPressed: () => _showProjectDetail(project),
+                      onPressed: open ? () => _showProjectDetail(project) : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.espresso,
+                        backgroundColor:
+                            open ? AppColors.espresso : AppColors.outlineVariant,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        disabledBackgroundColor: AppColors.outlineVariant,
+                        disabledForegroundColor: AppColors.outline,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6)),
                         elevation: 0,
                       ),
                       child: Text(
-                        'View Detail',
-                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold),
+                        open ? 'View Detail' : 'Assigned',
+                        style: GoogleFonts.inter(
+                            fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -406,72 +588,98 @@ class _MarketplacePageState extends State<MarketplacePage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: const Color(0xFFD9EAA3),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               project.style.toUpperCase(),
-                              style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.bold, color: const Color(0xFF56642B)),
+                              style: GoogleFonts.inter(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF56642B)),
                             ),
                           ),
-                          Text('ID: ${project.id}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.placeholder)),
+                          Text('ID: ${project.id}',
+                              style: GoogleFonts.inter(
+                                  fontSize: 11, color: AppColors.placeholder)),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
                         project.title,
-                        style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                        style: GoogleFonts.playfairDisplay(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.espresso),
                       ),
-                      Text(
-                        project.location,
-                        style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
-                      ),
+                      Text(project.location,
+                          style: GoogleFonts.inter(
+                              fontSize: 13, color: AppColors.textSecondary)),
                       const SizedBox(height: 24),
                       Row(
                         children: [
                           Expanded(
-                            child: _buildMetricCard('Expected Start', project.date),
-                          ),
+                              child: _buildMetricCard(
+                                  'Expected Start', project.date)),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _buildMetricCard('Budget Tier', project.budgetTier),
-                          ),
+                              child: _buildMetricCard(
+                                  'Budget Tier', project.budgetTier)),
                         ],
                       ),
                       const SizedBox(height: 24),
                       Text(
                         'PROJECT DESCRIPTION',
-                        style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.placeholder, letterSpacing: 1.0),
+                        style: GoogleFonts.inter(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.placeholder,
+                            letterSpacing: 1.0),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        project.description,
-                        style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
-                      ),
+                      Text(project.description,
+                          style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                              height: 1.5)),
                       const SizedBox(height: 24),
                       Text(
                         'SERVICE REQUIREMENTS',
-                        style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.placeholder, letterSpacing: 1.0),
+                        style: GoogleFonts.inter(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.placeholder,
+                            letterSpacing: 1.0),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: project.requirements.map((req) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.outlineVariant)),
-                          child: Text(req, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.espresso)),
-                        )).toList(),
+                        children: project.requirements
+                            .map((req) => Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                          color: AppColors.outlineVariant)),
+                                  child: Text(req,
+                                      style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.espresso)),
+                                ))
+                            .toList(),
                       ),
                       if (MarketplaceState.isServiceProvider) ...[
                         const SizedBox(height: 32),
                         _SubmitProposalForm(
                           project: project,
-                          onSubmitted: () {
-                            setState(() {}); // Refresh counter
-                          },
+                          onSubmitted: () => setState(() {}),
                         ),
                       ],
                     ],
@@ -491,14 +699,23 @@ class _MarketplacePageState extends State<MarketplacePage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        border: Border.all(
+            color: AppColors.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.placeholder)),
+          Text(label,
+              style: GoogleFonts.inter(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.placeholder)),
           const SizedBox(height: 4),
-          Text(val, style: GoogleFonts.playfairDisplay(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+          Text(val,
+              style: GoogleFonts.playfairDisplay(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.espresso)),
         ],
       ),
     );
@@ -509,7 +726,8 @@ class _SubmitProposalForm extends StatefulWidget {
   final BroadcastProject project;
   final VoidCallback onSubmitted;
 
-  const _SubmitProposalForm({required this.project, required this.onSubmitted});
+  const _SubmitProposalForm(
+      {required this.project, required this.onSubmitted});
 
   @override
   State<_SubmitProposalForm> createState() => _SubmitProposalFormState();
@@ -529,9 +747,10 @@ class _SubmitProposalFormState extends State<_SubmitProposalForm> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFFD9EAA3).withOpacity(0.3),
+          color: const Color(0xFFD9EAA3).withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF56642B).withOpacity(0.3)),
+          border: Border.all(
+              color: const Color(0xFF56642B).withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
@@ -539,13 +758,17 @@ class _SubmitProposalFormState extends State<_SubmitProposalForm> {
             const SizedBox(height: 12),
             Text(
               'Proposal Submitted!',
-              style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.espresso),
+              style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.espresso),
             ),
             const SizedBox(height: 4),
             Text(
               'The Cafe Owner will review your offer and get in touch with you.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+              style:
+                  GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -558,29 +781,30 @@ class _SubmitProposalFormState extends State<_SubmitProposalForm> {
         const Divider(height: 24, color: AppColors.outlineVariant),
         Text(
           'SUBMIT PROPOSAL',
-          style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.placeholder, letterSpacing: 1.0),
+          style: GoogleFonts.inter(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: AppColors.placeholder,
+              letterSpacing: 1.0),
         ),
         const SizedBox(height: 14),
         TextField(
-          controller: _nameController,
-          decoration: _inputDecor('Your Designer/Firm Name'),
-        ),
+            controller: _nameController,
+            decoration: _inputDecor('Your Designer/Firm Name')),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
               child: TextField(
-                controller: _costController,
-                keyboardType: TextInputType.number,
-                decoration: _inputDecor('Est. Cost (\$)'),
-              ),
+                  controller: _costController,
+                  keyboardType: TextInputType.number,
+                  decoration: _inputDecor('Est. Cost (\$)')),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: TextField(
-                controller: _timelineController,
-                decoration: _inputDecor('Duration (e.g. 10 weeks)'),
-              ),
+                  controller: _timelineController,
+                  decoration: _inputDecor('Duration (e.g. 10 weeks)')),
             ),
           ],
         ),
@@ -588,23 +812,24 @@ class _SubmitProposalFormState extends State<_SubmitProposalForm> {
         TextField(
           controller: _descController,
           maxLines: 3,
-          decoration: _inputDecor('Introduce your concept or modifications...'),
+          decoration:
+              _inputDecor('Introduce your concept or modifications...'),
         ),
         const SizedBox(height: 16),
         ElevatedButton(
           onPressed: () {
-            if (_nameController.text.isEmpty || _costController.text.isEmpty) {
+            if (_nameController.text.isEmpty ||
+                _costController.text.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please fill in your name and cost estimate.')),
+                const SnackBar(
+                    content:
+                        Text('Please fill in your name and cost estimate.')),
               );
               return;
             }
-
-            // Perform dummy submit
             setState(() {
-              // Retrieve and increment in memory
-              // (Since it is referenced by reference in the list)
-              final index = MarketplaceState.broadcasts.indexWhere((element) => element.id == widget.project.id);
+              final index = MarketplaceState.broadcasts
+                  .indexWhere((e) => e.id == widget.project.id);
               if (index != -1) {
                 final proj = MarketplaceState.broadcasts[index];
                 MarketplaceState.broadcasts[index] = BroadcastProject(
@@ -630,13 +855,13 @@ class _SubmitProposalFormState extends State<_SubmitProposalForm> {
             backgroundColor: AppColors.espresso,
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 48),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             elevation: 0,
           ),
-          child: Text(
-            'Send Proposal Brief',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
-          ),
+          child: Text('Send Proposal Brief',
+              style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold, fontSize: 13)),
         ),
       ],
     );
@@ -645,13 +870,16 @@ class _SubmitProposalFormState extends State<_SubmitProposalForm> {
   InputDecoration _inputDecor(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
+      hintStyle:
+          GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+        borderSide: BorderSide(
+            color: AppColors.outlineVariant.withValues(alpha: 0.5)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
