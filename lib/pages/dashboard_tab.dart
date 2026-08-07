@@ -157,6 +157,19 @@ class _DashboardTabState extends State<DashboardTab> {
     return ShopOwnerService.firstNameFrom(fullName);
   }
 
+  String get _timeOfDayGreeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'GOOD MORNING';
+    if (hour < 17) return 'GOOD AFTERNOON';
+    return 'GOOD EVENING';
+  }
+
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Coming soon')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -171,7 +184,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 const SizedBox(height: 24),
                 // Greeting
                 Text(
-                  'GOOD MORNING, OWNER',
+                  '$_timeOfDayGreeting, OWNER',
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -599,13 +612,16 @@ class _DashboardTabState extends State<DashboardTab> {
                 color: AppColors.espresso,
               ),
             ),
-            Text(
-              'See all',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF56642B),
-                decoration: TextDecoration.underline,
+            GestureDetector(
+              onTap: () => _showComingSoon(context),
+              child: Text(
+                'See all',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF56642B),
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
           ],

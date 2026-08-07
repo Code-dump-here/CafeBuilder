@@ -271,7 +271,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                            if (errorMessage.contains('409')) {
                              errorMessage = 'You have already sent a request or hired this provider for the selected project. Please try a different project.';
                            } else {
-                             errorMessage = 'Failed to book: \${e.toString()}';
+                             errorMessage = 'Failed to book: ${e.toString()}';
                            }
                            ScaffoldMessenger.of(context).showSnackBar(
                              SnackBar(content: Text(errorMessage, style: const TextStyle(color: Colors.white))),

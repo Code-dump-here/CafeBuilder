@@ -213,7 +213,7 @@ class _LoginPageState extends State<LoginPage> {
                     // Minimal Footer
                     Center(
                       child: Text(
-                        '© 2024 CAFEBUILDER',
+                        '© ${DateTime.now().year} CAFEBUILDER',
                         style: GoogleFonts.inter(
                           fontSize: 10,
                           color: AppColors.outline.withOpacity(0.4),
@@ -297,7 +297,11 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildGoogleButton() {
     return GestureDetector(
-      onTap: () {}, // TODO: Implement Google Sign In
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in is coming soon')),
+        );
+      },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

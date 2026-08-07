@@ -146,7 +146,11 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
 
   String _statusLabel(String status) {
     if (status.isEmpty) return 'Draft';
-    return status[0].toUpperCase() + status.substring(1);
+    return status
+        .split('_')
+        .where((w) => w.isNotEmpty)
+        .map((w) => w[0].toUpperCase() + w.substring(1).toLowerCase())
+        .join(' ');
   }
 
   Color _statusColor(String status) {

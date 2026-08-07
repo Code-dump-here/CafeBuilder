@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
@@ -67,6 +68,7 @@ class _PageNavigatorWrapperState extends State<PageNavigatorWrapper>
 
   @override
   Widget build(BuildContext context) {
+    if (kReleaseMode) return widget.child;
     return Scaffold(
       body: Stack(
         children: [

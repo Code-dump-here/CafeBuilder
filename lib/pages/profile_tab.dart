@@ -234,10 +234,16 @@ class _ProfileTabState extends State<ProfileTab> {
             );
           },
         ),
-        _buildMenuItem(Icons.dashboard_customize_outlined, 'My Moodboards'),
-        _buildMenuItem(Icons.person_search_outlined, 'My Application'),
-        _buildMenuItem(Icons.history_rounded, 'Consultation History'),
+        _buildMenuItem(Icons.dashboard_customize_outlined, 'My Moodboards', onTap: () => _showComingSoon(context)),
+        _buildMenuItem(Icons.person_search_outlined, 'My Application', onTap: () => _showComingSoon(context)),
+        _buildMenuItem(Icons.history_rounded, 'Consultation History', onTap: () => _showComingSoon(context)),
       ],
+    );
+  }
+
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Coming soon')),
     );
   }
 
@@ -257,8 +263,8 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
           ),
         ),
-        _buildMenuItem(Icons.settings_outlined, 'Account Settings'),
-        _buildMenuItem(Icons.help_outline_rounded, 'Help'),
+        _buildMenuItem(Icons.settings_outlined, 'Account Settings', onTap: () => _showComingSoon(context)),
+        _buildMenuItem(Icons.help_outline_rounded, 'Help', onTap: () => _showComingSoon(context)),
       ],
     );
   }

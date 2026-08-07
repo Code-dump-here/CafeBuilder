@@ -339,7 +339,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Widget _buildGoogleButton() {
     return OutlinedButton(
-      onPressed: () {},
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in is coming soon')),
+        );
+      },
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(

@@ -84,6 +84,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   final List<_FloorItem> _floors = [_FloorItem('Ground Floor')];
   double _ceilingHeight = 3.2;
   double _storefrontWidth = 8.0;
+  late final _budgetCtrl = TextEditingController(text: _formatVND(_totalBudget));
+  late final _ceilingHeightCtrl = TextEditingController(text: _ceilingHeight.toString());
+  late final _storefrontWidthCtrl = TextEditingController(text: _storefrontWidth.toString());
 
   double get _totalArea => _floors.fold(0.0, (sum, f) => sum + f.area);
 
@@ -93,6 +96,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     _locationCtrl.dispose();
     _conceptNarrativeCtrl.dispose();
     _differentiatorsCtrl.dispose();
+    _budgetCtrl.dispose();
+    _ceilingHeightCtrl.dispose();
+    _storefrontWidthCtrl.dispose();
     for (var f in _floors) {
       f.dispose();
     }
@@ -100,6 +106,13 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   }
 
   void _nextStep() {
+    if (_currentStep == 1 &&
+        (_cafeNameCtrl.text.trim().isEmpty || _locationCtrl.text.trim().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a cafe name and location to continue.')),
+      );
+      return;
+    }
     if (_currentStep < _totalSteps - 1) {
       setState(() => _currentStep++);
     } else {
@@ -509,7 +522,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           ],
         ),
         const SizedBox(height: 28),
-        _buildTextFieldLabel('Cafe Type (Select all that apply)'),
+        _buildTextFieldLabel('Cafe Type'),
         ...[
           _buildCafeTypeTile('Dine-in Cafe', 'Full service seating', Icons.local_cafe_outlined),
           _buildCafeTypeTile('Takeaway Cafe', 'Quick grab & go', Icons.storefront),
@@ -992,7 +1005,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
               setState(() => _totalBudget = parsed);
             }
           },
-          controller: TextEditingController()..text = _formatVND(_totalBudget),
+          controller: _budgetCtrl,
         ),
         const SizedBox(height: 36),
         _buildTextFieldLabel('Budget Allocation'),
@@ -1079,6 +1092,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         setState(() {
           _selectedBudgetLevel = name;
           _totalBudget = value;
+          _budgetCtrl.text = _formatVND(_totalBudget);
         });
       },
       child: Container(
@@ -1746,7 +1760,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                       final parsed = double.tryParse(val);
                       if (parsed != null) setState(() => _ceilingHeight = parsed);
                     },
-                    controller: TextEditingController()..text = _ceilingHeight.toString(),
+                    controller: _ceilingHeightCtrl,
                   ),
                 ],
               ),
@@ -1764,7 +1778,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                       final parsed = double.tryParse(val);
                       if (parsed != null) setState(() => _storefrontWidth = parsed);
                     },
-                    controller: TextEditingController()..text = _storefrontWidth.toString(),
+                    controller: _storefrontWidthCtrl,
                   ),
                 ],
               ),
