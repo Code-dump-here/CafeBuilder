@@ -123,7 +123,7 @@ class StyleDetailPage extends StatelessWidget {
                 Text(
                   'Aesthetic Exploration'.toUpperCase(),
                   style: GoogleFonts.inter(
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primaryFixed,
                     letterSpacing: 2.0,

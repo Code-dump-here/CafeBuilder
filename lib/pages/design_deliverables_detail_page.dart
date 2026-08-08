@@ -237,7 +237,7 @@ class _DesignDeliverablesDetailPageState
                           child: Text(
                             '${counts[i]}',
                             style: GoogleFonts.inter(
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: _selectedFilter == _filters[i]
                                   ? Colors.white
@@ -397,7 +397,7 @@ class _DesignDeliverablesDetailPageState
                           Text(
                             '${design.images.length} photos',
                             style: GoogleFonts.inter(
-                                fontSize: 10,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white),
                           ),

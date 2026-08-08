@@ -213,7 +213,7 @@ class _ConstructionProgressDetailPageState
             Text(
               label,
               style: GoogleFonts.inter(
-                  fontSize: 10,
+                  fontSize: 12,
                   color: Colors.white.withOpacity(0.6)),
             ),
           ],
@@ -387,7 +387,7 @@ class _ConstructionProgressDetailPageState
                           Text(
                             statusLabel,
                             style: GoogleFonts.inter(
-                                fontSize: 10,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: statusColor),
                           ),
@@ -445,7 +445,7 @@ class _ConstructionProgressDetailPageState
                     child: Text(
                       item.category!,
                       style: GoogleFonts.inter(
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: AppColors.espresso),
                     ),
@@ -553,7 +553,7 @@ class _ConstructionProgressDetailPageState
                   Text(
                     task.description!,
                     style: GoogleFonts.inter(
-                        fontSize: 10,
+                        fontSize: 12,
                         color: AppColors.placeholder),
                   ),
               ],

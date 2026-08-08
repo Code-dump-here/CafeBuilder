@@ -443,7 +443,7 @@ class AiDesignReportPage extends StatelessWidget {
                         'AI estimates are for conceptual reference only and should be certified by a building professional.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
-                          fontSize: 10,
+                          fontSize: 12,
                           color: AppColors.placeholder,
                           height: 1.4,
                         ),
@@ -838,7 +838,7 @@ class AiDesignReportPage extends StatelessWidget {
                   child: Text(
                     z.id,
                     style: GoogleFonts.inter(
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: z.isStaffOnly ? const Color(0xFF8B5E3C) : const Color(0xFF56642B),
                     ),

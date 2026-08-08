@@ -174,7 +174,7 @@ class PackageDetailsPage extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.bold),
+            style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -232,7 +232,7 @@ class PackageDetailsPage extends StatelessWidget {
                     color: Colors.white.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(version, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                  child: Text(version, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
               if (status.isNotEmpty)
@@ -245,7 +245,7 @@ class PackageDetailsPage extends StatelessWidget {
                       color: Colors.white.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text(status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor)),
+                    child: Text(status, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusColor)),
                   ),
                 ),
             ],
@@ -259,7 +259,7 @@ class PackageDetailsPage extends StatelessWidget {
                   Text(
                     status,
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: statusColor,
                       letterSpacing: 0.5,

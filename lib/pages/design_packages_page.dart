@@ -158,7 +158,7 @@ class DesignPackagesPage extends StatelessWidget {
                 children: [
                   Text(designerName, style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.espresso)),
                   const SizedBox(height: 4),
-                  Text(designerRole, style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+                  Text(designerRole, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
                 ],
               ),
             ],
@@ -219,7 +219,7 @@ class DesignPackagesPage extends StatelessWidget {
                 children: [
                   const Icon(Icons.download_outlined, size: 16, color: AppColors.espresso),
                   const SizedBox(width: 12),
-                  Text('QUICK DOWNLOAD\n(ZIP)', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: AppColors.espresso, height: 1.2)),
+                  Text('QUICK DOWNLOAD\n(ZIP)', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: AppColors.espresso, height: 1.2)),
                 ],
               ),
             ),
@@ -233,7 +233,7 @@ class DesignPackagesPage extends StatelessWidget {
     return Text(
       text,
       style: GoogleFonts.inter(
-        fontSize: 10,
+        fontSize: 12,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
         color: AppColors.placeholder,

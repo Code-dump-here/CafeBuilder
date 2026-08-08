@@ -94,7 +94,7 @@ class MeetingNotesPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(date, style: GoogleFonts.inter(fontSize: 10, color: AppColors.placeholder)),
+              Text(date, style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder)),
               const Icon(Icons.more_horiz, size: 16, color: AppColors.placeholder),
             ],
           ),

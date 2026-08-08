@@ -296,7 +296,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
                 child: Text(
                   type,
                   style: GoogleFonts.inter(
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF56642B),
                   ),
@@ -359,7 +359,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
           const SizedBox(height: 16),
           Text(
             'CORE SERVICES',
-            style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: AppColors.placeholder),
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: AppColors.placeholder),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -417,7 +417,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
           const SizedBox(height: 24),
           Text(
             'FEATURED PROJECTS',
-            style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: AppColors.placeholder),
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: AppColors.placeholder),
           ),
           const SizedBox(height: 8),
           Column(

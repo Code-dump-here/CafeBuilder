@@ -185,7 +185,7 @@ class PackageReviewPage extends StatelessWidget {
         RichText(
           text: TextSpan(
             style: GoogleFonts.inter(
-              fontSize: 10,
+              fontSize: 12,
               color: AppColors.placeholder,
             ),
             children: const [
@@ -291,7 +291,7 @@ class PackageReviewPage extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: textColor,
             ),
@@ -358,7 +358,7 @@ class PackageReviewPage extends StatelessWidget {
                     child: Text(
                       version,
                       style: GoogleFonts.inter(
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: AppColors.espresso,
                       ),
@@ -379,7 +379,7 @@ class PackageReviewPage extends StatelessWidget {
                       child: Text(
                         tagLabel,
                         style: GoogleFonts.inter(
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: AppColors.placeholder,
                           letterSpacing: 0.5,
@@ -401,7 +401,7 @@ class PackageReviewPage extends StatelessWidget {
                   Text(
                     statusText,
                     style: GoogleFonts.inter(
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.2,
                       color: statusColor,

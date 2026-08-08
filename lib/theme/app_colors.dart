@@ -8,11 +8,17 @@ class AppColors {
   static const Color espresso = Color(0xFF4B3621);
   static const Color textPrimary = Color(0xFF1B1C1C);
   static const Color textSecondary = Color(0xFF4E453D); // onSurfaceVariant
-  static const Color placeholder = Color(0xFF80756C);
-  static const Color outline = Color(0xFF80756C);
+  // Muted text (hints, field labels, meta). Was 0xFF80756C, which sits at
+  // 4.28:1 on `background` and fails WCAG AA for normal text (needs 4.5:1).
+  // 0xFF6E645B measures 5.5:1, leaving headroom for the .withOpacity() calls
+  // these are often wrapped in.
+  static const Color placeholder = Color(0xFF6E645B);
+  static const Color outline = Color(0xFF6E645B);
+  // Decorative hairlines/borders only — no text sits on these, so the lighter
+  // tone is fine here.
   static const Color outlineVariant = Color(0xFFD2C4BA);
   static const Color signUpLink = Color(0xFF4B3621);
-  static const Color fieldLabel = Color(0xFF80756C);
+  static const Color fieldLabel = Color(0xFF6E645B);
   static const Color greyLine = Color(0xFFD2C4BA);
   static const Color googleBorder = Color(0xFFD2C4BA);
   static const Color white = Color(0xFFFFFFFF);

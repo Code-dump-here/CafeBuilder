@@ -303,7 +303,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                   Text(
                     _tabController.index == 1 ? 'COMPLETED' : 'CURRENT FOCUS',
                     style: GoogleFonts.inter(
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,
                       color: AppColors.placeholder,
@@ -317,7 +317,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                   Text(
                     'RECENT HISTORY',
                     style: GoogleFonts.inter(
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,
                       color: AppColors.placeholder,
@@ -430,7 +430,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                         child: Text(
                           _statusLabel(project.status),
                           style: GoogleFonts.inter(
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: statusColor,
                           ),
@@ -661,7 +661,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                       const SizedBox(width: 4),
                       Text(
                         'Budget: ${_formatBudget(project.budget)}',
-                        style: GoogleFonts.inter(fontSize: 10, color: AppColors.placeholder),
+                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
                       ),
                     ],
                   ),
@@ -704,7 +704,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                               children: [
                                 const Icon(Icons.podcasts_rounded, size: 10, color: Colors.white),
                                 const SizedBox(width: 4),
-                                Text('Post', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+                                Text('Post', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
                               ],
                             ),
                           ),
@@ -715,7 +715,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                           children: [
                             const Icon(Icons.check_circle_outline, size: 11, color: Color(0xFF56642B)),
                             const SizedBox(width: 4),
-                            Text('Posted', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF56642B))),
+                            Text('Posted', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF56642B))),
                           ],
                         ),
                     ],

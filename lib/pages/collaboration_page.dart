@@ -120,7 +120,7 @@ class CollaborationPage extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: () {},
               icon: const Icon(Icons.add, size: 16),
-              label: Text('New\nThread', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold)),
+              label: Text('New\nThread', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.espresso,
                 foregroundColor: Colors.white,
@@ -242,7 +242,7 @@ class CollaborationPage extends StatelessWidget {
                 ),
                 Text(
                   timeAgo,
-                  style: GoogleFonts.inter(fontSize: 10, color: AppColors.placeholder),
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
                 ),
               ],
             ),
@@ -290,7 +290,7 @@ class CollaborationPage extends StatelessWidget {
                 ],
                 Text(
                   commentsCount,
-                  style: GoogleFonts.inter(fontSize: 10, color: AppColors.placeholder),
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
                 ),
               ],
             ),
@@ -357,7 +357,7 @@ class CollaborationPage extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(
                               'High\nPriority',
-                              style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFFC6463A), fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFFC6463A), fontWeight: FontWeight.bold),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -493,7 +493,7 @@ class CollaborationPage extends StatelessWidget {
             children: [
               Text(title, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.espresso)),
               const SizedBox(height: 2),
-              Text(subtitle, style: GoogleFonts.inter(fontSize: 10, color: AppColors.placeholder)),
+              Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder)),
               if (!isLast) const SizedBox(height: 16),
             ],
           ),
@@ -533,7 +533,7 @@ class CollaborationPage extends StatelessWidget {
           ),
           Text(
             'Key Summary:',
-            style: GoogleFonts.inter(fontSize: 10, color: AppColors.placeholder),
+            style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
           ),
           const SizedBox(height: 12),
           _buildCheckItem('Wall demolition completed.', isChecked: true),
@@ -552,7 +552,7 @@ class CollaborationPage extends StatelessWidget {
               child: Text(
                 'View All Notes',
                 style: GoogleFonts.inter(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: AppColors.espresso,
                 ),

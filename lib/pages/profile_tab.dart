@@ -212,7 +212,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
               color: AppColors.outline,

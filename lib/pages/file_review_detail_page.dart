@@ -168,7 +168,7 @@ class _FileReviewDetailPageState extends State<FileReviewDetailPage> {
               child: Text(
                 tagText,
                 style: GoogleFonts.inter(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                   letterSpacing: 0.5,
@@ -314,7 +314,7 @@ class _FileReviewDetailPageState extends State<FileReviewDetailPage> {
               child: Text(
                 tag,
                 style: GoogleFonts.inter(
-                  fontSize: 10,
+                  fontSize: 12,
                   color: Colors.white,
                 ),
               ),
@@ -325,7 +325,7 @@ class _FileReviewDetailPageState extends State<FileReviewDetailPage> {
         Text(
           subtitle,
           style: GoogleFonts.inter(
-            fontSize: 10,
+            fontSize: 12,
             fontWeight: isLatest ? FontWeight.bold : FontWeight.normal,
             color: isLatest ? AppColors.espresso : AppColors.placeholder,
           ),

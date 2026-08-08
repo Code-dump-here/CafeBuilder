@@ -22,7 +22,7 @@ class ServicesTab extends StatelessWidget {
                 Text(
                   'FOR OWNERS & INVESTORS',
                   style: GoogleFonts.inter(
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textSecondary,
                     letterSpacing: 2.0,
@@ -208,7 +208,7 @@ class ServicesTab extends StatelessWidget {
                   child: Text(
                     'START NOW!',
                     style: GoogleFonts.inter(
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primaryFixed,
                     ),

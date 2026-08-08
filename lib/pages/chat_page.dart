@@ -177,11 +177,11 @@ class _ChatPageState extends State<ChatPage> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (isMe) Text(time, style: const TextStyle(fontSize: 10, color: AppColors.placeholder)),
+                  if (isMe) Text(time, style: const TextStyle(fontSize: 12, color: AppColors.placeholder)),
                   if (isMe) const SizedBox(width: 8),
                   Text(sender, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textPrimary)),
                   if (!isMe) const SizedBox(width: 8),
-                  if (!isMe) Text(time, style: const TextStyle(fontSize: 10, color: AppColors.placeholder)),
+                  if (!isMe) Text(time, style: const TextStyle(fontSize: 12, color: AppColors.placeholder)),
                 ],
               ),
               const SizedBox(height: 4),

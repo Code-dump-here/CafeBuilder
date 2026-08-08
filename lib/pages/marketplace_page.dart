@@ -217,7 +217,7 @@ class _MarketplacePageState extends State<MarketplacePage>
           child: Text(
             '$count',
             style: GoogleFonts.inter(
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               color: isActiveTab ? Colors.white : AppColors.espresso,
             ),

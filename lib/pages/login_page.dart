@@ -162,7 +162,7 @@ class _LoginPageState extends State<LoginPage> {
                           child: Text(
                             'OR CONNECT VIA',
                             style: GoogleFonts.inter(
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: AppColors.outline.withOpacity(0.5),
                               letterSpacing: 2.0,
@@ -215,7 +215,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: Text(
                         '© ${DateTime.now().year} CAFEBUILDER',
                         style: GoogleFonts.inter(
-                          fontSize: 10,
+                          fontSize: 12,
                           color: AppColors.outline.withOpacity(0.4),
                           letterSpacing: 2.0,
                         ),
@@ -238,7 +238,7 @@ class _LoginPageState extends State<LoginPage> {
       child: Text(
         text,
         style: GoogleFonts.inter(
-          fontSize: 10,
+          fontSize: 12,
           fontWeight: FontWeight.w600,
           color: AppColors.outline,
           letterSpacing: 2.0,

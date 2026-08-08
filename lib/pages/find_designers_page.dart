@@ -449,7 +449,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary),
+        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
       ),
     );
   }

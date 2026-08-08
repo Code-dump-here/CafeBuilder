@@ -89,7 +89,7 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
                     ),
                     child: Text(
                       widget.tag,
-                      style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: widget.tagTextColor),
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: widget.tagTextColor),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -165,7 +165,7 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
                 children: [
                   Text(name, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
                   const SizedBox(width: 8),
-                  Text(time, style: GoogleFonts.inter(fontSize: 10, color: AppColors.placeholder)),
+                  Text(time, style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder)),
                 ],
               ),
               const SizedBox(height: 6),

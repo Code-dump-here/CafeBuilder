@@ -293,7 +293,7 @@ class DashboardTabState extends State<DashboardTab> {
                 Text(
                   '$_timeOfDayGreeting, OWNER',
                   style: GoogleFonts.inter(
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textSecondary.withOpacity(0.8),
                     letterSpacing: 2.0,
@@ -380,7 +380,7 @@ class DashboardTabState extends State<DashboardTab> {
               Text(
                 'YOUR PROJECT',
                 style: GoogleFonts.inter(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primaryFixed.withOpacity(0.6),
                   letterSpacing: 2.0,
@@ -471,7 +471,7 @@ class DashboardTabState extends State<DashboardTab> {
                         Text(
                           'YOUR PROJECT',
                           style: GoogleFonts.inter(
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.primaryFixed.withOpacity(0.6),
                             letterSpacing: 2.0,
@@ -570,7 +570,7 @@ class DashboardTabState extends State<DashboardTab> {
                                           '+${providers.length - 2}',
                                           style: const TextStyle(
                                             color: AppColors.espresso,
-                                            fontSize: 10,
+                                            fontSize: 12,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),

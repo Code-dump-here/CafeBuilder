@@ -234,7 +234,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
                       Text(
                         item.category.toUpperCase(),
                         style: GoogleFonts.inter(
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 2.0,
                           color: AppColors.primary,

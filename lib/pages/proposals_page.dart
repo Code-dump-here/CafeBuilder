@@ -176,7 +176,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
                 child: Text(
                   apply.status.toUpperCase(),
                   style: GoogleFonts.inter(
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: isPending ? const Color(0xFF56642B) : AppColors.placeholder,
                   ),

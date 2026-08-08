@@ -103,6 +103,11 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
       builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
     );
 
+    // Declared out here so the catch block's fallback can reuse it — a copy
+    // scoped inside try{} isn't visible from catch{}.
+    String detailedDescription =
+        'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.\nLocation: ${widget.location}\nStyle: ${widget.style}\nBudget: $_budgetTier\nExpected Start: $_expectedStart';
+
     try {
       // API call to create post
       final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
@@ -116,8 +121,6 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
       } else if (hasBuild) {
         mappedServiceKind = 'construction';
       }
-
-      String detailedDescription = 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.\nLocation: ${widget.location}\nStyle: ${widget.style}\nBudget: $_budgetTier\nExpected Start: $_expectedStart';
 
       if (widget.aiReport != null) {
         final r = widget.aiReport!;
@@ -340,7 +343,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                         child: Text(
                           'New Project  • Just Now',
                           style: GoogleFonts.inter(
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: AppColors.espresso,
                           ),
@@ -625,7 +628,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
               Text(
                 'By broadcasting, you agree to our Project Sharing Terms.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 10, color: AppColors.placeholder),
+                style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
               ),
               const SizedBox(height: 8),
               ElevatedButton(
@@ -868,7 +871,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                       Text(
                         'Broadcast ID: $bId',
                         style: GoogleFonts.inter(
-                          fontSize: 10,
+                          fontSize: 12,
                           color: AppColors.placeholder,
                         ),
                       ),

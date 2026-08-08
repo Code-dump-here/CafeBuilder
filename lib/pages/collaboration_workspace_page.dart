@@ -1001,7 +1001,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                 decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
                 child: Text(
                   item.status.toUpperCase(),
-                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor),
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: statusColor),
                 ),
               ),
             ],

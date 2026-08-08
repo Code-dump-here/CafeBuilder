@@ -385,7 +385,7 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Text(
             'OR SIGN UP WITH',
             style: GoogleFonts.inter(
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppColors.outline,
               letterSpacing: 2.0,

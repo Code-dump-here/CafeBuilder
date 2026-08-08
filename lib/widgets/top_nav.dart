@@ -96,7 +96,7 @@ class _TopNavState extends State<TopNav> {
                             decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
                             child: Text(
                               _unreadCount > 9 ? '9+' : '$_unreadCount',
-                              style: GoogleFonts.inter(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),

@@ -59,7 +59,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               Text(
                 'STEP 02 / PROFILE SETUP',
                 style: GoogleFonts.inter(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppColors.outline,
                   letterSpacing: 1.5,

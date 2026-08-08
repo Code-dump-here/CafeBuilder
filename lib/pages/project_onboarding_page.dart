@@ -1121,7 +1121,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
             const SizedBox(height: 4),
             Text(
               desc,
-              style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary),
+              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1573,7 +1573,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                     Text(
                       requirement,
                       style: GoogleFonts.inter(
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: AppColors.placeholder,
                       ),

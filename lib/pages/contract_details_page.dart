@@ -364,7 +364,7 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
       child: Text(
         title.toUpperCase(),
         style: GoogleFonts.inter(
-          fontSize: 10,
+          fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.5,
           color: AppColors.placeholder,

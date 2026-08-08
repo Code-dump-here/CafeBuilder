@@ -311,7 +311,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
               ),
               child: Text(
                 'Status: ${_statusLabel(project.status)}',
-                style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),
             const SizedBox(height: 8),
@@ -364,7 +364,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           Text(
             'BUDGET OVERVIEW',
             style: GoogleFonts.inter(
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
               color: AppColors.placeholder,
@@ -397,7 +397,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                           _formatMoney(project.budget),
                           style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso),
                         ),
-                        Text('Budget', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+                        Text('Budget', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
                       ],
                     ),
                   ),
@@ -412,7 +412,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Total Budget', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+                  Text('Total Budget', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
                   Text(
                     _formatMoneyFull(project.budget),
@@ -423,7 +423,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('Area', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+                  Text('Area', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
                   Text(
                     '${project.areaM2.toStringAsFixed(0)} m²',
@@ -450,7 +450,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         children: [
           Text(
             'NEXT MILESTONE',
-            style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white.withOpacity(0.5)),
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white.withOpacity(0.5)),
           ),
           const SizedBox(height: 16),
           Text(
@@ -490,7 +490,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             children: [
               Text(text, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.espresso)),
               const SizedBox(height: 2),
-              Text(time, style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+              Text(time, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
               if (hasLine) const SizedBox(height: 16),
             ],
           ),
@@ -513,7 +513,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Recent Activity', style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso)),
-              Text('View All', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.placeholder)),
+              Text('View All', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.placeholder)),
             ],
           ),
           const SizedBox(height: 20),
@@ -659,7 +659,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 child: Text(
                   'Team complete — a designer and a constructor are on this project.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary),
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ),
             )
@@ -670,12 +670,12 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 TextButton.icon(
                   onPressed: _showRecruitProviderSheet,
                   icon: const Icon(Icons.add_circle_outline, size: 14, color: AppColors.espresso),
-                  label: Text('Post Opening', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                  label: Text('Post Opening', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
                 ),
                 TextButton.icon(
                   onPressed: _browseProvidersForProject,
                   icon: const Icon(Icons.person_search_outlined, size: 14, color: AppColors.espresso),
-                  label: Text('Find Provider', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                  label: Text('Find Provider', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
                 ),
               ],
             ),
@@ -948,7 +948,12 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     );
   }
 
-  Future<void> _navigateToWorkspace(BuildContext context, String targetContractType, {bool isChat = false}) async {
+  Future<void> _navigateToWorkspace(
+    BuildContext context,
+    String targetContractType, {
+    bool isChat = false,
+    bool designerWorkspace = false,
+  }) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -961,10 +966,21 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         pageSize: 50,
       );
       
+      // Callers pass UI wording ('designer'/'constructor'); the backend stores
+      // ServiceKind values ('design'/'construction'/'both'). Without this
+      // mapping nothing ever matched and we silently fell through to the first
+      // engagement — which could be the wrong provider entirely.
+      final target = switch (targetContractType.toLowerCase()) {
+        'designer' || 'design' => 'design',
+        'constructor' || 'construction' => 'construction',
+        final other => other,
+      };
+
       ProjectWorkingResponse? matchedWorking;
       for (final w in workings.items) {
         final type = w.contractType.toLowerCase();
-        if (type == targetContractType.toLowerCase() || type == 'company') {
+        // 'both' means one provider covering design and construction.
+        if (type == target || type == 'both') {
           matchedWorking = w;
           break;
         }
@@ -1007,9 +1023,11 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => CollaborationWorkspacePage(projectWorkingId: workingId),
+            builder: (context) => designerWorkspace
+                ? DesignerWorkspacePage(projectWorkingId: workingId)
+                : CollaborationWorkspacePage(projectWorkingId: workingId),
           ),
-        );
+        ).then((_) => _loadProject());
       }
     } catch (e) {
       if (mounted) {
@@ -1039,12 +1057,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
               _buildActionCard(
                 Icons.design_services_outlined,
                 'Design',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const DesignerWorkspacePage(projectWorkingId: 0)),
-                  );
-                },
+                // Was hardcoded to projectWorkingId: 0, which the workspace
+                // treats as "no engagement" (its lookup only runs for null),
+                // so this could never open. Resolve the real engagement first.
+                onTap: () => _navigateToWorkspace(context, 'design', designerWorkspace: true),
               ),
               const SizedBox(height: 12),
               _buildActionCard(
@@ -1329,7 +1345,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             children: [
               const Icon(Icons.campaign_outlined, color: AppColors.espresso, size: 18),
               const SizedBox(width: 8),
-              Text('FINDING PROVIDERS...', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AppColors.espresso)),
+              Text('FINDING PROVIDERS...', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AppColors.espresso)),
             ],
           ),
           const SizedBox(height: 16),
@@ -1354,11 +1370,11 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       children: [
                         const Icon(Icons.work_outline, size: 12, color: AppColors.textSecondary),
                         const SizedBox(width: 4),
-                        Text(post.serviceKind.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+                        Text(post.serviceKind.toUpperCase(), style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
                         const SizedBox(width: 16),
                         const Icon(Icons.timer_outlined, size: 12, color: AppColors.textSecondary),
                         const SizedBox(width: 4),
-                        Text('Deadline: $deadlineStr', style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary)),
+                        Text('Deadline: $deadlineStr', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
                       ],
                     ),
                   ],

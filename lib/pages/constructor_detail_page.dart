@@ -471,7 +471,7 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
             ),
             Text(
               '${rating.toStringAsFixed(1)}/5',
-              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF56642B)),
+              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF56642B)),
             ),
           ],
         ),
@@ -550,7 +550,7 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
                   ),
                   Text(
                     role,
-                    style: GoogleFonts.inter(fontSize: 10, color: AppColors.placeholder),
+                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
                   ),
                 ],
               ),

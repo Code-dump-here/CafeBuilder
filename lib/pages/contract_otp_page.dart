@@ -95,7 +95,7 @@ class _ContractOtpPageState extends State<ContractOtpPage> {
               Text(
                 'CONTRACT OVERVIEW',
                 style: GoogleFonts.inter(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
                   color: AppColors.placeholder,
@@ -145,7 +145,7 @@ class _ContractOtpPageState extends State<ContractOtpPage> {
               Text(
                 'OTP VERIFICATION',
                 style: GoogleFonts.inter(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
                   color: AppColors.placeholder,

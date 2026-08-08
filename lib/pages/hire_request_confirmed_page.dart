@@ -106,7 +106,7 @@ class HireRequestConfirmedPage extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             'CONTRACTOR',
-                            style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: AppColors.placeholder),
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: AppColors.placeholder),
                           ),
                         ],
                       ),
@@ -139,7 +139,7 @@ class HireRequestConfirmedPage extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             'ESTIMATED REPLY',
-                            style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: AppColors.placeholder),
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: AppColors.placeholder),
                           ),
                         ],
                       ),
