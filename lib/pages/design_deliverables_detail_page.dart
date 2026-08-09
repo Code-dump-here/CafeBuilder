@@ -5,7 +5,6 @@ import '../models/responses/api_responses.dart';
 import '../services/design_service.dart';
 import '../services/comment_service.dart';
 import '../widgets/comments_section.dart';
-import 'file_review_detail_page.dart';
 
 class DesignDeliverablesDetailPage extends StatefulWidget {
   final List<DesignResponse> designs;
@@ -546,44 +545,6 @@ class _DesignDeliverablesDetailPageState
                         ),
                       ),
                     ],
-                  ),
-                ] else ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        final statusEnum = isApproved
-                            ? ReviewItemStatus.approved
-                            : ReviewItemStatus.revision;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => FileReviewDetailPage(
-                              title: design.title,
-                              imageUrl: firstImage ??
-                                  'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
-                              status: statusEnum,
-                              designId: design.id,
-                              onUpdated: widget.onUpdated,
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.remove_red_eye,
-                          size: 16, color: AppColors.espresso),
-                      label: const Text('View Full Detail'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.espresso,
-                        side:
-                            const BorderSide(color: AppColors.outlineVariant),
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 12),
-                        textStyle: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600, fontSize: 13),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
                   ),
                 ],
 

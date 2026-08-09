@@ -4,7 +4,7 @@ import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/project_working_service.dart';
 import '../services/design_service.dart';
-import 'file_review_detail_page.dart';
+import 'design_deliverables_detail_page.dart';
 
 class DesignerWorkspacePage extends StatefulWidget {
   final int? projectWorkingId;
@@ -454,17 +454,14 @@ class _DesignerWorkspacePageState extends State<DesignerWorkspacePage> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        final statusEnum = isApproved
-                            ? ReviewItemStatus.approved
-                            : ReviewItemStatus.revision;
+                        // Open the real deliverables page (live images +
+                        // comments) rather than FileReviewDetailPage, whose
+                        // revision timeline is hardcoded mock data.
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => FileReviewDetailPage(
-                              title: design.title,
-                              imageUrl: firstImage ?? 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
-                              status: statusEnum,
-                              designId: design.id,
+                            builder: (context) => DesignDeliverablesDetailPage(
+                              designs: [design],
                               onUpdated: _loadWorkspaceData,
                             ),
                           ),
@@ -487,25 +484,6 @@ class _DesignerWorkspacePageState extends State<DesignerWorkspacePage> {
         ],
       ),
     );
-  }
-
-  Future<void> _requestCompletion() async {
-    if (_activeWorkingId == null) return;
-    try {
-      await ProjectWorkingService.requestCompletion(_activeWorkingId!);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Báo hoàn thành thành công.')),
-        );
-        _loadWorkspaceData();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), duration: const Duration(seconds: 5)),
-        );
-      }
-    }
   }
 
   Future<void> _terminateEngagement() async {
@@ -548,27 +526,17 @@ class _DesignerWorkspacePageState extends State<DesignerWorkspacePage> {
   Widget _buildActionButtons() {
     if (_working == null) return const SizedBox();
     
-    final bool canRequestCompletion = _working!.status == 'accepted' && _working!.hasConfirmedContract && !_working!.isAwaitingAcceptance;
     final bool isAwaitingAcceptance = _working!.isAwaitingAcceptance;
     final bool canTerminate = _working!.status == 'accepted';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (canRequestCompletion)
-          ElevatedButton.icon(
-            onPressed: _requestCompletion,
-            icon: const Icon(Icons.check_circle, color: Colors.white),
-            label: const Text('Báo hoàn thành'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          )
-        else if (isAwaitingAcceptance)
+        // "Báo hoàn thành" (request-completion) is provider-only — the backend
+        // enforces EngagementActor.Provider — so it's not shown in this
+        // owner-side app. The owner's counterpart is "Nghiệm thu" (accept),
+        // which lives in the Collaboration Workspace.
+        if (isAwaitingAcceptance)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(

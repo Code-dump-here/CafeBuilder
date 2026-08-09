@@ -5,8 +5,6 @@ import '../services/project_service.dart';
 import '../services/api_client.dart';
 import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
-import 'designer_workspace_page.dart';
-import 'collaboration_page.dart';
 import 'proposals_page.dart';
 import 'contract_otp_page.dart';
 import 'contract_details_page.dart';
@@ -657,6 +655,26 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       ))
                   .toList(),
             ),
+            const SizedBox(height: 10),
+            // Applications only used to be reachable from the no-providers
+            // state, so once anyone joined you could no longer accept people
+            // applying to your still-open posts.
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProposalsPage(openPosts: _stillRecruiting),
+                    ),
+                  ).then((_) => _loadProject());
+                },
+                icon: const Icon(Icons.how_to_reg_outlined, size: 16, color: AppColors.espresso),
+                label: Text('View applications',
+                    style: GoogleFonts.inter(
+                        fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+              ),
+            ),
           ],
           // Posts whose role has since been filled are still live on the
           // marketplace pulling in applications nobody can accept.
@@ -1068,7 +1086,6 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     BuildContext context,
     String targetContractType, {
     bool isChat = false,
-    bool designerWorkspace = false,
   }) async {
     showDialog(
       context: context,
@@ -1139,9 +1156,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => designerWorkspace
-                ? DesignerWorkspacePage(projectWorkingId: workingId)
-                : CollaborationWorkspacePage(projectWorkingId: workingId),
+            builder: (context) => CollaborationWorkspacePage(projectWorkingId: workingId),
           ),
         ).then((_) => _loadProject());
       }
@@ -1162,21 +1177,12 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         Expanded(
           child: Column(
             children: [
+              // Approve / Design / Constructor all opened the same
+              // project-wide workspace, so they're one action now.
               _buildActionCard(
-                Icons.check_circle_outline,
-                'Approve',
-                onTap: () {
-                  _navigateToWorkspace(context, 'designer');
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildActionCard(
-                Icons.design_services_outlined,
-                'Design',
-                // Was hardcoded to projectWorkingId: 0, which the workspace
-                // treats as "no engagement" (its lookup only runs for null),
-                // so this could never open. Resolve the real engagement first.
-                onTap: () => _navigateToWorkspace(context, 'design', designerWorkspace: true),
+                Icons.dashboard_customize_outlined,
+                'Workspace',
+                onTap: () => _navigateToWorkspace(context, 'designer'),
               ),
               const SizedBox(height: 12),
               _buildActionCard(
@@ -1192,18 +1198,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           child: Column(
             children: [
               _buildActionCard(
-                Icons.group_outlined, 
-                'Collab', 
+                Icons.forum_outlined,
+                'Message',
                 onTap: () {
                   _navigateToWorkspace(context, 'designer', isChat: true);
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildActionCard(
-                Icons.construction_outlined,
-                'Constructor',
-                onTap: () {
-                  _navigateToWorkspace(context, 'constructor');
                 },
               ),
             ],

@@ -8,7 +8,6 @@ import '../services/design_service.dart';
 import '../services/construction_service.dart';
 import '../services/review_service.dart';
 import 'contract_otp_page.dart';
-import 'file_review_detail_page.dart';
 import 'design_deliverables_detail_page.dart';
 import 'construction_progress_detail_page.dart';
 
@@ -467,8 +466,14 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                           ),
                         ),
                         const SizedBox(height: 4),
+                        // This page aggregates contracts, designs and
+                        // construction across every engagement on the project,
+                        // so label it by project — naming a single engagement
+                        // implied a scope the content doesn't have.
                         Text(
-                          'Engagement ID #${_working?.id} • Provider: ${_working?.providerDisplayName ?? 'Partner Studio'}',
+                          _working?.projectName.isNotEmpty == true
+                              ? _working!.projectName
+                              : 'All contracts, designs and construction',
                           style: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 13),
                         ),
                         const SizedBox(height: 20),
@@ -842,17 +847,14 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        final statusEnum = isApproved
-                            ? ReviewItemStatus.approved
-                            : ReviewItemStatus.revision;
+                        // Open the real deliverables page (live images +
+                        // comments) rather than FileReviewDetailPage, whose
+                        // revision timeline is hardcoded mock data.
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => FileReviewDetailPage(
-                              title: design.title,
-                              imageUrl: firstImage ?? 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
-                              status: statusEnum,
-                              designId: design.id,
+                            builder: (context) => DesignDeliverablesDetailPage(
+                              designs: [design],
                               onUpdated: _loadWorkspaceData,
                             ),
                           ),
