@@ -8,9 +8,12 @@ import '../models/responses/api_responses.dart';
 import 'proposals_page.dart';
 import 'contract_otp_page.dart';
 import 'contract_details_page.dart';
+import 'design_deliverables_detail_page.dart';
 import 'collaboration_workspace_page.dart';
 import '../services/contract_service.dart';
 import '../services/project_working_service.dart';
+import '../services/construction_service.dart';
+import '../services/design_service.dart';
 import '../widgets/notifications_sheet.dart';
 import 'home_page.dart';
 import 'chat_thread_page.dart';
@@ -34,8 +37,72 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   ProjectResponse? _project;
   String _ownerFirstName = 'Owner';
   List<ProjectWorkingResponse> _projectWorkings = [];
+  List<ConstructionItemResponse> _constructionItems = [];
+  List<DesignResponse> _designs = [];
+  List<ContractResponse> _contracts = [];
   bool _loading = true;
   String? _error;
+
+  /// A contract awaiting the owner's OTP. Scans every engagement — looking at
+  /// only the first missed contracts on the second provider.
+  ContractResponse? get _pendingContract {
+    for (final c in _contracts) {
+      if (c.status.toLowerCase() == 'pending_otp') return c;
+    }
+    return null;
+  }
+
+  /// Designs still waiting on the owner's approve/revision decision.
+  List<DesignResponse> get _designsAwaitingReview => _designs
+      .where((d) => const {'pending', 'submitted'}.contains(d.status.toLowerCase()))
+      .toList();
+
+  /// Earliest unfinished milestone with a date — the genuine "next" one.
+  ConstructionItemResponse? get _nextMilestone {
+    final pending = _constructionItems
+        .where((i) => i.status.toLowerCase() != 'completed' && i.estimateAt != null)
+        .toList()
+      ..sort((a, b) => a.estimateAt!.compareTo(b.estimateAt!));
+    return pending.isNotEmpty ? pending.first : null;
+  }
+
+  /// Most recent work across designs and construction, newest first.
+  List<({String title, DateTime at})> get _recentActivity {
+    final items = <({String title, DateTime at})>[
+      for (final d in _designs)
+        (
+          title: d.title.isNotEmpty
+              ? '${d.title} · ${_designVerb(d.status)}'
+              : 'Design ${_designVerb(d.status)}',
+          at: d.updatedAt
+        ),
+      for (final c in _constructionItems)
+        (title: '${c.name} · ${_itemVerb(c.status)}', at: c.updatedAt),
+    ]..sort((a, b) => b.at.compareTo(a.at));
+    return items.take(3).toList();
+  }
+
+  static String _designVerb(String status) => switch (status.toLowerCase()) {
+        'approved' => 'approved',
+        'revision' => 'revision requested',
+        'submitted' => 'submitted',
+        _ => 'updated',
+      };
+
+  static String _itemVerb(String status) => switch (status.toLowerCase()) {
+        'completed' => 'completed',
+        'in_progress' => 'in progress',
+        _ => 'pending',
+      };
+
+  String _relativeDay(DateTime dt) {
+    final d = DateTime.now().difference(dt);
+    if (d.inHours < 1) return 'just now';
+    if (d.inHours < 24) return '${d.inHours}h ago';
+    if (d.inDays == 1) return 'yesterday';
+    if (d.inDays < 7) return '${d.inDays} days ago';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
 
   @override
   void initState() {
@@ -68,11 +135,43 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         ShopOwnerService.getCurrentOwnerFirstName(),
         ProjectWorkingService.getProjectWorkings(projectShopOwnerId: widget.projectId, pageSize: 50),
       ]);
+      final workings = (results[2] as PaginationResponse<ProjectWorkingResponse>).items;
+
+      // Real milestone + activity data lives per-engagement, so gather it in
+      // parallel rather than serially.
+      final items = <ConstructionItemResponse>[];
+      final designs = <DesignResponse>[];
+      final contracts = <ContractResponse>[];
+      if (workings.isNotEmpty) {
+        final fetched = await Future.wait([
+          for (final w in workings)
+            ConstructionService.getMilestones(projectWorkingId: w.id, pageSize: 50)
+                .then<Object?>((r) => r)
+                .catchError((_) => null),
+          for (final w in workings)
+            DesignService.getDesigns(projectWorkingId: w.id, pageSize: 50)
+                .then<Object?>((r) => r)
+                .catchError((_) => null),
+          for (final w in workings)
+            ContractService.getContracts(projectWorkingId: w.id, pageSize: 50)
+                .then<Object?>((r) => r)
+                .catchError((_) => null),
+        ]);
+        for (final r in fetched) {
+          if (r is PaginationResponse<ConstructionItemResponse>) items.addAll(r.items);
+          if (r is PaginationResponse<DesignResponse>) designs.addAll(r.items);
+          if (r is PaginationResponse<ContractResponse>) contracts.addAll(r.items);
+        }
+      }
+
       if (mounted) {
         setState(() {
           _project = results[0] as ProjectResponse;
           _ownerFirstName = results[1] as String;
-          _projectWorkings = (results[2] as PaginationResponse<ProjectWorkingResponse>).items;
+          _projectWorkings = workings;
+          _constructionItems = items;
+          _designs = designs;
+          _contracts = contracts;
           _loading = false;
         });
       }
@@ -462,7 +561,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Lighting Plan Approval',
+            _nextMilestone?.name ?? 'No upcoming milestone',
             style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 8),
@@ -471,7 +570,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
               Icon(Icons.calendar_today_outlined, size: 14, color: Colors.white.withOpacity(0.7)),
               const SizedBox(width: 8),
               Text(
-                'Oct 28, 2024',
+                _nextMilestone?.estimateAt != null
+                    ? '${_nextMilestone!.estimateAt!.day}/${_nextMilestone!.estimateAt!.month}/${_nextMilestone!.estimateAt!.year}'
+                    : 'Scheduled once construction is planned',
                 style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withOpacity(0.7)),
               ),
             ],
@@ -525,8 +626,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             ],
           ),
           const SizedBox(height: 20),
-          _buildActivityItem('Designer uploaded revised render', '2 hours ago', const Color(0xFFD9EAA3)),
-          _buildActivityItem('Contractor submitted quotation', 'Yesterday', const Color(0xFFD9EAA3)),
+          if (_recentActivity.isEmpty)
+            Text(
+              'No activity yet — updates appear here once your providers submit work.',
+              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.5),
+            )
+          else
+            for (final a in _recentActivity)
+              _buildActivityItem(a.title, _relativeDay(a.at), const Color(0xFFD9EAA3)),
           _buildActivityItem('$_ownerFirstName approved Floor Layout v.2', 'Oct 24', AppColors.outlineVariant, hasLine: false),
         ],
       )
@@ -534,6 +641,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   }
 
   Widget _buildPendingApprovals() {
+    // Nothing awaiting the owner — don't show an empty panel promising action.
+    if (_pendingContract == null && _designsAwaitingReview.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -546,37 +657,39 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         children: [
           Text('Pending Approvals', style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso)),
           const SizedBox(height: 16),
-          _buildApprovalItem('Sign Pending Contract', onTap: () async {
-            // Find the project working and contract
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
-            );
-            try {
-              final workings = await ProjectWorkingService.getProjectWorkings(projectShopOwnerId: _project!.id, pageSize: 1);
-              if (workings.items.isEmpty) throw Exception('No active engagement found.');
-              
-              final contracts = await ContractService.getContracts(projectWorkingId: workings.items.first.id, pageSize: 50);
-              final pendingContracts = contracts.items.where((c) => c.status == 'pending_otp').toList();
-              if (pendingContracts.isEmpty) throw Exception('No pending contract found for this engagement.');
-              
-              if (mounted) {
-                Navigator.pop(context); // close dialog
+          // Both items are driven by data loaded with the project, so they
+          // only appear when there is genuinely something to act on.
+          if (_pendingContract != null)
+            _buildApprovalItem(
+              'Sign contract: ${_pendingContract!.title}',
+              onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ContractOtpPage(contract: pendingContracts.first)),
+                  MaterialPageRoute(
+                    builder: (context) => ContractOtpPage(contract: _pendingContract!),
+                  ),
                 ).then((_) => _loadProject());
-              }
-            } catch (e) {
-              if (mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-              }
-            }
-          }),
-          const SizedBox(height: 8),
-          _buildApprovalItem('Approve 3D Layout'),
+              },
+            ),
+          if (_pendingContract != null && _designsAwaitingReview.isNotEmpty)
+            const SizedBox(height: 8),
+          if (_designsAwaitingReview.isNotEmpty)
+            _buildApprovalItem(
+              _designsAwaitingReview.length == 1
+                  ? 'Review design: ${_designsAwaitingReview.first.title}'
+                  : 'Review ${_designsAwaitingReview.length} designs',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DesignDeliverablesDetailPage(
+                      designs: _designsAwaitingReview,
+                      onUpdated: _loadProject,
+                    ),
+                  ),
+                ).then((_) => _loadProject());
+              },
+            ),
         ],
       )
     );
