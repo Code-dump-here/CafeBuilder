@@ -19,6 +19,7 @@ import 'chat_thread_page.dart';
 import '../services/chat_service.dart';
 import '../services/post_service.dart';
 import 'edit_project_page.dart';
+import 'ai_advice_page.dart';
 import 'find_designers_page.dart';
 import 'find_constructors_page.dart';
 
@@ -155,6 +156,15 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         ),
         centerTitle: true,
         actions: [
+          if (project != null)
+            IconButton(
+              tooltip: 'Ask AI about this project',
+              icon: const Icon(Icons.psychology_outlined, color: AppColors.espresso),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AiAdvicePage(project: project)),
+              ),
+            ),
           if (project != null)
             IconButton(
               icon: const Icon(Icons.edit_outlined, color: AppColors.espresso),
