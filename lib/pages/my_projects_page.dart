@@ -94,14 +94,19 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
     }
   }
 
-  bool _isCompleted(ProjectResponse p) =>
-      p.status.toLowerCase() == 'completed';
+  /// A project is closed once it's completed *or* cancelled. Cancelled ones
+  /// used to fall through to the "Active" tab, which is why finished work kept
+  /// cluttering the list.
+  bool _isClosed(ProjectResponse p) {
+    final s = p.status.toLowerCase();
+    return s == 'completed' || s == 'cancelled';
+  }
 
   List<ProjectResponse> get _filteredProjects {
     final query = _searchController.text.trim().toLowerCase();
     final byTab = _projects.where((p) {
-      final completed = _isCompleted(p);
-      return _tabController.index == 1 ? completed : !completed;
+      final closed = _isClosed(p);
+      return _tabController.index == 1 ? closed : !closed;
     });
     if (query.isEmpty) return byTab.toList();
     return byTab
@@ -261,7 +266,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                 dividerColor: AppColors.outlineVariant.withOpacity(0.5),
                 tabs: const [
                   Tab(text: 'Active'),
-                  Tab(text: 'Completed'),
+                  Tab(text: 'Closed'),
                 ],
               ),
               const SizedBox(height: 24),
@@ -283,7 +288,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                   icon: Icons.folder_open_outlined,
                   title: _projects.isEmpty
                       ? 'Start your first project'
-                      : (_tabController.index == 1 ? 'No completed projects' : 'No active projects'),
+                      : (_tabController.index == 1 ? 'No closed projects' : 'No active projects'),
                   subtitle: _projects.isEmpty
                       ? 'Set up your café details and we\'ll help you find a designer or constructor.'
                       : 'Try another tab or clear your search.',

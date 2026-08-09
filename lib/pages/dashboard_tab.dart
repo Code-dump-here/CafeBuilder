@@ -78,7 +78,12 @@ class DashboardTabState extends State<DashboardTab> {
         ownerId: shopOwnerId,
         pageSize: 50,
       );
-      final projects = List<ProjectResponse>.from(projectsResult.items)
+      // Cancelled projects still get an updatedAt bump when they're cancelled,
+      // so without this the newest cancelled project becomes the featured card
+      // on Home. Completed ones stay eligible — finished work is worth showing.
+      final projects = projectsResult.items
+          .where((p) => p.status.toLowerCase() != 'cancelled')
+          .toList()
         ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
       ProjectResponse? latest;

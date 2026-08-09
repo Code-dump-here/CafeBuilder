@@ -636,29 +636,61 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 ),
               );
             }),
-          if (_project != null && _project!.openPosts.isNotEmpty) ...[
+          if (_stillRecruiting.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text('Recruiting', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: AppColors.outline)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _project!.openPosts.map((post) {
-                final label = post.serviceKind == 'both'
-                    ? 'Designer + Constructor'
-                    : (post.serviceKind.isNotEmpty ? (post.serviceKind[0].toUpperCase() + post.serviceKind.substring(1)) : 'Provider');
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryFixed.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '$label · ${post.status}',
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.espresso),
-                  ),
-                );
-              }).toList(),
+              children: _stillRecruiting
+                  .map((post) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryFixed.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${_postLabel(post)} · ${post.status}',
+                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.espresso),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ],
+          // Posts whose role has since been filled are still live on the
+          // marketplace pulling in applications nobody can accept.
+          if (_stalePosts.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text('Still posted but already filled',
+                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: AppColors.outline)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _stalePosts
+                  .map((post) => GestureDetector(
+                        onTap: () => _closePost(post),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF6F3F2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.outlineVariant),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_postLabel(post),
+                                  style: GoogleFonts.inter(
+                                      fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                              const SizedBox(width: 6),
+                              const Icon(Icons.close_rounded, size: 13, color: AppColors.outline),
+                            ],
+                          ),
+                        ),
+                      ))
+                  .toList(),
             ),
           ],
           const SizedBox(height: 8),
@@ -710,6 +742,80 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
   bool get _designTaken => _roleTaken('design');
   bool get _constructionTaken => _roleTaken('construction');
+
+  String _postLabel(OpenPostResponse p) {
+    final k = p.serviceKind.toLowerCase();
+    if (k == 'both') return 'Designer + Constructor';
+    if (k == 'design') return 'Designer';
+    if (k == 'construction') return 'Constructor';
+    return p.serviceKind.isEmpty ? 'Provider' : p.serviceKind;
+  }
+
+  /// True when a post is still advertised but the role it asks for is now
+  /// filled — so it keeps attracting applications that can't be accepted.
+  bool _postIsStale(OpenPostResponse p) {
+    if (p.status.toLowerCase() != 'open') return false;
+    switch (p.serviceKind.toLowerCase()) {
+      case 'both':
+        return _designTaken || _constructionTaken;
+      case 'design':
+        return _designTaken;
+      case 'construction':
+        return _constructionTaken;
+      default:
+        return false;
+    }
+  }
+
+  List<OpenPostResponse> get _stillRecruiting =>
+      (_project?.openPosts ?? const <OpenPostResponse>[])
+          .where((p) => p.status.toLowerCase() == 'open' && !_postIsStale(p))
+          .toList();
+
+  List<OpenPostResponse> get _stalePosts =>
+      (_project?.openPosts ?? const <OpenPostResponse>[]).where(_postIsStale).toList();
+
+  Future<void> _closePost(OpenPostResponse post) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Close this opening?',
+            style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold, color: AppColors.espresso)),
+        content: Text(
+          'The ${_postLabel(post)} role is already filled. Closing removes the '
+          'listing from the marketplace so you stop receiving applications.\n\n'
+          'Closed listings are not shown here afterwards — if you need this role '
+          'again, post a new opening.',
+          style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep it')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Close listing',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.espresso)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await PostService.updatePost(post.id, UpdatePostRequest(status: 'closed'));
+      await _loadProject();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Listing closed')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not close listing: $e')),
+        );
+      }
+    }
+  }
 
   /// Browse providers with the project already known. Only roles the project
   /// still has an open slot for are offered.
@@ -1335,8 +1441,66 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             ),
           ),
         ],
+        // Delete is only offered once the project is closed — the backend
+        // rejects it otherwise ("cancel or complete before deleting").
+        if (isCompleted || project.status.toLowerCase() == 'cancelled') ...[
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _deleteProject,
+              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+              label: const Text('Delete project'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+        ],
       ],
     );
+  }
+
+  Future<void> _deleteProject() async {
+    final name = _project?.name ?? 'this project';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete project?',
+            style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold, color: AppColors.espresso)),
+        content: Text(
+          'This permanently removes "$name" and its history. This cannot be undone.',
+          style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Delete',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ProjectService.deleteProject(widget.projectId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Project deleted')),
+      );
+      Navigator.pop(context, true); // back to the list, which reloads
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not delete: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildRecruitingStatus(List<OpenPostResponse> posts) {

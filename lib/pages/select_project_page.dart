@@ -85,7 +85,13 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
       );
       if (mounted) {
         setState(() {
-          _projects = result.items;
+          // Cancelled and completed are terminal states — a provider can't be
+          // engaged on either, so offering them here only invites a failed
+          // request. Also keeps this list short enough to scan on a phone.
+          _projects = result.items.where((p) {
+            final s = p.status.toLowerCase();
+            return s != 'cancelled' && s != 'completed';
+          }).toList();
           _selectedIndex = 0;
           _loading = false;
         });
@@ -235,7 +241,8 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Text(
-                          'You don\'t have any projects yet. Create one to share with ${widget.designerName}.',
+                          'No open projects to share with ${widget.designerName}. '
+                          'Completed and cancelled projects can\'t take on new providers — create a new one below.',
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             color: AppColors.textSecondary,
