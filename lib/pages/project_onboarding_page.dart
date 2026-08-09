@@ -33,7 +33,11 @@ class _FloorItem {
 }
 
 class ProjectOnboardingPage extends StatefulWidget {
-  const ProjectOnboardingPage({super.key});
+  /// Preselects the step-7 interior style, e.g. when starting a project from
+  /// a Gallery inspiration. Null keeps the default.
+  final String? initialSoul;
+
+  const ProjectOnboardingPage({super.key, this.initialSoul});
 
   @override
   State<ProjectOnboardingPage> createState() => _ProjectOnboardingPageState();
@@ -89,6 +93,15 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   late final _storefrontWidthCtrl = TextEditingController(text: _storefrontWidth.toString());
 
   double get _totalArea => _floors.fold(0.0, (sum, f) => sum + f.area);
+
+  @override
+  void initState() {
+    super.initState();
+    // Arriving from the Gallery preselects the style the user was browsing.
+    // It's only a starting point — step 7 can still change it.
+    final soul = widget.initialSoul;
+    if (soul != null && soul.isNotEmpty) _selectedSoul = soul;
+  }
 
   @override
   void dispose() {

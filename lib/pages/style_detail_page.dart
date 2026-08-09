@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../theme/app_colors.dart';
 import 'discovery_page.dart';
+import 'project_onboarding_page.dart';
 
 class StyleDetailPage extends StatelessWidget {
   final InspirationItem item;
@@ -34,7 +35,7 @@ class StyleDetailPage extends StatelessWidget {
             ],
           ),
           _buildStickyHeader(context),
-          _buildBottomActionButtons(),
+          _buildBottomActionButtons(context),
         ],
       ),
     );
@@ -344,7 +345,168 @@ class StyleDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomActionButtons() {
+  /// Gallery categories and the step-7 style options are two separate lists,
+  /// so map between them rather than passing a value onboarding won't match.
+  String get _mappedSoul {
+    switch (item.category.toLowerCase()) {
+      case 'industrial':
+        return 'Industrial';
+      case 'japandi':
+      case 'modern japanese':
+        return 'Japandi';
+      case 'vintage':
+        return 'Vintage';
+      case 'minimalist':
+      default:
+        return 'Modern Minimal';
+    }
+  }
+
+  /// Deliberately a two-step hand-off: browsing shouldn't drop you into a
+  /// 9-step wizard by accident, so explain what's about to happen and let the
+  /// user back out.
+  void _applyToProject(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Start a project in this style?',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.espresso,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'We\'ll open the project brief with "$_mappedSoul" already chosen as '
+                'your interior style. Everything stays editable — you can change '
+                'it, or any other answer, before finishing.',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  height: 1.55,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF6F3F2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+                        item.imageUrl,
+                        width: 52,
+                        height: 52,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 52,
+                          height: 52,
+                          color: AppColors.outlineVariant,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(item.title,
+                              style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.espresso)),
+                          const SizedBox(height: 2),
+                          Text('Style: $_mappedSoul',
+                              style: GoogleFonts.inter(
+                                  fontSize: 12, color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.espresso,
+                        side: const BorderSide(color: AppColors.outlineVariant),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text('Keep browsing',
+                          style: GoogleFonts.inter(
+                              fontSize: 13, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ProjectOnboardingPage(initialSoul: _mappedSoul),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.espresso,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text('Start brief',
+                          style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomActionButtons(BuildContext context) {
     return Positioned(
       bottom: 0,
       left: 0,
@@ -366,7 +528,9 @@ class StyleDetailPage extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Container(
+              child: GestureDetector(
+                onTap: () => _applyToProject(context),
+                child: Container(
                 height: 56,
                 decoration: BoxDecoration(
                   color: AppColors.espresso,
@@ -396,6 +560,7 @@ class StyleDetailPage extends StatelessWidget {
                     ],
                   ),
                 ),
+              ),
               ),
             ),
             const SizedBox(width: 12),
