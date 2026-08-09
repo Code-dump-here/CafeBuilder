@@ -413,6 +413,7 @@ class _MarketplacePageState extends State<MarketplacePage>
                           0,      0,      0,      1, 0,
                         ]),
                   child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     project.imageUrl,
                     height: 160,
                     width: double.infinity,
@@ -632,6 +633,7 @@ class _MarketplacePageState extends State<MarketplacePage>
                         child: Stack(
                           children: [
                             Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                               project.imageUrl,
                               height: 200,
                               width: double.infinity,

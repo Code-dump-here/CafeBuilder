@@ -118,6 +118,7 @@ class ServicesTab extends StatelessWidget {
             AspectRatio(
               aspectRatio: 16 / 9,
               child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                 imageUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (c, e, s) => Container(color: Colors.grey[100]),
@@ -265,6 +266,7 @@ class ServicesTab extends StatelessWidget {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
             child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
               'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=600',
               height: 200,
               width: double.infinity,

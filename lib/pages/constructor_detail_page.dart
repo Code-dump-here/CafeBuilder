@@ -494,6 +494,7 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
             imageUrl,
             height: 200,
             width: double.infinity,

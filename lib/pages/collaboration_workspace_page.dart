@@ -733,6 +733,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               child: Stack(
                 children: [
                   Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     firstImage,
                     height: 160,
                     width: double.infinity,
@@ -1043,7 +1044,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Image.network(imgUrl!, fit: BoxFit.cover),
+                                  Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,imgUrl!, fit: BoxFit.cover),
                                   TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
                                 ],
                               ),

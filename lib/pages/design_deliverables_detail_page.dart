@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/design_service.dart';
+import '../services/comment_service.dart';
+import '../widgets/comments_section.dart';
 import 'file_review_detail_page.dart';
 
 class DesignDeliverablesDetailPage extends StatefulWidget {
@@ -341,6 +343,7 @@ class _DesignDeliverablesDetailPageState
               children: [
                 firstImage != null
                     ? Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                         firstImage,
                         height: 180,
                         width: double.infinity,
@@ -609,6 +612,7 @@ class _DesignDeliverablesDetailPageState
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(7),
                               child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                                 img.viewUrl,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Container(
@@ -625,6 +629,14 @@ class _DesignDeliverablesDetailPageState
                     ),
                   ),
                 ],
+                const SizedBox(height: 28),
+                // Shared thread — the provider posts into the same list, so a
+                // revision request can carry the reason with it.
+                CommentsSection(
+                  targetType: CommentService.targetDesign,
+                  targetId: design.id,
+                  title: 'Discussion',
+                ),
               ],
             ),
           ),
@@ -654,7 +666,8 @@ class _DesignDeliverablesDetailPageState
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(url, fit: BoxFit.contain),
+              child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,url, fit: BoxFit.contain),
             ),
             Positioned(
               top: 8,

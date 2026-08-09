@@ -766,6 +766,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           child: Stack(
             children: [
               Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                 imgUrl,
                 height: 120,
                 width: double.infinity,
@@ -940,6 +941,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                     bottomRight: Radius.circular(14),
                   ),
                   child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     imgUrl,
                     height: 140,
                     fit: BoxFit.cover,
@@ -1234,6 +1236,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                   imgUrl,
                   width: 60,
                   height: 60,
@@ -1355,6 +1358,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                   topRight: Radius.circular(14),
                 ),
                 child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                   imgUrl,
                   height: 180,
                   fit: BoxFit.cover,

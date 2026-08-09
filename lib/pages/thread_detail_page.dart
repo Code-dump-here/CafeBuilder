@@ -198,7 +198,8 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
                         spacing: 8,
                         children: attachments.map((url) => ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(url, height: 100, width: 140, fit: BoxFit.cover),
+                          child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,url, height: 100, width: 140, fit: BoxFit.cover),
                         )).toList(),
                       ),
                     ]

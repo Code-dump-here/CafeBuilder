@@ -1103,3 +1103,40 @@ class NotificationResponse {
         createdAt: DateTime.parse(json['createdAt']),
       );
 }
+
+// ── Comments ────────────────────────────────────────────────────────────────
+
+/// A comment on a design deliverable or construction item. Both the project
+/// owner and the engaged provider can post to the same thread.
+class CommentResponse {
+  final int id;
+  final String targetType;
+  final int targetId;
+  final String body;
+  final int? createdBy;
+  final String? createdByName;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  CommentResponse({
+    required this.id,
+    required this.targetType,
+    required this.targetId,
+    required this.body,
+    this.createdBy,
+    this.createdByName,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory CommentResponse.fromJson(Map<String, dynamic> json) => CommentResponse(
+        id: json['id'] is num ? (json['id'] as num).toInt() : 0,
+        targetType: json['targetType']?.toString() ?? '',
+        targetId: json['targetId'] is num ? (json['targetId'] as num).toInt() : 0,
+        body: json['body']?.toString() ?? '',
+        createdBy: json['createdBy'] is num ? (json['createdBy'] as num).toInt() : null,
+        createdByName: json['createdByName']?.toString(),
+        createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+        updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+      );
+}

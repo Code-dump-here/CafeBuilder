@@ -67,6 +67,7 @@ class _ElementDetailsPageState extends State<ElementDetailsPage> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=800',
                     height: 200,
                     width: double.infinity,
@@ -157,6 +158,7 @@ class _ElementDetailsPageState extends State<ElementDetailsPage> {
                         child: Stack(
                           children: [
                             Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                               'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=400',
                               height: 100,
                               width: double.infinity,
@@ -193,6 +195,7 @@ class _ElementDetailsPageState extends State<ElementDetailsPage> {
                         child: Stack(
                           children: [
                             Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                               'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=400',
                               height: 100,
                               width: double.infinity,

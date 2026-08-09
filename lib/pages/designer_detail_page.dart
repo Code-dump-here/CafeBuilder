@@ -481,6 +481,7 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
       child: Stack(
         children: [
           Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
             imageUrl,
             height: 240,
             width: double.infinity,

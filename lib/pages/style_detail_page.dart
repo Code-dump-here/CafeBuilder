@@ -313,6 +313,7 @@ class StyleDetailPage extends StatelessWidget {
                 child: AspectRatio(
                   aspectRatio: images[index]['ratio'] as double,
                   child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     images[index]['url'] as String,
                     fit: BoxFit.cover,
                   ),

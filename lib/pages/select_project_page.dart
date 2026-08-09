@@ -414,6 +414,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
                   child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     _coverFor(project),
                     height: 140,
                     width: double.infinity,

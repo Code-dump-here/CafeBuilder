@@ -783,6 +783,7 @@ class AiDesignReportPage extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
               url,
               width: double.infinity,
               fit: BoxFit.cover,

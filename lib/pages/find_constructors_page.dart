@@ -425,6 +425,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                   image1,
                   width: double.infinity,
                   height: 140,
@@ -438,6 +439,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                         image2,
                         height: 90,
                         fit: BoxFit.cover,
@@ -449,6 +451,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                         image3,
                         height: 90,
                         fit: BoxFit.cover,

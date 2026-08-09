@@ -347,6 +347,7 @@ class _DesignerWorkspacePageState extends State<DesignerWorkspacePage> {
               child: Stack(
                 children: [
                   Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     firstImage,
                     height: 160,
                     width: double.infinity,

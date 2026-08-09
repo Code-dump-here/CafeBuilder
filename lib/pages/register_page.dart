@@ -356,6 +356,7 @@ class _RegisterPageState extends State<RegisterPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
             'https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png',
             height: 20,
             errorBuilder: (context, error, stackTrace) {

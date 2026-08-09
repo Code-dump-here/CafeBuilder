@@ -215,6 +215,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
                 child: Hero(
                   tag: 'style-${item.imageUrl}',
                   child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     item.imageUrl,
                     fit: BoxFit.cover,
                   ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
+import '../services/comment_service.dart';
+import '../widgets/comments_section.dart';
 
 class ConstructionProgressDetailPage extends StatefulWidget {
   final List<ConstructionItemResponse> items;
@@ -509,6 +511,16 @@ class _ConstructionProgressDetailPageState
               ),
             ),
           ],
+          // Per-milestone thread — lets the owner query a specific item
+          // instead of raising it in a general chat.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            child: CommentsSection(
+              targetType: CommentService.targetConstructionItem,
+              targetId: item.id,
+              title: 'Notes',
+            ),
+          ),
         ],
       ),
     );
@@ -597,6 +609,7 @@ class _ConstructionProgressDetailPageState
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                 url,
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => Container(

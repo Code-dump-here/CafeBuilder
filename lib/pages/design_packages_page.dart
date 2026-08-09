@@ -146,6 +146,7 @@ class DesignPackagesPage extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                   designerAvatar,
                   width: 56,
                   height: 56,

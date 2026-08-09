@@ -407,6 +407,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
               child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                 _coverFor(project),
                 height: 140,
                 width: double.infinity,
@@ -628,6 +629,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                 _coverFor(project),
                 width: 64,
                 height: 64,

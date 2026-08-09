@@ -360,6 +360,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     image1,
                     width: MediaQuery.of(context).size.width * 0.6,
                     height: 120,
@@ -377,6 +378,7 @@ class _FindDesignersPageState extends State<FindDesignersPage> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                         image2,
                         width: 140,
                         height: 90,

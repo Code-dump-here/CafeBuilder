@@ -324,6 +324,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                     topRight: Radius.circular(20),
                   ),
                   child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=500',
                     height: 140,
                     fit: BoxFit.cover,
@@ -497,6 +498,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                           'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=200',
                           width: 50,
                           height: 50,
@@ -833,6 +835,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=200',
                     width: 60,
                     height: 60,

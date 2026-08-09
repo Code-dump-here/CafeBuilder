@@ -212,6 +212,7 @@ class PackageDetailsPage extends StatelessWidget {
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                   imageUrl,
                   height: 160,
                   width: double.infinity,
