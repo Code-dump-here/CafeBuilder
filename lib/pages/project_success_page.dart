@@ -231,14 +231,33 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     }
   }
 
+  void _handleBackNavigation() {
+    if (_flowSubStep == 1) {
+      Navigator.of(context).pop();
+      return;
+    }
+    if (_flowSubStep == 0) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  bool get _canPopDirectly => _flowSubStep == 0 || _flowSubStep == 1;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _buildFlowContent(),
+    return PopScope(
+      canPop: _canPopDirectly,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _handleBackNavigation();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _buildFlowContent(),
+          ),
         ),
       ),
     );
@@ -454,7 +473,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
             children: [
               IconButton(
                 icon: const Icon(Icons.arrow_back, color: AppColors.espresso),
-                onPressed: () => setState(() => _flowSubStep = 0),
+                onPressed: _handleBackNavigation,
               ),
               const SizedBox(width: 8),
               Text(
