@@ -1028,7 +1028,7 @@ class PostResponse {
   // Bridge getters for backward compatibility with UI components (like MarketplacePage)
   String get location => projectAddress ?? 'Remote';
   String get style => serviceKind;
-  String get budgetTier => projectBudget != null ? '\$${projectBudget!.toStringAsFixed(0)}' : '\$TBD';
+  String get budgetTier => projectBudget != null ? '${projectBudget!.toStringAsFixed(0)} ₫' : 'TBD';
   String get expectedStart => submissionDeadline != null ? submissionDeadline!.toString().substring(0, 10) : '';
   List<String> get requirements => [serviceKind];
 

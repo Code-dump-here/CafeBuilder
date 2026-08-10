@@ -212,10 +212,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     return status[0].toUpperCase() + status.substring(1);
   }
 
+  // Budgets are stored in VND, not USD. Without the billions tier a typical
+  // 1.5 tỷ budget rendered as the unreadable "1500.0M".
   String _formatMoney(double value) {
-    if (value >= 1000000) return '\$${(value / 1000000).toStringAsFixed(1)}M';
-    if (value >= 1000) return '\$${(value / 1000).toStringAsFixed(0)}k';
-    return '\$${value.toStringAsFixed(0)}';
+    if (value >= 1000000000) return '${(value / 1000000000).toStringAsFixed(1)}B ₫';
+    if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M ₫';
+    if (value >= 1000) return '${(value / 1000).toStringAsFixed(0)}k ₫';
+    return '${value.toStringAsFixed(0)} ₫';
   }
 
   String _formatMoneyFull(double value) {
@@ -226,7 +229,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       buf.write(s[i]);
       if (fromEnd > 1 && fromEnd % 3 == 1) buf.write(',');
     }
-    return '\$$buf';
+    return '$buf ₫';
   }
 
   @override

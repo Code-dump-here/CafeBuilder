@@ -57,7 +57,7 @@ class _MarketplacePageState extends State<MarketplacePage>
               location: post.location.isNotEmpty ? post.location : 'Remote',
               style: post.style.isNotEmpty ? post.style : 'Concept',
               budgetTier:
-                  post.budgetTier.isNotEmpty ? post.budgetTier : '\$TBD',
+                  post.budgetTier.isNotEmpty ? post.budgetTier : 'TBD',
               description: post.description.isNotEmpty
                   ? post.description
                   : 'A beautiful architecture project.',

@@ -56,7 +56,8 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     // Compute budget tier
     double lowEstimate = widget.totalBudget * 0.9;
     double highEstimate = widget.totalBudget * 1.15;
-    _budgetTier = '\$${(lowEstimate / 1000).toStringAsFixed(0)}k – \$${(highEstimate / 1000).toStringAsFixed(0)}k';
+    _budgetTier =
+        '${(lowEstimate / 1000000).toStringAsFixed(0)}M – ${(highEstimate / 1000000).toStringAsFixed(0)}M ₫';
     
     final now = DateTime.now().add(const Duration(days: 30));
     _submissionDeadline = DateTime(now.year, now.month, now.day, 23, 59, 59);

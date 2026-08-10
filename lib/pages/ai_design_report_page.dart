@@ -333,15 +333,15 @@ class AiDesignReportPage extends StatelessWidget {
   String _costRange() {
     final min = report?.fitoutMinVnd;
     final max = report?.fitoutMaxVnd;
-    if (min != null && max != null) return '${_formatVnd(min)} – ${_formatVnd(max)} VND';
+    if (min != null && max != null) return '${_formatVnd(min)} – ${_formatVnd(max)} ₫';
     // Fallback: use totalBudget
-    return '${_formatVnd(totalBudget * 0.9)} – ${_formatVnd(totalBudget * 1.15)} VND';
+    return '${_formatVnd(totalBudget * 0.9)} – ${_formatVnd(totalBudget * 1.15)} ₫';
   }
 
   String _equipRange() {
     final min = report?.equipmentMinVnd;
     final max = report?.equipmentMaxVnd;
-    if (min != null && max != null) return '${_formatVnd(min)} – ${_formatVnd(max)} VND';
+    if (min != null && max != null) return '${_formatVnd(min)} – ${_formatVnd(max)} ₫';
     return '—';
   }
 
