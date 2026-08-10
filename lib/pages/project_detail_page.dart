@@ -787,7 +787,11 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ProposalsPage(openPosts: _stillRecruiting),
+                      builder: (context) => ProposalsPage(
+                        openPosts: _stillRecruiting,
+                        designTaken: _designTaken,
+                        constructionTaken: _constructionTaken,
+                      ),
                     ),
                   ).then((_) => _loadProject());
                 },
@@ -1682,7 +1686,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ProposalsPage(openPosts: posts)),
+                  MaterialPageRoute(
+                    builder: (context) => ProposalsPage(
+                      openPosts: posts,
+                      designTaken: _designTaken,
+                      constructionTaken: _constructionTaken,
+                    ),
+                  ),
                 ).then((_) => _loadProject());
               },
               style: ElevatedButton.styleFrom(

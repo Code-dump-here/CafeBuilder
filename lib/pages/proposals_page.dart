@@ -8,7 +8,18 @@ import 'collaboration_workspace_page.dart';
 class ProposalsPage extends StatefulWidget {
   final List<OpenPostResponse> openPosts;
 
-  const ProposalsPage({super.key, required this.openPosts});
+  /// A project holds one designer slot and one constructor slot. The caller
+  /// already knows which are filled, so it passes them down rather than making
+  /// this page refetch the engagements.
+  final bool designTaken;
+  final bool constructionTaken;
+
+  const ProposalsPage({
+    super.key,
+    required this.openPosts,
+    this.designTaken = false,
+    this.constructionTaken = false,
+  });
 
   @override
   State<ProposalsPage> createState() => _ProposalsPageState();
@@ -19,10 +30,44 @@ class _ProposalsPageState extends State<ProposalsPage> {
   String? _error;
   List<ApplyResponse> _applies = [];
 
+  // Local copies, updated on a successful accept, so a slot filled during this
+  // visit still blocks a second accept if we haven't navigated away yet.
+  late bool _designTaken = widget.designTaken;
+  late bool _constructionTaken = widget.constructionTaken;
+
   @override
   void initState() {
     super.initState();
     _fetchApplies();
+  }
+
+  /// The role an application is for lives on its post, not on the application.
+  /// Every apply here was fetched from [widget.openPosts], so the lookup hits.
+  String _kindFor(ApplyResponse apply) {
+    for (final post in widget.openPosts) {
+      if (post.id == apply.postId) return post.serviceKind.toLowerCase();
+    }
+    return '';
+  }
+
+  /// Why this application can't be accepted, or null when it can. A 'both'
+  /// application needs both slots free, since one provider would fill each.
+  String? _slotConflict(ApplyResponse apply) {
+    switch (_kindFor(apply)) {
+      case 'design':
+        return _designTaken ? 'This project already has a designer.' : null;
+      case 'construction':
+        return _constructionTaken ? 'This project already has a constructor.' : null;
+      case 'both':
+        if (_designTaken && _constructionTaken) {
+          return 'This project already has a designer and a constructor.';
+        }
+        if (_designTaken) return 'This project already has a designer.';
+        if (_constructionTaken) return 'This project already has a constructor.';
+        return null;
+      default:
+        return null;
+    }
   }
 
   Future<void> _fetchApplies() async {
@@ -55,6 +100,15 @@ class _ProposalsPageState extends State<ProposalsPage> {
   }
 
   Future<void> _acceptApply(ApplyResponse apply) async {
+    // The backend closes a post and rejects its other applicants on accept, so
+    // it can't be double-filled from one post — but nothing stops a second post
+    // for the same role, so the slot is checked here before we call.
+    final conflict = _slotConflict(apply);
+    if (conflict != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(conflict)));
+      return;
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -63,6 +117,9 @@ class _ProposalsPageState extends State<ProposalsPage> {
 
     try {
       final working = await ApplyService.acceptApply(apply.id);
+      final accepted = working.contractType.toLowerCase();
+      if (accepted == 'design' || accepted == 'both') _designTaken = true;
+      if (accepted == 'construction' || accepted == 'both') _constructionTaken = true;
       if (mounted) {
         Navigator.pop(context); // close dialog
         ScaffoldMessenger.of(context).showSnackBar(
@@ -135,7 +192,8 @@ class _ProposalsPageState extends State<ProposalsPage> {
 
   Widget _buildProposalCard(ApplyResponse apply) {
     final bool isPending = apply.status.toLowerCase() == 'pending';
-    
+    final String? blockedReason = isPending ? _slotConflict(apply) : null;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -226,7 +284,9 @@ class _ProposalsPageState extends State<ProposalsPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => _acceptApply(apply),
+                    // Greyed out rather than hidden, so it's clear the applicant
+                    // is still there and why they can't be taken on.
+                    onPressed: blockedReason != null ? null : () => _acceptApply(apply),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.espresso,
                       foregroundColor: Colors.white,
@@ -239,6 +299,13 @@ class _ProposalsPageState extends State<ProposalsPage> {
                 ),
               ],
             ),
+            if (blockedReason != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                blockedReason,
+                style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
+              ),
+            ],
           ],
         ],
       ),
