@@ -606,10 +606,14 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
     );
   }
 
+  // Budgets are stored in VND, not USD. Without the billions tier a typical
+  // 1.5 tỷ budget rendered as the unreadable "1500.0M". Tiers and casing match
+  // _formatMoney in project_detail_page so a budget reads the same on both.
   String _formatBudget(double budget) {
-    if (budget >= 1000000) return '${(budget / 1000000).toStringAsFixed(1)}M';
-    if (budget >= 1000) return '${(budget / 1000).toStringAsFixed(0)}K';
-    return budget.toStringAsFixed(0);
+    if (budget >= 1000000000) return '${(budget / 1000000000).toStringAsFixed(1)}B ₫';
+    if (budget >= 1000000) return '${(budget / 1000000).toStringAsFixed(1)}M ₫';
+    if (budget >= 1000) return '${(budget / 1000).toStringAsFixed(0)}k ₫';
+    return '${budget.toStringAsFixed(0)} ₫';
   }
 
   Widget _buildHistoryCard(ProjectResponse project) {
