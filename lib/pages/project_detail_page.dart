@@ -814,7 +814,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
               runSpacing: 8,
               children: _stalePosts
                   .map((post) => GestureDetector(
-                        onTap: () => _closePost(post),
+                        onTap: () => _closePost(post, stale: true),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
@@ -919,17 +919,20 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   List<OpenPostResponse> get _stalePosts =>
       (_project?.openPosts ?? const <OpenPostResponse>[]).where(_postIsStale).toList();
 
-  Future<void> _closePost(OpenPostResponse post) async {
+  Future<void> _closePost(OpenPostResponse post, {required bool stale}) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Close this opening?',
             style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold, color: AppColors.espresso)),
         content: Text(
-          'The ${_postLabel(post)} role is already filled. Closing removes the '
-          'listing from the marketplace so you stop receiving applications.\n\n'
-          'Closed listings are not shown here afterwards — if you need this role '
-          'again, post a new opening.',
+          stale
+              ? 'The ${_postLabel(post)} role is already filled. Closing removes the '
+                  'listing from the marketplace so you stop receiving applications.\n\n'
+                  'Closed listings are not shown here afterwards — if you need this role '
+                  'again, post a new opening.'
+              : 'This removes the ${_postLabel(post)} listing from the marketplace. '
+                  'You can post a new opening later if you still need this role.',
           style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
         ),
         actions: [
@@ -956,6 +959,58 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Could not close listing: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _editPostDeadline(OpenPostResponse post) async {
+    final initial = post.submissionDeadline ?? DateTime.now().add(const Duration(days: 30));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial.isAfter(DateTime.now()) ? initial : DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.espresso,
+              onPrimary: Colors.white,
+              onSurface: AppColors.espresso,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked == null) return;
+
+    final deadline = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+    if (!deadline.isAfter(DateTime.now())) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Submission deadline must be later than the current time.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      await PostService.updatePost(post.id, UpdatePostRequest(submissionDeadline: deadline));
+      await _loadProject();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Deadline updated')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update deadline: $e')),
         );
       }
     }
@@ -1061,6 +1116,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     final descriptionController = TextEditingController(
       text: 'Looking for a provider to work on ${_project!.name}.',
     );
+    final now = DateTime.now();
+    DateTime submissionDeadline = DateTime(now.year, now.month, now.day, 23, 59, 59).add(const Duration(days: 30));
     bool submitting = false;
 
     showModalBottomSheet(
@@ -1140,6 +1197,65 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  Text('SUBMISSION DEADLINE', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: AppColors.outline)),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: sheetContext,
+                        initialDate: submissionDeadline,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.light(
+                                primary: AppColors.espresso,
+                                onPrimary: Colors.white,
+                                onSurface: AppColors.espresso,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked == null) return;
+                      final deadline = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+                      if (!deadline.isAfter(DateTime.now())) {
+                        if (sheetContext.mounted) {
+                          ScaffoldMessenger.of(sheetContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('Submission deadline must be later than the current time.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                      setSheetState(() => submissionDeadline = deadline);
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F3F2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.event_outlined, size: 16, color: AppColors.espresso),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${submissionDeadline.day.toString().padLeft(2, '0')}/${submissionDeadline.month.toString().padLeft(2, '0')}/${submissionDeadline.year}',
+                            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.espresso),
+                          ),
+                          const Spacer(),
+                          Text('Tap to change', style: GoogleFonts.inter(fontSize: 11, color: AppColors.placeholder)),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
@@ -1148,6 +1264,15 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       onPressed: submitting
                           ? null
                           : () async {
+                              if (!submissionDeadline.isAfter(DateTime.now())) {
+                                ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Submission deadline must be later than the current time.'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
                               setSheetState(() => submitting = true);
                               try {
                                 await PostService.createPost(CreatePostRequest(
@@ -1157,6 +1282,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                                   description: descriptionController.text.trim().isEmpty
                                       ? 'Looking for a provider to work on ${_project!.name}.'
                                       : descriptionController.text.trim(),
+                                  submissionDeadline: submissionDeadline,
                                 ));
                                 if (sheetContext.mounted) Navigator.pop(sheetContext);
                                 await _loadProject();
@@ -1491,14 +1617,16 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Huỷ dự án'),
-        content: const Text('Bạn có chắc chắn muốn huỷ dự án này? Thao tác này sẽ huỷ tất cả hợp tác đang mở.'),
+        title: const Text('Cancel Project'),
+        content: const Text(
+          'Are you sure you want to cancel this project? This will terminate all open collaborations.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Không')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Huỷ dự án', style: TextStyle(color: Colors.white)),
+            child: const Text('Cancel Project', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1554,7 +1682,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             child: OutlinedButton.icon(
               onPressed: _cancelProject,
               icon: const Icon(Icons.cancel, size: 20, color: Colors.red),
-              label: const Text('Huỷ dự án'),
+              label: const Text('Cancel Project'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.red,
                 side: const BorderSide(color: Colors.red),
@@ -1628,6 +1756,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   }
 
   Widget _buildRecruitingStatus(List<OpenPostResponse> posts) {
+    final openPosts = posts.where((p) => p.status.toLowerCase() == 'open').toList();
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1647,7 +1777,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             ],
           ),
           const SizedBox(height: 16),
-          ...posts.map((post) {
+          ...openPosts.map((post) {
             final deadlineStr = post.submissionDeadline != null 
                 ? '${post.submissionDeadline!.day}/${post.submissionDeadline!.month}/${post.submissionDeadline!.year}'
                 : 'N/A';
@@ -1668,11 +1798,37 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       children: [
                         const Icon(Icons.work_outline, size: 12, color: AppColors.textSecondary),
                         const SizedBox(width: 4),
-                        Text(post.serviceKind.toUpperCase(), style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
+                        Text(_postLabel(post).toUpperCase(), style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
                         const SizedBox(width: 16),
                         const Icon(Icons.timer_outlined, size: 12, color: AppColors.textSecondary),
                         const SizedBox(width: 4),
                         Text('Deadline: $deadlineStr', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => _editPostDeadline(post),
+                          icon: const Icon(Icons.edit_calendar_outlined, size: 14, color: AppColors.espresso),
+                          label: Text('Edit deadline', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                            minimumSize: const Size(0, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          onPressed: () => _closePost(post, stale: false),
+                          icon: const Icon(Icons.close_rounded, size: 14, color: Colors.red),
+                          label: Text('Close listing', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red)),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                            minimumSize: const Size(0, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -1683,12 +1839,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           const SizedBox(height: 8),
           Center(
             child: ElevatedButton.icon(
-              onPressed: () {
+              onPressed: openPosts.isEmpty
+                  ? null
+                  : () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => ProposalsPage(
-                      openPosts: posts,
+                      openPosts: openPosts,
                       designTaken: _designTaken,
                       constructionTaken: _constructionTaken,
                     ),

@@ -83,20 +83,35 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
       },
     );
     if (picked != null) {
-      setState(() {
-        _submissionDeadline = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          23,
-          59,
-          59,
-        );
-      });
+      final deadline = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+      if (!deadline.isAfter(DateTime.now())) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Submission deadline must be later than the current time.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+      setState(() => _submissionDeadline = deadline);
     }
   }
 
+  bool _isDeadlineValid() => _submissionDeadline.isAfter(DateTime.now());
+
   Future<void> _onBroadcastToMarketplace() async {
+    if (!_isDeadlineValid()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Submission deadline must be later than the current time.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     // Show loading indicator
     showDialog(
       context: context,
