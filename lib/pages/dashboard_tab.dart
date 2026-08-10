@@ -47,6 +47,7 @@ class DashboardTabState extends State<DashboardTab> {
   ProjectResponse? _latestProject;
   List<_DocItem> _recentDocs = [];
   bool _loading = true;
+  String? _error;
   int _unreadCount = 0;
 
   @override
@@ -69,6 +70,7 @@ class DashboardTabState extends State<DashboardTab> {
     bool forceRefreshOwner = false,
   }) async {
     if (showSkeleton) setState(() => _loading = true);
+    setState(() => _error = null);
     try {
       final shopOwner =
           await ShopOwnerService.getCurrentShopOwner(forceRefresh: forceRefreshOwner);
@@ -119,10 +121,23 @@ class DashboardTabState extends State<DashboardTab> {
           _loading = false;
         });
       }
-    } on ApiException catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } on ApiException catch (e) {
+      // Never swallow this. A failed fetch leaves _latestProject null, which
+      // would otherwise render "Start your first project" — telling the user
+      // they have no projects when we simply could not load them.
+      if (mounted) {
+        setState(() {
+          _error = e.message;
+          _loading = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _error = 'Could not reach the server. Check your connection and try again.';
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -360,6 +375,66 @@ class DashboardTabState extends State<DashboardTab> {
         ),
         child: const Center(
           child: CircularProgressIndicator(color: AppColors.primaryFixed),
+        ),
+      );
+    }
+
+    // Checked before the empty state: without this, a failed load looks
+    // identical to genuinely having no projects.
+    if (_error != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.espresso,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.cloud_off_rounded,
+                    size: 16, color: AppColors.primaryFixed.withOpacity(0.8)),
+                const SizedBox(width: 8),
+                Text(
+                  "COULDN'T LOAD YOUR PROJECTS",
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryFixed.withOpacity(0.8),
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _error!,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.primaryFixedDim.withOpacity(0.9),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _loadDashboard(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryFixed,
+                foregroundColor: AppColors.espresso,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: Text(
+                'Try again',
+                style: GoogleFonts.inter(
+                    fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
         ),
       );
     }

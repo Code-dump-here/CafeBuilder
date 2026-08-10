@@ -1,8 +1,8 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
+import '../services/api_client.dart';
 import '../services/post_service.dart';
 import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
@@ -194,41 +194,23 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // hide loading
-        
+
+        // The post was NOT created. Stay on this step so the user can retry —
+        // never advance to "Project Live", which would claim a broadcast that
+        // the backend never received.
+        final message = e is ApiException ? e.message : 'Could not reach the server.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('API Error: $e'),
+            content: Text('Broadcast failed: $message'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'RETRY',
+              textColor: Colors.white,
+              onPressed: _onBroadcastToMarketplace,
+            ),
           ),
         );
-        
-        // Fallback to local logic if API fails
-        final id = 'AT-${100 + Random().nextInt(899)}-XC';
-        final fallbackAiImage = widget.aiReport?.imageArtifactUrl;
-        final newBroadcast = BroadcastProject(
-          id: id,
-          title: widget.cafeName,
-          location: widget.location,
-          style: widget.style,
-          budgetTier: _budgetTier,
-          description: widget.aiReport != null ? detailedDescription : 'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.',
-          requirements: _reqs,
-          date: _expectedStart,
-          proposalsCount: 0,
-          commentsCount: 0,
-          status: 'Open for Proposals',
-          imageUrl: (fallbackAiImage != null && fallbackAiImage.isNotEmpty)
-              ? fallbackAiImage
-              : 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
-        );
-
-        MarketplaceState.activeProject = newBroadcast;
-        MarketplaceState.addBroadcast(newBroadcast);
-
-        setState(() {
-          _flowSubStep = 2;
-        });
       }
     }
   }
@@ -768,7 +750,8 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
   // --- STEP 2: Project Done & Live! ---
   Widget _buildProjectLiveStep() {
     final active = MarketplaceState.activeProject;
-    final bId = active != null ? active.id : 'AT-982-XC';
+    // Only ever set from a real backend response — never invent an ID here.
+    final bId = active?.id;
     return Padding(
       key: const ValueKey<int>(2),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -871,13 +854,14 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                           color: AppColors.espresso,
                         ),
                       ),
-                      Text(
-                        'Broadcast ID: $bId',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppColors.placeholder,
+                      if (bId != null)
+                        Text(
+                          'Broadcast ID: $bId',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.placeholder,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),

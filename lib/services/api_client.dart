@@ -282,6 +282,17 @@ class ApiClient {
         name: 'ApiClient',
         level: 1000,
       );
+      // 5xx is a server fault. Its `detail` is an internal stack trace or raw SQL
+      // error ("42703: column p1.terminated_at does not exist") — meaningless to a
+      // user and it leaks our schema. It stays in the log above; users get plain
+      // language and a chance to retry.
+      if (response.statusCode >= 500) {
+        throw ApiException(
+          statusCode: response.statusCode,
+          message: 'The server is having trouble right now. Please try again in a moment.',
+        );
+      }
+
       String message = 'Request failed';
       try {
         final body = jsonDecode(response.body);
