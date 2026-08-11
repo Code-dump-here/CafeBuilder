@@ -101,7 +101,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
         setState(() {
           _working = workingRes;
           _contracts = allContracts;
-          _designs = allDesigns;
+          _designs = DesignService.ownerVisible(allDesigns);
           _constructionItems = allItems;
           _allTasks = allTasks;
           _loading = false;
@@ -698,19 +698,34 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   Widget _buildDesignCard(DesignResponse design) {
     final isApproved = design.status == 'approved';
     final isRevision = design.status == 'revision';
-    final isPending = !isApproved && !isRevision;
+    // Only a *submitted* design can be acted on. Previously this was
+    // "not approved and not revision", which swept in_progress in too and
+    // offered Approve on drafts — the backend then rejected it with an error
+    // the owner had no way to make sense of.
+    final isSubmitted = design.status == 'submitted';
+    final isReworking = design.status == 'in_progress';
 
     final statusColor = isApproved
         ? const Color(0xFF2E7D32)
         : isRevision
             ? const Color(0xFFC62828)
-            : const Color(0xFFE65100);
+            : isReworking
+                ? AppColors.textSecondary
+                : const Color(0xFFE65100);
     final statusBg = isApproved
         ? const Color(0xFFE8F5E9)
         : isRevision
             ? const Color(0xFFFFEBEE)
-            : const Color(0xFFFFF3E0);
-    final statusLabel = isApproved ? '✓ Approved' : isRevision ? '↩ Revision' : '⏳ Pending';
+            : isReworking
+                ? const Color(0xFFF2EFEC)
+                : const Color(0xFFFFF3E0);
+    final statusLabel = isApproved
+        ? '✓ Approved'
+        : isRevision
+            ? '↩ Revision requested'
+            : isReworking
+                ? '✎ Being revised'
+                : '⏳ Pending review';
 
     final firstImage = design.images.isNotEmpty ? design.images.first.viewUrl : null;
 
@@ -807,7 +822,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                   style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
                 ),
                 const SizedBox(height: 16),
-                if (isPending) ...[
+                if (isSubmitted) ...[
                   // Approve button (primary, full width)
                   SizedBox(
                     width: double.infinity,

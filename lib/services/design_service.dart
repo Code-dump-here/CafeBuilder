@@ -127,6 +127,24 @@ class DesignService {
     return PaginationResponse.fromJson(body, DesignResponse.fromJson);
   }
 
+  /// Whether a design is the provider's business only, or something the owner
+  /// is meant to see.
+  ///
+  /// Designs are created at version 0.1 and gain +0.1 each time the provider
+  /// starts a revision, so an 'in_progress' design still on its first version
+  /// has never been submitted — it's a private draft. Past 0.1 it's rework the
+  /// owner explicitly asked for, so it stays visible (read-only) instead of
+  /// disappearing the moment they request changes.
+  ///
+  /// This lives here because every owner-facing screen that lists designs needs
+  /// the same rule.
+  static bool isVisibleToOwner(DesignResponse d) =>
+      d.status != 'in_progress' || d.version > 0.1;
+
+  /// [getDesigns] filtered to what the owner should actually see.
+  static List<DesignResponse> ownerVisible(Iterable<DesignResponse> designs) =>
+      designs.where(isVisibleToOwner).toList();
+
   static Future<DesignResponse> getDesign(int id) async {
     final response = await ApiClient.authGet('/designs/$id');
     ApiClient.throwIfError(response);

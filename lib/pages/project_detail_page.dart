@@ -159,7 +159,11 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         ]);
         for (final r in fetched) {
           if (r is PaginationResponse<ConstructionItemResponse>) items.addAll(r.items);
-          if (r is PaginationResponse<DesignResponse>) designs.addAll(r.items);
+          // Unsubmitted provider drafts must not reach the owner's design list
+          // or the Pending Approvals count derived from it.
+          if (r is PaginationResponse<DesignResponse>) {
+            designs.addAll(DesignService.ownerVisible(r.items));
+          }
           if (r is PaginationResponse<ContractResponse>) contracts.addAll(r.items);
         }
       }

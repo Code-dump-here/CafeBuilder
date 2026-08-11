@@ -71,7 +71,8 @@ class _DesignerWorkspacePageState extends State<DesignerWorkspacePage> {
       if (mounted) {
         setState(() {
           _working = workingRes;
-          _designs = allDesigns;
+          // Drafts the provider hasn't submitted aren't the owner's business.
+          _designs = DesignService.ownerVisible(allDesigns);
           _loading = false;
         });
       }

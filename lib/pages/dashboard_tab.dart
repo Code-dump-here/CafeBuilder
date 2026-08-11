@@ -157,7 +157,7 @@ class DashboardTabState extends State<DashboardTab> {
           projectWorkingId: working.id,
           pageSize: 20,
         );
-        for (final d in result.items) {
+        for (final d in DesignService.ownerVisible(result.items)) {
           allDocs.add(_DocItem(
             projectId: projectShopOwnerId,
             title: d.title.isNotEmpty ? d.title : 'Design v${d.version.toStringAsFixed(1)}',
