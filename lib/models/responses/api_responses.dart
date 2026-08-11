@@ -596,6 +596,15 @@ class ProjectWorkingResponse {
   final DateTime? completionRequestedAt;
   final String? completionRequestNote;
   final bool isAwaitingAcceptance;
+  // Ending an engagement needs both sides to agree. A request parks here
+  // until the other party responds; the engagement stays 'accepted'.
+  final DateTime? terminationRequestedAt;
+  /// 'owner' | 'provider' — which side asked to end it.
+  final String? terminationRequestedBy;
+  final String? terminationRequestNote;
+  final DateTime? terminatedAt;
+  /// Server-derived: a request is pending the other side's answer.
+  final bool isAwaitingTerminationApproval;
 
   ProjectWorkingResponse({
     required this.id,
@@ -614,6 +623,11 @@ class ProjectWorkingResponse {
     this.completionRequestedAt,
     this.completionRequestNote,
     this.isAwaitingAcceptance = false,
+    this.terminationRequestedAt,
+    this.terminationRequestedBy,
+    this.terminationRequestNote,
+    this.terminatedAt,
+    this.isAwaitingTerminationApproval = false,
   });
 
   factory ProjectWorkingResponse.fromJson(Map<String, dynamic> json) => ProjectWorkingResponse(
@@ -633,6 +647,16 @@ class ProjectWorkingResponse {
         completionRequestedAt: json['completionRequestedAt'] != null ? DateTime.parse(json['completionRequestedAt']) : null,
         completionRequestNote: json['completionRequestNote'],
         isAwaitingAcceptance: json['isAwaitingAcceptance'] ?? false,
+        terminationRequestedAt: json['terminationRequestedAt'] != null
+            ? DateTime.parse(json['terminationRequestedAt'])
+            : null,
+        terminationRequestedBy: json['terminationRequestedBy'],
+        terminationRequestNote: json['terminationRequestNote'],
+        terminatedAt: json['terminatedAt'] != null
+            ? DateTime.parse(json['terminatedAt'])
+            : null,
+        isAwaitingTerminationApproval:
+            json['isAwaitingTerminationApproval'] ?? false,
       );
 }
 

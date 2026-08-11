@@ -487,31 +487,62 @@ class _DesignerWorkspacePageState extends State<DesignerWorkspacePage> {
     );
   }
 
+  /// Asks the provider to end the engagement. Ending one needs both sides to
+  /// agree, so this files a request rather than cancelling anything outright.
   Future<void> _terminateEngagement() async {
     if (_activeWorkingId == null) return;
+    final reasonController = TextEditingController();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Huỷ hợp tác'),
-        content: const Text('Bạn có chắc chắn muốn huỷ ngang hợp tác này không?'),
+        title: const Text('Đề nghị huỷ hợp tác'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Hợp tác chỉ dừng khi bên còn lại đồng ý. Đề nghị của bạn sẽ được '
+              'gửi cho nhà cung cấp để họ phản hồi.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Lý do (tuỳ chọn)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Không')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Huỷ', style: TextStyle(color: Colors.white)),
+            child: const Text('Gửi đề nghị', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
 
+    final reason = reasonController.text.trim();
+    reasonController.dispose();
     if (confirm != true) return;
 
     try {
-      await ProjectWorkingService.terminateEngagement(_activeWorkingId!);
+      final updated = await ProjectWorkingService.requestTermination(
+        _activeWorkingId!,
+        reason: reason,
+      );
       if (mounted) {
+        final ended = updated.status.toLowerCase() == 'terminated';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã huỷ hợp tác.')),
+          SnackBar(
+            content: Text(ended
+                ? 'Hợp tác đã kết thúc.'
+                : 'Đã gửi đề nghị huỷ — đang chờ nhà cung cấp phản hồi.'),
+          ),
         );
         _loadWorkspaceData();
       }
@@ -522,6 +553,168 @@ class _DesignerWorkspacePageState extends State<DesignerWorkspacePage> {
         );
       }
     }
+  }
+
+  /// Answers a request the provider raised.
+  Future<void> _respondToTermination(bool approve) async {
+    if (_activeWorkingId == null) return;
+    if (approve) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Đồng ý huỷ hợp tác'),
+          content: const Text(
+            'Hợp tác sẽ kết thúc ngay khi bạn đồng ý. Hành động này không thể hoàn tác.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Không')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Đồng ý huỷ', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+
+    try {
+      await ProjectWorkingService.respondToTermination(
+        _activeWorkingId!,
+        approve: approve,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(approve
+                ? 'Hợp tác đã kết thúc.'
+                : 'Đã từ chối đề nghị huỷ — hợp tác tiếp tục.'),
+          ),
+        );
+        _loadWorkspaceData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  /// Withdraws our own pending request.
+  Future<void> _withdrawTerminationRequest() async {
+    if (_activeWorkingId == null) return;
+    try {
+      await ProjectWorkingService.cancelTerminationRequest(_activeWorkingId!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã rút lại đề nghị huỷ.')),
+        );
+        _loadWorkspaceData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  /// Pending-request banner — mirrors the one in the collaboration workspace
+  /// so a provider's request is visible from whichever workspace the owner
+  /// happens to be in.
+  Widget _buildTerminationBanner() {
+    final w = _working;
+    if (w == null) return const SizedBox.shrink();
+    final raisedByProvider = w.terminationRequestedBy?.toLowerCase() == 'provider';
+    final note = w.terminationRequestNote;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE65100).withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.pause_circle_outline, size: 20, color: Color(0xFFE65100)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  raisedByProvider
+                      ? 'Nhà cung cấp đề nghị huỷ hợp tác'
+                      : 'Đang chờ nhà cung cấp phản hồi đề nghị huỷ',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: const Color(0xFFE65100),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (note != null && note.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('Lý do: $note',
+                style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.4)),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            raisedByProvider
+                ? 'Hợp tác vẫn đang chạy cho tới khi bạn phản hồi.'
+                : 'Hợp tác vẫn đang chạy cho tới khi họ đồng ý.',
+            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+          ),
+          const SizedBox(height: 12),
+          if (raisedByProvider)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _respondToTermination(false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.espresso,
+                      side: const BorderSide(color: AppColors.outlineVariant),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text('Từ chối'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _respondToTermination(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                    ),
+                    child: const Text('Đồng ý huỷ'),
+                  ),
+                ),
+              ],
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _withdrawTerminationRequest,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.espresso,
+                  side: const BorderSide(color: AppColors.outlineVariant),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: const Text('Rút lại đề nghị'),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildActionButtons() {
@@ -562,12 +755,15 @@ class _DesignerWorkspacePageState extends State<DesignerWorkspacePage> {
             ),
           ),
           
-        if (canTerminate) ...[
+        if (_working!.isAwaitingTerminationApproval) ...[
+          const SizedBox(height: 16),
+          _buildTerminationBanner(),
+        ] else if (canTerminate) ...[
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: _terminateEngagement,
             icon: const Icon(Icons.cancel_outlined, color: Colors.red),
-            label: const Text('Huỷ ngang'),
+            label: const Text('Đề nghị huỷ hợp tác'),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red,
               side: const BorderSide(color: Colors.red),

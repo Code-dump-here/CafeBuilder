@@ -142,9 +142,52 @@ class ProjectWorkingService {
     ApiClient.throwIfError(response);
   }
 
-  static Future<void> terminateEngagement(int id) async {
-    final response = await ApiClient.authPost('/project-workings/$id/terminate', {});
+  // ── Ending an engagement early ───────────────────────────────────────────
+  // Ending a running engagement takes both sides. One party requests, the
+  // other approves; until then the engagement stays 'accepted'. The old
+  // one-shot `/terminate` still exists but no longer terminates on its own —
+  // it files a request, or approves the other side's — so these explicit
+  // endpoints are used instead to keep the app honest about what happened.
+
+  /// Asks the provider to end the engagement. Returns the updated engagement,
+  /// which stays 'accepted' with [isAwaitingTerminationApproval] set.
+  static Future<ProjectWorkingResponse> requestTermination(
+    int id, {
+    String? reason,
+  }) async {
+    final response = await ApiClient.authPost(
+      '/project-workings/$id/termination-request',
+      {if (reason != null && reason.isNotEmpty) 'reason': reason},
+    );
     ApiClient.throwIfError(response);
+    return ProjectWorkingResponse.fromJson(ApiClient.parseBody(response));
+  }
+
+  /// Answers the provider's request. [approve] true ends the engagement;
+  /// false clears the request and the work continues.
+  static Future<ProjectWorkingResponse> respondToTermination(
+    int id, {
+    required bool approve,
+    String? note,
+  }) async {
+    final response = await ApiClient.authPost(
+      '/project-workings/$id/termination-response',
+      {
+        'approve': approve,
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+    );
+    ApiClient.throwIfError(response);
+    return ProjectWorkingResponse.fromJson(ApiClient.parseBody(response));
+  }
+
+  /// Withdraws our own pending request, while the provider hasn't answered.
+  static Future<ProjectWorkingResponse> cancelTerminationRequest(int id) async {
+    final response = await ApiClient.authDelete(
+      '/project-workings/$id/termination-request',
+    );
+    ApiClient.throwIfError(response);
+    return ProjectWorkingResponse.fromJson(ApiClient.parseBody(response));
   }
 
   static Future<ProjectWorkingResponse> requestCompletion(int id, {String? note}) async {
