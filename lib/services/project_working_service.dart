@@ -2,6 +2,55 @@ import '../models/responses/api_responses.dart';
 import 'api_client.dart';
 
 class ProjectWorkingService {
+  // ── Project slot rules ───────────────────────────────────────────────────
+  // Mirrors ProjectSlotRules on the backend, which is what actually enforces
+  // this. Keep the two in step: when they drifted, the app offered to recruit
+  // for a slot the server then refused with a 409.
+
+  /// Engagement statuses that hold a slot. A pending invite ('requested')
+  /// counts, because the provider may still accept and we must not
+  /// double-book. 'completed', 'rejected' and 'terminated' release the slot.
+  static const engagedStatuses = {'requested', 'accepted'};
+
+  /// Whether two scopes of work collide. 'both' collides with everything.
+  static bool kindsOverlap(String a, String b) =>
+      a == 'both' || b == 'both' || a == b;
+
+  /// Whether [role] ('design' or 'construction') is already held on a project.
+  static bool roleTaken(
+    Iterable<ProjectWorkingResponse> workings,
+    String role,
+  ) =>
+      workings.any((w) =>
+          engagedStatuses.contains(w.status.toLowerCase()) &&
+          kindsOverlap(w.contractType.toLowerCase(), role));
+
+  /// Why [wantedKind] can't be taken on, or null when the slot is free.
+  /// Phrased for display to the owner.
+  static String? slotConflict(
+    Iterable<ProjectWorkingResponse> workings,
+    String wantedKind,
+  ) {
+    final kind = wantedKind.toLowerCase();
+    final designTaken = roleTaken(workings, 'design');
+    final constructionTaken = roleTaken(workings, 'construction');
+
+    final blocked = switch (kind) {
+      'design' => designTaken,
+      'construction' => constructionTaken,
+      'both' => designTaken || constructionTaken,
+      _ => false,
+    };
+    if (!blocked) return null;
+
+    if (designTaken && constructionTaken) {
+      return 'This project already has a designer and a constructor.';
+    }
+    return designTaken
+        ? 'This project already has a designer.'
+        : 'This project already has a constructor.';
+  }
+
   static Future<PaginationResponse<ProjectWorkingResponse>> getProjectWorkings({
     int pageNumber = 1,
     int pageSize = 10,

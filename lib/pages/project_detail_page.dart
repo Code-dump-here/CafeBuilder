@@ -874,19 +874,12 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     );
   }
 
-  /// A project holds one designer slot and one constructor slot. A slot is
-  /// taken once a provider is actually on the project — a pending invite
-  /// ('requested') doesn't hold one, and a rejected/terminated engagement
-  /// releases it. A 'both' engagement is one provider filling both slots.
-  static const _engagedStatuses = {'accepted', 'completed'};
-
-  bool _roleTaken(String role) {
-    return _projectWorkings.any((pw) {
-      if (!_engagedStatuses.contains(pw.status.toLowerCase())) return false;
-      final type = pw.contractType.toLowerCase();
-      return type == role || type == 'both';
-    });
-  }
+  /// A project holds one designer slot and one constructor slot; a 'both'
+  /// engagement fills both. The rule itself lives in ProjectWorkingService so
+  /// every screen that needs it reads the same definition — see the note there
+  /// about keeping it in step with the backend.
+  bool _roleTaken(String role) =>
+      ProjectWorkingService.roleTaken(_projectWorkings, role);
 
   bool get _designTaken => _roleTaken('design');
   bool get _constructionTaken => _roleTaken('construction');

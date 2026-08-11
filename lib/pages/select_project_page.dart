@@ -56,13 +56,49 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
   ];
 
+  /// Slot conflict per project id, filled in lazily as projects are selected.
+  /// null value = checked and free; absent = not checked yet.
+  final Map<int, String?> _slotConflict = {};
+  bool _checkingSlot = false;
+
+  /// The scope this hire would take up, in backend terms.
+  String get _wantedKind => switch (widget.contractType) {
+        'designer' => 'design',
+        'constructor' => 'construction',
+        final other => other,
+      };
+
   @override
   void initState() {
     super.initState();
     if (widget.preselectedProjectId != null) {
       _loading = false;
+      _checkSlot(widget.preselectedProjectId!);
     } else {
       _loadProjects();
+    }
+  }
+
+  /// A project holds one designer and one constructor slot, and the backend
+  /// rejects a direct request that collides with a filled one. Without this the
+  /// owner only found out after writing a message and pressing send.
+  Future<void> _checkSlot(int projectId) async {
+    if (_slotConflict.containsKey(projectId)) return;
+    setState(() => _checkingSlot = true);
+    try {
+      final workings = await ProjectWorkingService.getProjectWorkings(
+        projectShopOwnerId: projectId,
+        pageSize: 50,
+      );
+      final conflict =
+          ProjectWorkingService.slotConflict(workings.items, _wantedKind);
+      if (mounted) setState(() => _slotConflict[projectId] = conflict);
+    } catch (_) {
+      // Couldn't check — stay out of the way and let the backend be the
+      // authority rather than blocking a hire that might be perfectly valid.
+      if (mounted) setState(() => _slotConflict[projectId] = null);
+    } finally {
+      if (mounted) setState(() => _checkingSlot = false);
     }
   }
 
@@ -95,6 +131,9 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
           _selectedIndex = 0;
           _loading = false;
         });
+        // Card 0 is selected on arrival, so its slot state is what the button
+        // reflects before the owner touches anything.
+        if (_projects.isNotEmpty) _checkSlot(_projects.first.id);
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -149,6 +188,13 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
 
   ProjectResponse? get _selectedProject =>
       _projects.isNotEmpty ? _projects[_selectedIndex] : null;
+
+  /// Slot conflict for whichever project the button would act on, or null when
+  /// it's free (or hasn't been checked yet).
+  String? get _activeSlotConflict {
+    final id = widget.preselectedProjectId ?? _selectedProject?.id;
+    return id == null ? null : _slotConflict[id];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -293,87 +339,126 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                 top: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
               ),
             ),
-            child: ElevatedButton(
-              onPressed: (widget.preselectedProjectId == null && (_projects.isEmpty || _loading))
-                  ? null
-                  : () async {
-                      final projectId = widget.preselectedProjectId ?? _selectedProject!.id;
-                      final projectTitle = widget.preselectedProjectName ?? _selectedProject!.name;
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_activeSlotConflict != null) ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 16, color: AppColors.textSecondary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${_activeSlotConflict!} Finish or cancel that engagement before hiring another.',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                ElevatedButton(
+                  onPressed: (widget.preselectedProjectId == null && (_projects.isEmpty || _loading)) ||
+                          _activeSlotConflict != null ||
+                          _checkingSlot
+                      ? null
+                      : () async {
+                          final projectId = widget.preselectedProjectId ?? _selectedProject!.id;
+                          final projectTitle = widget.preselectedProjectName ?? _selectedProject!.name;
 
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
-                      );
-
-                      try {
-                        String mappedContractType = widget.contractType;
-                        if (mappedContractType == 'designer') mappedContractType = 'design';
-                        if (mappedContractType == 'constructor') mappedContractType = 'construction';
-
-                        final message = _messageController.text.trim();
-                        await ProjectWorkingService.directRequest(
-                          projectShopOwnerId: projectId,
-                          serviceProviderProfileId: widget.serviceProviderProfileId,
-                          contractType: mappedContractType,
-                          requestMessage: message.isEmpty
-                              ? 'I would like to discuss my project brief with you.'
-                              : message,
-                        );
-
-                        if (mounted) {
-                          Navigator.pop(context); // hide loading
-                          if (widget.isConstructor) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => HireRequestConfirmedPage(
-                                  constructorName: widget.designerName,
-                                ),
-                              ),
+                          // Re-check rather than trust the cached value: the slot
+                          // may have been filled while this page sat open.
+                          _slotConflict.remove(projectId);
+                          await _checkSlot(projectId);
+                          if (!mounted) return;
+                          final conflict = _slotConflict[projectId];
+                          if (conflict != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(conflict)),
                             );
-                          } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => BookingConfirmedPage(
-                                  projectTitle: projectTitle,
-                                  designerName: widget.designerName,
-                                ),
-                              ),
-                            );
+                            return;
                           }
-                        }
-                      } catch (e) {
-                         if (mounted) {
-                           Navigator.pop(context);
-                           String errorMessage = e.toString();
-                           if (errorMessage.contains('409')) {
-                             errorMessage = 'You have already sent a request or hired this provider for the selected project. Please try a different project.';
-                           } else {
-                             errorMessage = 'Failed to book: ${e.toString()}';
-                           }
-                           ScaffoldMessenger.of(context).showSnackBar(
-                             SnackBar(content: Text(errorMessage, style: const TextStyle(color: Colors.white))),
-                           );
-                         }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.espresso,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                elevation: 0,
-              ),
-              child: Text(
-                'CONFIRM & SEND >',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
+
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
+                          );
+
+                          try {
+                            String mappedContractType = widget.contractType;
+                            if (mappedContractType == 'designer') mappedContractType = 'design';
+                            if (mappedContractType == 'constructor') mappedContractType = 'construction';
+
+                            final message = _messageController.text.trim();
+                            await ProjectWorkingService.directRequest(
+                              projectShopOwnerId: projectId,
+                              serviceProviderProfileId: widget.serviceProviderProfileId,
+                              contractType: mappedContractType,
+                              requestMessage: message.isEmpty
+                                  ? 'I would like to discuss my project brief with you.'
+                                  : message,
+                            );
+
+                            if (mounted) {
+                              Navigator.pop(context); // hide loading
+                              if (widget.isConstructor) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => HireRequestConfirmedPage(
+                                      constructorName: widget.designerName,
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => BookingConfirmedPage(
+                                      projectTitle: projectTitle,
+                                      designerName: widget.designerName,
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
+                          } catch (e) {
+                             if (mounted) {
+                               Navigator.pop(context);
+                               String errorMessage = e.toString();
+                               if (errorMessage.contains('409')) {
+                                 errorMessage = 'You have already sent a request or hired this provider for the selected project. Please try a different project.';
+                               } else {
+                                 errorMessage = 'Failed to book: ${e.toString()}';
+                               }
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 SnackBar(content: Text(errorMessage, style: const TextStyle(color: Colors.white))),
+                               );
+                             }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.espresso,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'CONFIRM & SEND >',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -387,7 +472,10 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
     final highlighted = _isHighlightedStatus(project.status);
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
+      onTap: () {
+        setState(() => _selectedIndex = index);
+        _checkSlot(project.id);
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
