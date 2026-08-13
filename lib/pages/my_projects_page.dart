@@ -9,6 +9,7 @@ import '../models/responses/api_responses.dart';
 import 'project_detail_page.dart';
 import 'project_success_page.dart';
 import 'project_onboarding_page.dart';
+import 'project_manual_create_page.dart';
 
 class MyProjectsPage extends StatefulWidget {
   const MyProjectsPage({super.key});
@@ -280,8 +281,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                   icon: Icons.error_outline,
                   title: 'Could not load projects',
                   subtitle: _error!,
-                  actionLabel: 'Retry',
-                  onAction: _loadProjects,
+                  actionWidget: TextButton(onPressed: _loadProjects, child: const Text('Retry')),
                 )
               else if (filtered.isEmpty)
                 _buildMessageState(
@@ -292,15 +292,44 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                   subtitle: _projects.isEmpty
                       ? 'Set up your café details and we\'ll help you find a designer or constructor.'
                       : 'Try another tab or clear your search.',
-                  actionLabel: _projects.isEmpty ? 'Create a project' : null,
-                  onAction: _projects.isEmpty
-                      ? () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ProjectOnboardingPage()),
-                          );
-                          if (mounted) _loadProjects();
-                        }
+                  actionWidget: _projects.isEmpty
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const ProjectOnboardingPage()),
+                                );
+                                if (mounted) _loadProjects();
+                              },
+                              icon: const Icon(Icons.auto_awesome, size: 18),
+                              label: const Text('Design with AI (Premium)'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.espresso,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton(
+                              onPressed: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const ProjectManualCreatePage()),
+                                );
+                                if (result == true && mounted) _loadProjects();
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.espresso,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                side: BorderSide(color: AppColors.espresso.withOpacity(0.5)),
+                              ),
+                              child: const Text('Create Manually'),
+                            ),
+                          ],
+                        )
                       : null,
                 )
               else ...[
@@ -340,6 +369,14 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
           ),
         ),
       ),
+      floatingActionButton: _projects.isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: () => _showCreateProjectOptions(context),
+              backgroundColor: AppColors.espresso,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: Text('New Project', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+            )
+          : null,
     );
   }
 
@@ -347,8 +384,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
     required IconData icon,
     required String title,
     required String subtitle,
-    String? actionLabel,
-    VoidCallback? onAction,
+    Widget? actionWidget,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
@@ -371,9 +407,9 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
             ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 16),
-              TextButton(onPressed: onAction, child: Text(actionLabel)),
+            if (actionWidget != null) ...[
+              const SizedBox(height: 24),
+              actionWidget,
             ],
           ],
         ),
@@ -762,5 +798,97 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
       // Refresh posted IDs after returning from the broadcast screen
       _loadPostedProjectIds();
     });
+  }
+
+  void _showCreateProjectOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Create a New Project',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.espresso,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Choose how you want to create your next cafe project.',
+                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                ListTile(
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProjectOnboardingPage()),
+                    ).then((_) {
+                      if (mounted) _loadProjects();
+                    });
+                  },
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.espresso,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.auto_awesome, color: Colors.white),
+                  ),
+                  title: Text(
+                    'Design with AI (Premium)',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.espresso),
+                  ),
+                  subtitle: Text(
+                    'Generate a full design brief and concept automatically.',
+                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProjectManualCreatePage()),
+                    ).then((result) {
+                      if (result == true && mounted) _loadProjects();
+                    });
+                  },
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF6F3F1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.edit_document, color: AppColors.espresso),
+                  ),
+                  title: Text(
+                    'Create Manually',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.espresso),
+                  ),
+                  subtitle: Text(
+                    'Input your own details without AI generation.',
+                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
