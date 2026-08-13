@@ -695,11 +695,7 @@ class _MarketplacePageState extends State<MarketplacePage>
                             letterSpacing: 1.0),
                       ),
                       const SizedBox(height: 8),
-                      Text(project.description,
-                          style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                              height: 1.5)),
+                      _buildRichDescription(project.description),
                       const SizedBox(height: 24),
                       Text(
                         'SERVICE REQUIREMENTS',
@@ -774,6 +770,53 @@ class _MarketplacePageState extends State<MarketplacePage>
         ],
       ),
     );
+  }
+
+  Widget _buildRichDescription(String text) {
+    final RegExp imageRegex = RegExp(r'🖼️\s*AI_IMAGE:\s*(https?://\S+)');
+    final match = imageRegex.firstMatch(text);
+    
+    if (match != null) {
+      final before = text.substring(0, match.start).trim();
+      final url = match.group(1)!;
+      final after = text.substring(match.end).trim();
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (before.isNotEmpty)
+            Text(before,
+                style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    height: 1.5)),
+          if (before.isNotEmpty) const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+              url,
+              width: double.infinity,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          ),
+          if (after.isNotEmpty) const SizedBox(height: 16),
+          if (after.isNotEmpty)
+            Text(after,
+                style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    height: 1.5)),
+        ],
+      );
+    }
+
+    return Text(text,
+        style: GoogleFonts.inter(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+            height: 1.5));
   }
 }
 

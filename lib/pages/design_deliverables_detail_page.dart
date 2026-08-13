@@ -5,6 +5,7 @@ import '../models/responses/api_responses.dart';
 import '../services/design_service.dart';
 import '../services/comment_service.dart';
 import '../widgets/comments_section.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DesignDeliverablesDetailPage extends StatefulWidget {
   final List<DesignResponse> designs;
@@ -341,15 +342,18 @@ class _DesignDeliverablesDetailPageState
             child: Stack(
               children: [
                 firstImage != null
-                    ? Image.network(
+                    ? GestureDetector(
+                        onTap: () => _handleFileTap(firstImage),
+                        child: Image.network(
               webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-                        firstImage,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _placeholderImage(),
+                          firstImage,
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _buildFilePlaceholder(firstImage),
+                        ),
                       )
-                    : _placeholderImage(),
+                    : _buildFilePlaceholder(null),
                 // Status badge
                 Positioned(
                   top: 12,
@@ -559,7 +563,7 @@ class _DesignDeliverablesDetailPageState
                       itemBuilder: (context, i) {
                         final img = design.images[i];
                         return GestureDetector(
-                          onTap: () => _showImageFullScreen(img.viewUrl),
+                          onTap: () => _handleFileTap(img.viewUrl),
                           child: Container(
                             margin: const EdgeInsets.only(right: 8),
                             width: 60,
@@ -576,11 +580,10 @@ class _DesignDeliverablesDetailPageState
               webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                                 img.viewUrl,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  color: const Color(0xFFF0EBE6),
-                                  child: const Icon(Icons.image,
-                                      size: 20,
-                                      color: AppColors.outlineVariant),
+                                errorBuilder: (_, __, ___) => _buildFilePlaceholder(
+                                  img.viewUrl,
+                                  iconSize: 24,
+                                  height: 60,
                                 ),
                               ),
                             ),
@@ -606,16 +609,101 @@ class _DesignDeliverablesDetailPageState
     );
   }
 
-  Widget _placeholderImage() {
+  Widget _buildFilePlaceholder(String? url, {double iconSize = 48, double height = 180}) {
+    IconData icon = Icons.palette_outlined;
+    Color iconColor = AppColors.outlineVariant;
+    Color bgColor = const Color(0xFFF0EBE6);
+    String ext = '';
+
+    if (url != null && !_isImage(url)) {
+      final lower = url.toLowerCase().split('?').first;
+      if (lower.endsWith('.pdf')) {
+        icon = Icons.picture_as_pdf;
+        iconColor = const Color(0xFFD32F2F);
+        bgColor = const Color(0xFFFFEBEE);
+        ext = 'PDF';
+      } else if (lower.endsWith('.doc') || lower.endsWith('.docx')) {
+        icon = Icons.description;
+        iconColor = const Color(0xFF1976D2);
+        bgColor = const Color(0xFFE3F2FD);
+        ext = 'DOC';
+      } else if (lower.endsWith('.xls') || lower.endsWith('.xlsx') || lower.endsWith('.csv')) {
+        icon = Icons.table_chart;
+        iconColor = const Color(0xFF388E3C);
+        bgColor = const Color(0xFFE8F5E9);
+        ext = 'XLS';
+      } else if (lower.endsWith('.zip') || lower.endsWith('.rar')) {
+        icon = Icons.folder_zip;
+        iconColor = const Color(0xFFF57C00);
+        bgColor = const Color(0xFFFFF3E0);
+        ext = 'ZIP';
+      } else {
+        icon = Icons.insert_drive_file;
+        iconColor = const Color(0xFF757575);
+        bgColor = const Color(0xFFF5F5F5);
+        ext = 'FILE';
+      }
+    }
+
     return Container(
-      height: 180,
+      height: height,
       width: double.infinity,
-      color: const Color(0xFFF0EBE6),
-      child: const Center(
-        child: Icon(Icons.palette_outlined,
-            size: 48, color: AppColors.outlineVariant),
+      color: bgColor,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: iconSize, color: iconColor),
+            if (ext.isNotEmpty && iconSize >= 40) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  ext,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: iconColor,
+                  ),
+                ),
+              ),
+            ]
+          ],
+        ),
       ),
     );
+  }
+
+  bool _isImage(String url) {
+    final lowerUrl = url.toLowerCase().split('?').first;
+    return lowerUrl.endsWith('.jpg') ||
+        lowerUrl.endsWith('.jpeg') ||
+        lowerUrl.endsWith('.png') ||
+        lowerUrl.endsWith('.gif') ||
+        lowerUrl.endsWith('.webp') ||
+        lowerUrl.contains('unsplash.com') ||
+        lowerUrl.contains('image');
+  }
+
+  Future<void> _handleFileTap(String url) async {
+    if (_isImage(url)) {
+      _showImageFullScreen(url);
+    } else {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open file.')),
+          );
+        }
+      }
+    }
   }
 
   void _showImageFullScreen(String url) {

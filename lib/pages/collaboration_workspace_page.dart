@@ -956,11 +956,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                     height: 160,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 160,
-                      color: const Color(0xFFF6F3F1),
-                      child: const Center(child: Icon(Icons.image_not_supported, color: AppColors.outlineVariant, size: 40)),
-                    ),
+                    errorBuilder: (_, __, ___) => _buildFilePlaceholder(firstImage),
                   ),
                   Positioned(
                     top: 12,
@@ -1424,6 +1420,81 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilePlaceholder(String? url, {double iconSize = 48, double height = 160}) {
+    IconData icon = Icons.palette_outlined;
+    Color iconColor = AppColors.outlineVariant;
+    Color bgColor = const Color(0xFFF0EBE6);
+    String ext = '';
+
+    if (url != null) {
+      final lower = url.toLowerCase().split('?').first;
+      final isImage = lower.endsWith('.jpg') || lower.endsWith('.jpeg') ||
+                      lower.endsWith('.png') || lower.endsWith('.gif') ||
+                      lower.endsWith('.webp') || lower.contains('unsplash.com') ||
+                      lower.contains('image');
+      if (!isImage) {
+        if (lower.endsWith('.pdf')) {
+          icon = Icons.picture_as_pdf;
+          iconColor = const Color(0xFFD32F2F);
+          bgColor = const Color(0xFFFFEBEE);
+          ext = 'PDF';
+        } else if (lower.endsWith('.doc') || lower.endsWith('.docx')) {
+          icon = Icons.description;
+          iconColor = const Color(0xFF1976D2);
+          bgColor = const Color(0xFFE3F2FD);
+          ext = 'DOC';
+        } else if (lower.endsWith('.xls') || lower.endsWith('.xlsx') || lower.endsWith('.csv')) {
+          icon = Icons.table_chart;
+          iconColor = const Color(0xFF388E3C);
+          bgColor = const Color(0xFFE8F5E9);
+          ext = 'XLS';
+        } else if (lower.endsWith('.zip') || lower.endsWith('.rar')) {
+          icon = Icons.folder_zip;
+          iconColor = const Color(0xFFF57C00);
+          bgColor = const Color(0xFFFFF3E0);
+          ext = 'ZIP';
+        } else {
+          icon = Icons.insert_drive_file;
+          iconColor = const Color(0xFF757575);
+          bgColor = const Color(0xFFF5F5F5);
+          ext = 'FILE';
+        }
+      }
+    }
+
+    return Container(
+      height: height,
+      width: double.infinity,
+      color: bgColor,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: iconSize, color: iconColor),
+            if (ext.isNotEmpty && iconSize >= 40) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  ext,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: iconColor,
+                  ),
+                ),
+              ),
+            ]
+          ],
+        ),
       ),
     );
   }
