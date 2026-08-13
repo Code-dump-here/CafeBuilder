@@ -771,6 +771,8 @@ class _DesignerWorkspacePageState extends State<DesignerWorkspacePage> {
         ],
       ],
     );
+  }
+
   Widget _buildFilePlaceholder(String? url, {double iconSize = 48, double height = 160}) {
     IconData icon = Icons.palette_outlined;
     Color iconColor = AppColors.outlineVariant;
