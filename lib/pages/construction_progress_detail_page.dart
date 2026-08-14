@@ -4,6 +4,7 @@ import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/comment_service.dart';
 import '../widgets/comments_section.dart';
+import '../widgets/confirm_dialog.dart';
 
 class ConstructionProgressDetailPage extends StatefulWidget {
   final List<ConstructionItemResponse> items;
@@ -590,7 +591,7 @@ class _ConstructionProgressDetailPageState
     );
   }
 
-  void _showTaskImage(ConstructionTaskResponse task) {
+  Future<void> _showTaskImage(ConstructionTaskResponse task) async {
     String? imgUrl = task.imageUrl;
     if (imgUrl == null) return;
     if (!imgUrl.startsWith('http')) {
@@ -599,6 +600,14 @@ class _ConstructionProgressDetailPageState
           'https://storage.googleapis.com/smartcoffeebuilder_bucket/$imgUrl';
     }
     final url = imgUrl;
+
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'View Photo',
+      message: 'View this task photo?',
+      confirmLabel: 'View',
+    );
+    if (!confirmed || !mounted) return;
 
     showDialog(
       context: context,
