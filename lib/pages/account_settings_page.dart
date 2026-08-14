@@ -24,6 +24,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
   bool _loading = true;
   bool _saving = false;
   String? _email;
+  String? _loadError;
 
   @override
   void initState() {
@@ -41,8 +42,14 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
   }
 
   Future<void> _loadProfile() async {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
     try {
-      final owner = await ShopOwnerService.getCurrentShopOwner(forceRefresh: true);
+      final owner = await ShopOwnerService.getCurrentShopOwner(
+        forceRefresh: true,
+      );
       final email = await ApiClient.getEmail();
       if (!mounted) return;
       setState(() {
@@ -54,8 +61,14 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
         _addressController.text = owner.address;
         _loading = false;
       });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e is ApiException
+            ? e.message
+            : 'Failed to load your profile.';
+        _loading = false;
+      });
     }
   }
 
@@ -74,15 +87,18 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       );
       ShopOwnerService.clearCache();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile updated')));
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update profile: $e')),
-      );
+      final message = e is ApiException
+          ? e.message
+          : 'Failed to update profile. Please try again.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -110,6 +126,30 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _loadError != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _loadError!,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      onPressed: _loadProfile,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Form(
@@ -130,7 +170,10 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                       const SizedBox(height: 8),
                       Text(
                         _email!,
-                        style: GoogleFonts.inter(fontSize: 15, color: AppColors.textSecondary),
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 24),
                     ],
@@ -153,17 +196,26 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                         onPressed: _saving ? null : _save,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.espresso,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: _saving
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
                               )
                             : Text(
                                 'Save Changes',
-                                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                                style: GoogleFonts.inter(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
                       ),
                     ),
@@ -197,12 +249,16 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
-          validator: (v) => (v == null || v.trim().isEmpty) ? '$label is required' : null,
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? '$label is required' : null,
           style: GoogleFonts.inter(fontSize: 15, color: AppColors.espresso),
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
