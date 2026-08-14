@@ -19,6 +19,7 @@ class ProfileTab extends StatefulWidget {
 class _ProfileTabState extends State<ProfileTab> {
   ShopOwnerResponse? _shopOwner;
   bool _loading = true;
+  String? _loadError;
 
   @override
   void initState() {
@@ -27,18 +28,32 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Future<void> _loadProfile() async {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
     try {
-      final owner = await ShopOwnerService.getCurrentShopOwner();
+      final owner = await ShopOwnerService.getCurrentShopOwner(forceRefresh: true);
       if (mounted) {
         setState(() {
           _shopOwner = owner;
           _loading = false;
         });
       }
-    } on ApiException catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadError = e.message;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadError = 'Failed to load your profile.';
+        });
+      }
     }
   }
 
@@ -52,6 +67,10 @@ class _ProfileTabState extends State<ProfileTab> {
             child: Column(
               children: [
                 const SizedBox(height: 16),
+                if (_loadError != null) ...[
+                  _buildLoadErrorBanner(),
+                  const SizedBox(height: 16),
+                ],
                 _buildProfileCard(),
                 const SizedBox(height: 24),
                 _buildStatsGrid(),
@@ -64,6 +83,36 @@ class _ProfileTabState extends State<ProfileTab> {
                 const SizedBox(height: 100), // Bottom nav space
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Shown when the profile fetch fails, instead of silently falling back
+  // to generic placeholder copy with no indication anything went wrong.
+  Widget _buildLoadErrorBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFEBEE),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFC62828).withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Color(0xFFC62828), size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _loadError ?? 'Failed to load your profile.',
+              style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFFC62828)),
+            ),
+          ),
+          TextButton(
+            onPressed: _loadProfile,
+            child: const Text('Retry'),
           ),
         ],
       ),
