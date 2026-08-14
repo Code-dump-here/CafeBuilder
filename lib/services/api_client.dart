@@ -19,11 +19,15 @@ class ApiClient {
 
   // ── Global navigation key for session-expired redirect ───────────────────────
   /// Set this in main() so ApiClient can navigate to /login from anywhere.
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   /// Called when both tokens are expired/invalid and the user must re-login.
   static void _onSessionExpired() {
-    dev.log('[ApiClient] Session expired — redirecting to /login', name: 'ApiClient');
+    dev.log(
+      '[ApiClient] Session expired — redirecting to /login',
+      name: 'ApiClient',
+    );
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (_) => false);
   }
 
@@ -104,7 +108,9 @@ class ApiClient {
     };
   }
 
-  static Map<String, String> get _headers => {'Content-Type': 'application/json'};
+  static Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+  };
 
   static Uri _uri(String path, [Map<String, dynamic>? params]) {
     final uri = Uri.parse('$_baseUrl$path');
@@ -244,12 +250,12 @@ class ApiClient {
   static Future<http.Response> authMultipart(
     String path,
     Map<String, String> body, {
-    List<String>? filePaths,
+    List<UploadFile>? files,
     String fileField = 'files',
   }) async {
     return _retryRequest(() async {
       final request = http.MultipartRequest('POST', _uri(path));
-      
+
       final token = await getAccessToken();
       if (token != null) {
         request.headers['Authorization'] = 'Bearer $token';
@@ -257,9 +263,28 @@ class ApiClient {
 
       request.fields.addAll(body);
 
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
+      if (files != null) {
+        for (final file in files) {
+          // Web has no real filesystem path — file_picker only gives bytes
+          // there, and http.MultipartFile.fromPath doesn't work on web
+          // regardless. Bytes take priority when both are present.
+          if (file.bytes != null) {
+            request.files.add(
+              http.MultipartFile.fromBytes(
+                fileField,
+                file.bytes!,
+                filename: file.filename,
+              ),
+            );
+          } else if (file.path != null) {
+            request.files.add(
+              await http.MultipartFile.fromPath(
+                fileField,
+                file.path!,
+                filename: file.filename,
+              ),
+            );
+          }
         }
       }
 
@@ -289,7 +314,8 @@ class ApiClient {
       if (response.statusCode >= 500) {
         throw ApiException(
           statusCode: response.statusCode,
-          message: 'The server is having trouble right now. Please try again in a moment.',
+          message:
+              'The server is having trouble right now. Please try again in a moment.',
         );
       }
 
@@ -302,7 +328,8 @@ class ApiClient {
           final errors = body['errors'] as Map;
           message = errors.values.expand((v) => v is List ? v : [v]).join('; ');
         } else {
-          message = body['detail'] ?? body['title'] ?? body['message'] ?? message;
+          message =
+              body['detail'] ?? body['title'] ?? body['message'] ?? message;
         }
       } catch (_) {
         if (response.body.isNotEmpty) message = response.body;
@@ -310,6 +337,18 @@ class ApiClient {
       throw ApiException(statusCode: response.statusCode, message: message);
     }
   }
+}
+
+/// A file to attach to an [ApiClient.authMultipart] request. Carry [bytes]
+/// on web (no real filesystem path exists there) or [path] elsewhere —
+/// exactly one should be set. Kept independent of any file-picker package
+/// so this file has no UI-layer dependency.
+class UploadFile {
+  final String filename;
+  final List<int>? bytes;
+  final String? path;
+
+  UploadFile({required this.filename, this.bytes, this.path});
 }
 
 class ApiException implements Exception {

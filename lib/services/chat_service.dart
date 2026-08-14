@@ -33,7 +33,9 @@ class ChatMessageResponse {
           .whereType<String>()
           .toList(),
       // BE field is "sentAt", not "createdAt".
-      createdAt: json['sentAt'] != null ? DateTime.parse(json['sentAt']) : DateTime.now(),
+      createdAt: json['sentAt'] != null
+          ? DateTime.parse(json['sentAt'])
+          : DateTime.now(),
     );
   }
 }
@@ -43,7 +45,8 @@ class ConversationResponse {
   final int projectWorkingId;
   ConversationResponse({required this.id, required this.projectWorkingId});
 
-  factory ConversationResponse.fromJson(Map<String, dynamic> json) => ConversationResponse(
+  factory ConversationResponse.fromJson(Map<String, dynamic> json) =>
+      ConversationResponse(
         id: json['id'] as int,
         projectWorkingId: json['projectWorkingId'] as int,
       );
@@ -61,14 +64,19 @@ class ChatService {
     });
     ApiClient.throwIfError(listResponse);
     final listBody = ApiClient.parseBody(listResponse);
-    final existing = PaginationResponse.fromJson(listBody, ConversationResponse.fromJson);
+    final existing = PaginationResponse.fromJson(
+      listBody,
+      ConversationResponse.fromJson,
+    );
     if (existing.items.isNotEmpty) return existing.items.first.id;
 
     final createResponse = await ApiClient.authPost('/chat/conversations', {
       'projectWorkingId': projectWorkingId,
     });
     ApiClient.throwIfError(createResponse);
-    final created = ConversationResponse.fromJson(ApiClient.parseBody(createResponse));
+    final created = ConversationResponse.fromJson(
+      ApiClient.parseBody(createResponse),
+    );
     return created.id;
   }
 
@@ -86,7 +94,9 @@ class ChatService {
     });
     ApiClient.throwIfError(response);
     final list = jsonDecode(response.body) as List<dynamic>;
-    final messages = list.map((e) => ChatMessageResponse.fromJson(e as Map<String, dynamic>)).toList();
+    final messages = list
+        .map((e) => ChatMessageResponse.fromJson(e as Map<String, dynamic>))
+        .toList();
     return PaginationResponse(
       items: messages,
       pageNumber: 1,
@@ -101,12 +111,12 @@ class ChatService {
   static Future<ChatMessageResponse> postMessage(
     int conversationId,
     String bodyText, {
-    List<String>? filePaths,
+    List<UploadFile>? files,
   }) async {
     final response = await ApiClient.authMultipart(
       '/chat/messages/$conversationId',
       {'body': bodyText},
-      filePaths: filePaths,
+      files: files,
       fileField: 'files',
     );
     ApiClient.throwIfError(response);

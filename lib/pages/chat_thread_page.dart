@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
@@ -24,14 +23,14 @@ class ChatThreadPage extends StatefulWidget {
 class _ChatThreadPageState extends State<ChatThreadPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  
+
   List<ChatMessageResponse> _messages = [];
   bool _isLoading = true;
   bool _isSending = false;
   String? _error;
   int? _currentAccountId;
 
-  List<String> _selectedFilePaths = [];
+  final List<PlatformFile> _selectedFiles = [];
   Timer? _pollingTimer;
 
   @override
@@ -109,46 +108,59 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
 
   Future<void> _pickFiles() async {
     try {
+      // withData: true forces bytes to be populated even on platforms
+      // where file_picker would otherwise only give a path. On Web, .paths
+      // throws (browsers don't expose real filesystem paths) — .bytes is
+      // the only thing that ever works there, so this is required, not
+      // just a nice-to-have.
       FilePickerResult? result = await FilePicker.pickFiles(
         allowMultiple: true,
         type: FileType.any,
+        withData: true,
       );
       if (result != null) {
         setState(() {
-          _selectedFilePaths.addAll(result.paths.whereType<String>());
+          _selectedFiles.addAll(result.files);
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error picking file')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Error picking file')));
     }
   }
 
   void _removeFile(int index) {
     setState(() {
-      _selectedFilePaths.removeAt(index);
+      _selectedFiles.removeAt(index);
     });
   }
 
   Future<void> _sendMessage() async {
     final text = _textController.text.trim();
-    if (text.isEmpty && _selectedFilePaths.isEmpty) return;
+    if (text.isEmpty && _selectedFiles.isEmpty) return;
 
     setState(() {
       _isSending = true;
     });
 
     try {
+      final uploadFiles = _selectedFiles
+          .map(
+            (f) => UploadFile(filename: f.name, bytes: f.bytes, path: f.path),
+          )
+          .toList();
       final newMessage = await ChatService.postMessage(
         widget.conversationId,
         text,
-        filePaths: _selectedFilePaths.isNotEmpty ? _selectedFilePaths : null,
+        files: uploadFiles.isNotEmpty ? uploadFiles : null,
       );
 
       if (mounted) {
         setState(() {
           _messages.add(newMessage);
           _textController.clear();
-          _selectedFilePaths.clear();
+          _selectedFiles.clear();
           _isSending = false;
         });
         _scrollToBottom();
@@ -158,9 +170,9 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
         setState(() {
           _isSending = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send message: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
       }
     }
   }
@@ -200,15 +212,14 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
           IconButton(
             icon: const Icon(Icons.info_outline, color: AppColors.espresso),
             onPressed: () {},
-          )
+          ),
         ],
       ),
       body: Column(
         children: [
-          Expanded(
-            child: _buildMessagesArea(),
-          ),
-          if (widget.conversationId != 0 && _selectedFilePaths.isNotEmpty) _buildAttachmentPreview(),
+          Expanded(child: _buildMessagesArea()),
+          if (widget.conversationId != 0 && _selectedFiles.isNotEmpty)
+            _buildAttachmentPreview(),
           if (widget.conversationId != 0) _buildInputArea(),
         ],
       ),
@@ -217,7 +228,9 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
 
   Widget _buildMessagesArea() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.espresso));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.espresso),
+      );
     }
     if (_error != null || _messages.isEmpty) {
       final isNoCollab = widget.conversationId == 0;
@@ -241,9 +254,11 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
               ),
               const SizedBox(height: 24),
               Text(
-                isNoCollab 
-                    ? 'No Active Collab Yet' 
-                    : (_error != null ? 'Oops, something went wrong' : 'No messages yet'),
+                isNoCollab
+                    ? 'No Active Collab Yet'
+                    : (_error != null
+                          ? 'Oops, something went wrong'
+                          : 'No messages yet'),
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -253,9 +268,11 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
               ),
               const SizedBox(height: 12),
               Text(
-                isNoCollab 
+                isNoCollab
                     ? 'It looks like there is no active contract or engagement for this project yet. Once accepted, your chat will appear here.'
-                    : (_error != null ? _error! : 'Start the conversation by sending a message below!'),
+                    : (_error != null
+                          ? _error!
+                          : 'Start the conversation by sending a message below!'),
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   color: AppColors.textSecondary,
@@ -267,13 +284,23 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
               if (!isNoCollab && _error != null)
                 ElevatedButton.icon(
                   onPressed: _loadMessages,
-                  icon: const Icon(Icons.refresh, size: 18, color: Colors.white),
+                  icon: const Icon(
+                    Icons.refresh,
+                    size: 18,
+                    color: Colors.white,
+                  ),
                   label: const Text('Try Again'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.espresso,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    textStyle: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -292,7 +319,8 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
       itemCount: _messages.length,
       itemBuilder: (context, index) {
         final message = _messages[index];
-        final isMine = _currentAccountId != null && message.senderId == _currentAccountId;
+        final isMine =
+            _currentAccountId != null && message.senderId == _currentAccountId;
         return _buildMessageBubble(message, isMine);
       },
     );
@@ -302,7 +330,9 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment: isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMine
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMine) ...[
@@ -330,11 +360,13 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
                       color: Colors.black.withOpacity(0.05),
                       blurRadius: 5,
                       offset: const Offset(0, 2),
-                    )
+                    ),
                 ],
               ),
               child: Column(
-                crossAxisAlignment: isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: isMine
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 children: [
                   if (message.body.isNotEmpty)
                     Text(
@@ -351,31 +383,48 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
                       runSpacing: 8,
                       children: message.fileUrls.map((url) {
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: isMine ? Colors.white.withOpacity(0.2) : const Color(0xFFF6F3F1),
+                            color: isMine
+                                ? Colors.white.withOpacity(0.2)
+                                : const Color(0xFFF6F3F1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.insert_drive_file, size: 14, color: isMine ? Colors.white : AppColors.espresso),
+                              Icon(
+                                Icons.insert_drive_file,
+                                size: 14,
+                                color: isMine
+                                    ? Colors.white
+                                    : AppColors.espresso,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 'Attachment',
-                                style: GoogleFonts.inter(fontSize: 12, color: isMine ? Colors.white : AppColors.espresso),
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: isMine
+                                      ? Colors.white
+                                      : AppColors.espresso,
+                                ),
                               ),
                             ],
                           ),
                         );
                       }).toList(),
-                    )
+                    ),
                   ],
                 ],
               ),
             ),
           ),
-          if (isMine) const SizedBox(width: 22), // space equivalent to avatar + spacing
+          if (isMine)
+            const SizedBox(width: 22), // space equivalent to avatar + spacing
         ],
       ),
     );
@@ -389,10 +438,9 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
         height: 60,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          itemCount: _selectedFilePaths.length,
+          itemCount: _selectedFiles.length,
           itemBuilder: (context, index) {
-            final path = _selectedFilePaths[index];
-            final name = path.split(Platform.pathSeparator).last;
+            final name = _selectedFiles[index].name;
             return Container(
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -403,18 +451,29 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.attach_file, size: 16, color: AppColors.placeholder),
+                  const Icon(
+                    Icons.attach_file,
+                    size: 16,
+                    color: AppColors.placeholder,
+                  ),
                   const SizedBox(width: 8),
                   SizedBox(
                     width: 80,
                     child: Text(
                       name,
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.espresso),
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppColors.espresso,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 16, color: AppColors.placeholder),
+                    icon: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: AppColors.placeholder,
+                    ),
                     onPressed: () => _removeFile(index),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -444,7 +503,10 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: AppColors.placeholder),
+            icon: const Icon(
+              Icons.add_circle_outline,
+              color: AppColors.placeholder,
+            ),
             onPressed: _pickFiles,
           ),
           Expanded(
@@ -459,7 +521,10 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
                 ),
                 filled: true,
                 fillColor: const Color(0xFFF6F3F1),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
               ),
               maxLines: null,
             ),
@@ -471,7 +536,10 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
                   child: SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.espresso),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.espresso,
+                    ),
                   ),
                 )
               : IconButton(
