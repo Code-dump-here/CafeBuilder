@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'find_designers_page.dart';
 import 'find_constructors_page.dart';
+import 'find_both_providers_page.dart';
 import 'project_onboarding_page.dart';
 
 class ServicesTab extends StatelessWidget {
@@ -82,8 +83,25 @@ class ServicesTab extends StatelessWidget {
                 ),
                 
                 const SizedBox(height: 24),
-                
-                // Card 3: Start New Project
+
+                // Card 3: Hire a Design & Build studio (capability 'both')
+                _buildWhiteServiceCard(
+                  imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600',
+                  icon: Icons.workspaces_outlined,
+                  title: 'Hire Design & Build',
+                  desc: 'One studio, both design and construction — a single hire covers the whole project.',
+                  actionText: 'EXPLORE STUDIOS',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const FindBothProvidersPage()),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                // Card 4: Start New Project
                 _buildDarkProjectCard(context),
                 
                 const SizedBox(height: 100), // Bottom nav space

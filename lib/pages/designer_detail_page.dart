@@ -103,6 +103,20 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
   double get _avgRating => _summary?.averageRating ?? _provider?.avgRating ?? 0;
   int get _reviewCount => _summary?.reviewCount ?? _reviews.length;
 
+  /// This page also serves both-capability studios reached from "Find
+  /// Design & Build" — title/CTA read from the loaded provider's actual
+  /// capability rather than always saying "Designer".
+  String get _pageTitle => switch (_provider?.capability) {
+        'constructor' => 'Contractor Detail',
+        'both' => 'Studio Detail',
+        _ => 'Designer Detail',
+      };
+  String get _bookCta => switch (_provider?.capability) {
+        'constructor' => 'Book Contractor',
+        'both' => 'Book Design & Build Studio',
+        _ => 'Book Designer',
+      };
+
   static String _initialsFrom(String name) {
     final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.length >= 2) {
@@ -126,7 +140,7 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Designer Detail',
+              _pageTitle,
               style: GoogleFonts.playfairDisplay(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -252,7 +266,7 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
                       elevation: 0,
                     ),
                     child: Text(
-                      'Book Designer',
+                      _bookCta,
                       style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                     ),
                   ),
