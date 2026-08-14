@@ -12,24 +12,33 @@ class ApplyService {
       'pageNumber': pageNumber,
       'pageSize': pageSize,
     };
-    
+
     if (postId != null) {
       queryParams['postId'] = postId;
     }
-    
+
     if (status != null && status.isNotEmpty) {
       queryParams['status'] = status;
     }
 
-    final queryStr = queryParams.entries.map((e) => '${e.key}=${e.value}').join('&');
+    final queryStr = queryParams.entries
+        .map((e) => '${e.key}=${e.value}')
+        .join('&');
     final response = await ApiClient.authGet('/applies?$queryStr');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
-    
+
     return PaginationResponse.fromJson(
       body,
       (json) => ApplyResponse.fromJson(json),
     );
+  }
+
+  static Future<ApplyResponse> getApply(int id) async {
+    final response = await ApiClient.authGet('/applies/$id');
+    ApiClient.throwIfError(response);
+    final body = ApiClient.parseBody(response);
+    return ApplyResponse.fromJson(body['data'] ?? body);
   }
 
   static Future<ProjectWorkingResponse> acceptApply(int applyId) async {
