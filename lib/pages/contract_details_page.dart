@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/contract_service.dart';
+import '../widgets/confirm_dialog.dart';
 
 class ContractDetailsPage extends StatefulWidget {
   final ContractResponse contract;
@@ -27,6 +28,14 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
   }
 
   Future<void> _launchUrl(String urlString) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Open Document',
+      message: 'This will open the contract document in another app. Continue?',
+      confirmLabel: 'Open',
+    );
+    if (!confirmed || !mounted) return;
+
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
@@ -468,6 +477,9 @@ class _OtpBottomSheetState extends State<_OtpBottomSheet> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    // Created by _showOtpBottomSheet specifically for this sheet instance
+    // and never reused afterward — this is the only place left to dispose it.
+    widget.otpController.dispose();
     super.dispose();
   }
 

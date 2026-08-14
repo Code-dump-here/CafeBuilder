@@ -18,6 +18,12 @@ class _ContractOtpPageState extends State<ContractOtpPage> {
   final TextEditingController _otpController = TextEditingController();
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    _otpController.dispose();
+    super.dispose();
+  }
+
   Future<void> _confirmOtp() async {
     final code = _otpController.text.trim();
     if (code.isEmpty) {
