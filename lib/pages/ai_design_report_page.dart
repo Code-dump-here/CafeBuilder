@@ -134,9 +134,29 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
         pageSize: 1,
       );
 
-      if (existing.items.isNotEmpty && existing.items.first.isCompleted) {
-        if (mounted) setState(() { _report = existing.items.first; _apiDone = true; });
-        return;
+      if (existing.items.isNotEmpty) {
+        final latest = existing.items.first;
+        if (latest.isCompleted) {
+          if (mounted) setState(() { _report = latest; _apiDone = true; });
+          return;
+        }
+        if (latest.isPending) {
+          // A job for this brief is already queued/processing — resume
+          // polling it instead of firing a second concurrent (billed) job.
+          if (mounted) setState(() => _currentPollStatus = 'Resuming AI job (id=${latest.id})…');
+          final resumed = await AiRecommendationService.pollUntilComplete(
+            latest.id,
+            intervalSeconds: 5,
+            maxAttempts: 36,
+            onPoll: (rec) {
+              if (mounted) {
+                setState(() => _currentPollStatus = 'AI job ${rec.state}…');
+              }
+            },
+          );
+          if (mounted) setState(() { _report = resumed; _apiDone = true; });
+          return;
+        }
       }
 
       // 2. Create a new AI job (POST → 202 Accepted with queued job)
