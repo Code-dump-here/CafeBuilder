@@ -4,7 +4,6 @@ import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
 import '../services/api_client.dart';
 import '../services/post_service.dart';
-import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
 
 class ProjectSuccessPage extends StatefulWidget {
@@ -102,6 +101,21 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
   bool _isDeadlineValid() => _submissionDeadline.isAfter(DateTime.now());
 
   Future<void> _onBroadcastToMarketplace() async {
+    // projectId and the shop-owner's own profile id are different id
+    // spaces — falling back from one to the other would silently attach
+    // this broadcast to whatever unrelated project happens to share that
+    // numeric id. Fail loudly instead of guessing; every current caller
+    // already passes a real projectId, so this should never actually fire.
+    if (widget.projectId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Missing project reference. Please go back and try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (!_isDeadlineValid()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -125,9 +139,6 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
         'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.\nLocation: ${widget.location}\nStyle: ${widget.style}\nBudget: $_budgetTier\nExpected Start: $_expectedStart';
 
     try {
-      // API call to create post
-      final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
-
       // Map UI requirements to backend serviceKind enum
       bool hasDesign = _reqs.contains('Designer') || _reqs.contains('Both');
       bool hasBuild = _reqs.contains('Constructor') || _reqs.contains('Both');
@@ -169,7 +180,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
       }
 
       final request = CreatePostRequest(
-        projectShopOwnerId: widget.projectId > 0 ? widget.projectId : shopOwnerId,
+        projectShopOwnerId: widget.projectId,
         serviceKind: mappedServiceKind,
         title: widget.cafeName,
         description: detailedDescription,
