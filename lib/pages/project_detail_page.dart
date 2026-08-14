@@ -196,19 +196,19 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     }
   }
 
+  // The backend has returned 'inprogress', 'in_progress', and 'active' for
+  // the same state at different times — every "is this project active?"
+  // check must tolerate all three or it silently dead-ends (e.g. the close
+  // project button never rendering for a project whose status came back
+  // spelled differently than expected).
+  static const _activeStatuses = {'inprogress', 'in_progress', 'active'};
+
   double _progressFor(ProjectResponse p) {
-    switch (p.status.toLowerCase()) {
-      case 'completed':
-        return 1.0;
-      case 'draft':
-        return 0.2;
-      case 'inprogress':
-      case 'in_progress':
-      case 'active':
-        return 0.65;
-      default:
-        return 0.4;
-    }
+    final status = p.status.toLowerCase();
+    if (status == 'completed') return 1.0;
+    if (status == 'draft') return 0.2;
+    if (_activeStatuses.contains(status)) return 0.65;
+    return 0.4;
   }
 
   String _statusLabel(String status) {
@@ -1567,7 +1567,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
   Future<void> _completeProject() async {
     final engagements = _projectWorkings;
-    final conMo = engagements.where((e) => ["requested", "accepted"].contains(e.status)).toList();
+    final conMo = engagements
+        .where((e) => ProjectWorkingService.engagedStatuses.contains(e.status.toLowerCase()))
+        .toList();
     final daNghiemThu = engagements.where((e) => e.status == "completed").toList();
 
     if (conMo.isNotEmpty) {
@@ -1658,13 +1660,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   }
 
   Widget _buildProjectActions(ProjectResponse project) {
-    final canCancel = ["briefed", "in_progress"].contains(project.status.toLowerCase());
-    final isCompleted = project.status.toLowerCase() == "completed";
+    final status = project.status.toLowerCase();
+    final canCancel = status == 'briefed' || _activeStatuses.contains(status);
+    final isCompleted = status == 'completed';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (project.status.toLowerCase() == 'in_progress') ...[
+        if (_activeStatuses.contains(status)) ...[
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
