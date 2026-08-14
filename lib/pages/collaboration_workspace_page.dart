@@ -10,6 +10,7 @@ import '../services/review_service.dart';
 import 'contract_otp_page.dart';
 import 'design_deliverables_detail_page.dart';
 import 'construction_progress_detail_page.dart';
+import '../widgets/confirm_dialog.dart';
 
 class CollaborationWorkspacePage extends StatefulWidget {
   final int? projectWorkingId;
@@ -30,6 +31,10 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   List<DesignResponse> _designs = [];
   List<ConstructionItemResponse> _constructionItems = [];
   List<ConstructionTaskResponse> _allTasks = [];
+
+  // Guards against a fast double-tap firing the same request twice.
+  final Set<int> _pendingDesignActionIds = {};
+  bool _engagementActionInProgress = false;
 
   @override
   void initState() {
@@ -118,6 +123,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   }
 
   Future<void> _approveDesign(int designId) async {
+    if (_pendingDesignActionIds.contains(designId)) return;
+    setState(() => _pendingDesignActionIds.add(designId));
     try {
       await DesignService.approveDesign(designId);
       if (mounted) {
@@ -132,6 +139,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
           SnackBar(content: Text('Approval failed: $e')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _pendingDesignActionIds.remove(designId));
     }
   }
 
@@ -160,7 +169,17 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       ),
     );
 
-    if (reason == null || reason.isEmpty) return;
+    if (reason == null) return; // user cancelled
+    if (reason.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter feedback before submitting.')),
+        );
+      }
+      return;
+    }
+    if (_pendingDesignActionIds.contains(designId)) return;
+    setState(() => _pendingDesignActionIds.add(designId));
 
     try {
       await DesignService.requestRevision(designId, reason: reason);
@@ -176,6 +195,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
           SnackBar(content: Text('Failed: $e')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _pendingDesignActionIds.remove(designId));
     }
   }
 
@@ -198,6 +219,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     );
 
     if (confirm != true) return;
+    if (_engagementActionInProgress) return;
+    setState(() => _engagementActionInProgress = true);
 
     try {
       await ProjectWorkingService.completeEngagement(_activeWorkingId!);
@@ -217,6 +240,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _engagementActionInProgress = false);
     }
   }
 
@@ -263,6 +288,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     final reason = reasonController.text.trim();
     reasonController.dispose();
     if (confirm != true) return;
+    if (_engagementActionInProgress) return;
+    setState(() => _engagementActionInProgress = true);
 
     try {
       final updated = await ProjectWorkingService.requestTermination(
@@ -288,6 +315,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
           SnackBar(content: Text(e.toString())), // Show backend message directly
         );
       }
+    } finally {
+      if (mounted) setState(() => _engagementActionInProgress = false);
     }
   }
 
@@ -314,6 +343,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       );
       if (confirm != true) return;
     }
+    if (_engagementActionInProgress) return;
+    setState(() => _engagementActionInProgress = true);
 
     try {
       await ProjectWorkingService.respondToTermination(
@@ -334,6 +365,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
       }
+    } finally {
+      if (mounted) setState(() => _engagementActionInProgress = false);
     }
   }
 
@@ -395,7 +428,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => _respondToTermination(false),
+                    onPressed: _engagementActionInProgress ? null : () => _respondToTermination(false),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.espresso,
                       side: const BorderSide(color: AppColors.outlineVariant),
@@ -407,7 +440,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => _respondToTermination(true),
+                    onPressed: _engagementActionInProgress ? null : () => _respondToTermination(true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
@@ -423,7 +456,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: _withdrawTerminationRequest,
+                onPressed: _engagementActionInProgress ? null : _withdrawTerminationRequest,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.espresso,
                   side: const BorderSide(color: AppColors.outlineVariant),
@@ -440,6 +473,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   /// Withdraws our own pending request.
   Future<void> _withdrawTerminationRequest() async {
     if (_activeWorkingId == null) return;
+    if (_engagementActionInProgress) return;
+    setState(() => _engagementActionInProgress = true);
     try {
       await ProjectWorkingService.cancelTerminationRequest(_activeWorkingId!);
       if (mounted) {
@@ -452,6 +487,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
       }
+    } finally {
+      if (mounted) setState(() => _engagementActionInProgress = false);
     }
   }
 
@@ -1021,7 +1058,9 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => _approveDesign(design.id),
+                      onPressed: _pendingDesignActionIds.contains(design.id)
+                          ? null
+                          : () => _approveDesign(design.id),
                       icon: const Icon(Icons.check_circle_outline, size: 18, color: Colors.white),
                       label: const Text('Approve Design'),
                       style: ElevatedButton.styleFrom(
@@ -1039,7 +1078,9 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () => _requestRevision(design.id),
+                      onPressed: _pendingDesignActionIds.contains(design.id)
+                          ? null
+                          : () => _requestRevision(design.id),
                       icon: const Icon(Icons.edit_note, size: 18, color: AppColors.espresso),
                       label: const Text('Request Revision'),
                       style: OutlinedButton.styleFrom(
@@ -1242,27 +1283,33 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                   if (task.imageUrl != null)
                     IconButton(
                       icon: const Icon(Icons.photo, size: 16, color: AppColors.espresso),
-                      onPressed: () {
+                      onPressed: () async {
                         String? imgUrl = task.imageUrl;
-                        if (imgUrl != null) {
-                          if (!imgUrl.startsWith('http')) {
-                            if (imgUrl.startsWith('/')) imgUrl = imgUrl.substring(1);
-                            imgUrl = 'https://storage.googleapis.com/smartcoffeebuilder_bucket/$imgUrl';
-                          }
-                          showDialog(
-                            context: context,
-                            builder: (ctx) => Dialog(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Image.network(
-              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,imgUrl!, fit: BoxFit.cover),
-                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
-                                ],
-                              ),
-                            ),
-                          );
+                        if (imgUrl == null) return;
+                        if (!imgUrl.startsWith('http')) {
+                          if (imgUrl.startsWith('/')) imgUrl = imgUrl.substring(1);
+                          imgUrl = 'https://storage.googleapis.com/smartcoffeebuilder_bucket/$imgUrl';
                         }
+                        final confirmed = await showConfirmDialog(
+                          context,
+                          title: 'View Photo',
+                          message: 'View this task photo?',
+                          confirmLabel: 'View',
+                        );
+                        if (!confirmed || !mounted) return;
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => Dialog(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.network(
+              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,imgUrl!, fit: BoxFit.cover),
+                                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+                              ],
+                            ),
+                          ),
+                        );
                       },
                     ),
                 ],
@@ -1345,7 +1392,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _completeProject,
+                  onPressed: _engagementActionInProgress ? null : _completeProject,
                   icon: const Icon(Icons.check_circle, size: 20, color: Colors.white),
                   label: Text(_working?.isAwaitingAcceptance == true ? 'Nghiệm thu (Đang chờ)' : 'Nghiệm thu'),
                   style: ElevatedButton.styleFrom(
@@ -1366,7 +1413,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: _terminateEngagement,
+                  onPressed: _engagementActionInProgress ? null : _terminateEngagement,
                   icon: const Icon(Icons.cancel, size: 20, color: Colors.red),
                   // Reads as a proposal, not a done deal — the provider still
                   // has to agree before anything ends.

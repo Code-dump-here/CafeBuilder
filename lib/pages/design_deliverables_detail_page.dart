@@ -5,6 +5,7 @@ import '../models/responses/api_responses.dart';
 import '../services/design_service.dart';
 import '../services/comment_service.dart';
 import '../widgets/comments_section.dart';
+import '../widgets/confirm_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class DesignDeliverablesDetailPage extends StatefulWidget {
@@ -28,6 +29,9 @@ class _DesignDeliverablesDetailPageState
   late TabController _tabController;
   late List<DesignResponse> _designs;
   String _selectedFilter = 'All';
+  // Design ids with an approve/revision request currently in flight — guards
+  // against a fast double-tap firing the request twice.
+  final Set<int> _pendingActionIds = {};
 
   static const _filters = ['All', 'Pending', 'Approved', 'Revision'];
 
@@ -49,14 +53,31 @@ class _DesignDeliverablesDetailPageState
     super.dispose();
   }
 
+  // The "Pending" tab means "awaiting owner review", which is the backend's
+  // 'submitted' status — not the literal string 'pending' (which the
+  // backend never actually returns). Comparing against 'pending' directly
+  // made this tab and its count always show zero designs.
+  bool _matchesFilter(DesignResponse d, String filter) {
+    switch (filter) {
+      case 'Pending':
+        return d.status == 'submitted';
+      case 'Approved':
+        return d.status == 'approved';
+      case 'Revision':
+        return d.status == 'revision';
+      default:
+        return true;
+    }
+  }
+
   List<DesignResponse> get _filteredDesigns {
     if (_selectedFilter == 'All') return _designs;
-    return _designs
-        .where((d) => d.status.toLowerCase() == _selectedFilter.toLowerCase())
-        .toList();
+    return _designs.where((d) => _matchesFilter(d, _selectedFilter)).toList();
   }
 
   Future<void> _approveDesign(int designId) async {
+    if (_pendingActionIds.contains(designId)) return;
+    setState(() => _pendingActionIds.add(designId));
     try {
       await DesignService.approveDesign(designId);
       if (mounted) {
@@ -90,10 +111,13 @@ class _DesignDeliverablesDetailPageState
           SnackBar(content: Text('Approval failed: $e')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _pendingActionIds.remove(designId));
     }
   }
 
   Future<void> _requestRevision(int designId) async {
+    if (_pendingActionIds.contains(designId)) return;
     final controller = TextEditingController();
     final reason = await showDialog<String>(
       context: context,
@@ -127,8 +151,17 @@ class _DesignDeliverablesDetailPageState
       ),
     );
 
-    if (reason == null || reason.isEmpty) return;
+    if (reason == null) return; // user cancelled
+    if (reason.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter feedback before submitting.')),
+        );
+      }
+      return;
+    }
 
+    setState(() => _pendingActionIds.add(designId));
     try {
       await DesignService.requestRevision(designId, reason: reason);
       if (mounted) {
@@ -162,6 +195,8 @@ class _DesignDeliverablesDetailPageState
           SnackBar(content: Text('Failed: $e')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _pendingActionIds.remove(designId));
     }
   }
 
@@ -172,7 +207,7 @@ class _DesignDeliverablesDetailPageState
     // Tally counts
     final allCount = _designs.length;
     final pendingCount =
-        _designs.where((d) => d.status == 'pending').length;
+        _designs.where((d) => d.status == 'submitted').length;
     final approvedCount =
         _designs.where((d) => d.status == 'approved').length;
     final revisionCount =
@@ -296,25 +331,43 @@ class _DesignDeliverablesDetailPageState
   Widget _buildDesignCard(DesignResponse design) {
     final isApproved = design.status == 'approved';
     final isRevision = design.status == 'revision';
-    final isPending = !isApproved && !isRevision;
+    // Only a *submitted* design can be acted on. "Not approved and not
+    // revision" used to include 'in_progress' too, which offered
+    // Approve/Revision on a draft still being reworked — the backend then
+    // rejected it with an error the owner had no way to make sense of. See
+    // the identical fix (and fuller explanation) in
+    // collaboration_workspace_page.dart's _buildDesignCard.
+    final isSubmitted = design.status == 'submitted';
+    final isReworking = design.status == 'in_progress';
 
     final statusColor = isApproved
         ? const Color(0xFF2E7D32)
         : isRevision
             ? const Color(0xFFC62828)
-            : const Color(0xFFE65100);
+            : isReworking
+                ? AppColors.textSecondary
+                : const Color(0xFFE65100);
     final statusBg = isApproved
         ? const Color(0xFFE8F5E9)
         : isRevision
             ? const Color(0xFFFFEBEE)
-            : const Color(0xFFFFF3E0);
+            : isReworking
+                ? const Color(0xFFF2EFEC)
+                : const Color(0xFFFFF3E0);
     final statusIcon = isApproved
         ? Icons.check_circle
         : isRevision
             ? Icons.undo
-            : Icons.hourglass_empty;
-    final statusLabel =
-        isApproved ? 'Approved' : isRevision ? 'Revision' : 'Pending';
+            : isReworking
+                ? Icons.edit_note
+                : Icons.hourglass_empty;
+    final statusLabel = isApproved
+        ? 'Approved'
+        : isRevision
+            ? 'Revision'
+            : isReworking
+                ? 'Being revised'
+                : 'Pending';
 
     final firstImage =
         design.images.isNotEmpty ? design.images.first.viewUrl : null;
@@ -506,12 +559,14 @@ class _DesignDeliverablesDetailPageState
                 const SizedBox(height: 16),
 
                 // Action buttons
-                if (isPending) ...[
+                if (isSubmitted) ...[
                   Row(
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _approveDesign(design.id),
+                          onPressed: _pendingActionIds.contains(design.id)
+                              ? null
+                              : () => _approveDesign(design.id),
                           icon: const Icon(Icons.check_circle_outline,
                               size: 16, color: Colors.white),
                           label: const Text('Approve'),
@@ -531,7 +586,9 @@ class _DesignDeliverablesDetailPageState
                       const SizedBox(width: 8),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => _requestRevision(design.id),
+                          onPressed: _pendingActionIds.contains(design.id)
+                              ? null
+                              : () => _requestRevision(design.id),
                           icon: const Icon(Icons.edit_note,
                               size: 16, color: AppColors.espresso),
                           label: const Text('Revision'),
@@ -690,7 +747,18 @@ class _DesignDeliverablesDetailPageState
   }
 
   Future<void> _handleFileTap(String url) async {
-    if (_isImage(url)) {
+    final isImage = _isImage(url);
+    final confirmed = await showConfirmDialog(
+      context,
+      title: isImage ? 'View Image' : 'Open File',
+      message: isImage
+          ? 'View this image?'
+          : 'This will open the file in another app. Continue?',
+      confirmLabel: isImage ? 'View' : 'Open',
+    );
+    if (!confirmed || !mounted) return;
+
+    if (isImage) {
       _showImageFullScreen(url);
     } else {
       final uri = Uri.parse(url);
