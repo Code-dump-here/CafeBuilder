@@ -728,6 +728,22 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     );
   }
 
+  /// Engagements that belong on the Project Team card.
+  ///
+  /// A provider who declined the invitation, or whose engagement was ended,
+  /// isn't on the team — listing them as "Designer (Rejected)" just leaves
+  /// dead rows the owner can't act on. Pending invites stay visible so the
+  /// owner can see who they're still waiting on, and completed engagements
+  /// stay so finished work keeps its attribution.
+  ///
+  /// Only the display is filtered — `_projectWorkings` still holds every row,
+  /// because the slot rules and the project-completion check read it.
+  static const _teamVisibleStatuses = {'requested', 'accepted', 'completed'};
+
+  List<ProjectWorkingResponse> get _teamMembers => _projectWorkings
+      .where((pw) => _teamVisibleStatuses.contains(pw.status.toLowerCase()))
+      .toList();
+
   Widget _buildProjectTeam() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -741,10 +757,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         children: [
           Text('Project Team', style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso)),
           const SizedBox(height: 16),
-          if (_projectWorkings.isEmpty)
+          if (_teamMembers.isEmpty)
             Text('No providers or requests yet.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary))
           else
-            ..._projectWorkings.map((pw) {
+            ..._teamMembers.map((pw) {
               final name = pw.providerDisplayName.isNotEmpty ? pw.providerDisplayName : 'Unknown';
               // E.g. "Designer (Pending)"
               final statusCap = pw.status.isNotEmpty ? (pw.status[0].toUpperCase() + pw.status.substring(1).toLowerCase()) : '';
