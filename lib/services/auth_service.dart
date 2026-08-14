@@ -75,16 +75,25 @@ class AuthService {
     ApiClient.throwIfError(response);
   }
 
+  /// Always clears local session state, even if the server-side logout call
+  /// fails (offline, 5xx, etc.) — otherwise a failed network call leaves the
+  /// user "logged in" locally despite intending to log out.
   static Future<void> logout() async {
-    final refreshToken = await ApiClient.getRefreshToken();
-    if (refreshToken != null) {
-      await ApiClient.authPost(
-        '/auth/logout',
-        RefreshTokenRequest(refreshToken: refreshToken).toJson(),
-      );
+    try {
+      final refreshToken = await ApiClient.getRefreshToken();
+      if (refreshToken != null) {
+        await ApiClient.authPost(
+          '/auth/logout',
+          RefreshTokenRequest(refreshToken: refreshToken).toJson(),
+        );
+      }
+    } catch (_) {
+      // Best-effort: the server-side token revocation didn't go through,
+      // but the user still needs to be logged out on this device.
+    } finally {
+      await ApiClient.clearTokens();
+      ShopOwnerService.clearCache();
     }
-    await ApiClient.clearTokens();
-    ShopOwnerService.clearCache();
   }
 
   static Future<AuthResponse> refreshToken() async {
