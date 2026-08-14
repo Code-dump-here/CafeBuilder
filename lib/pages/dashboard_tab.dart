@@ -105,10 +105,9 @@ class DashboardTabState extends State<DashboardTab> {
       }
 
       int unread = 0;
-      final accountId = await ApiClient.getAccountId();
-      if (accountId != null) {
+      if (await ApiClient.isLoggedIn()) {
         try {
-          unread = await NotificationService.getUnreadCount(accountId);
+          unread = await NotificationService.getUnreadCount();
         } catch (_) {}
       }
 

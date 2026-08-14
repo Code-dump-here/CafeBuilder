@@ -34,10 +34,9 @@ class _TopNavState extends State<TopNav> {
   }
 
   Future<void> _loadUnreadCount() async {
-    final accountId = await ApiClient.getAccountId();
-    if (accountId == null) return;
+    if (!await ApiClient.isLoggedIn()) return;
     try {
-      final count = await NotificationService.getUnreadCount(accountId);
+      final count = await NotificationService.getUnreadCount();
       if (mounted) setState(() => _unreadCount = count);
     } catch (_) {
       // Non-blocking — badge just stays at 0 if this fails.
@@ -45,14 +44,12 @@ class _TopNavState extends State<TopNav> {
   }
 
   Future<void> _showNotifications() async {
-    final accountId = await ApiClient.getAccountId();
-    if (accountId == null || !mounted) return;
+    if (!await ApiClient.isLoggedIn() || !mounted) return;
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => NotificationsSheet(
-        accountId: accountId,
         onNotificationRead: () {
           if (mounted && _unreadCount > 0) setState(() => _unreadCount--);
         },

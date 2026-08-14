@@ -111,14 +111,12 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   }
 
   void _showNotifications() async {
-    final accountId = await ApiClient.getAccountId();
-    if (accountId == null || !mounted) return;
+    if (!await ApiClient.isLoggedIn() || !mounted) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => NotificationsSheet(
-        accountId: accountId,
         onNotificationRead: () {},
       ),
     );

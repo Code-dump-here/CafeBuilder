@@ -10,11 +10,9 @@ import '../pages/project_detail_page.dart';
 /// Bottom sheet listing the account's notifications — shared by every
 /// screen that shows the notification bell (see [TopNav]).
 class NotificationsSheet extends StatefulWidget {
-  final int accountId;
   final VoidCallback onNotificationRead;
   const NotificationsSheet({
     super.key,
-    required this.accountId,
     required this.onNotificationRead,
   });
 
@@ -86,7 +84,7 @@ class NotificationsSheetState extends State<NotificationsSheet> {
 
   Future<void> _loadNotifications() async {
     try {
-      final res = await NotificationService.getNotifications(widget.accountId);
+      final res = await NotificationService.getNotifications();
       if (mounted) {
         setState(() {
           _notifications = res.items;

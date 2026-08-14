@@ -11,7 +11,6 @@ class ConstructionService {
     String? description,
     String? category,
     required String estimateAt, // yyyy-MM-dd
-    required int createdBy,
   }) async {
     final response = await ApiClient.authPost('/construction-items', {
       'projectWorkingId': projectWorkingId,
@@ -20,7 +19,6 @@ class ConstructionService {
       if (description != null) 'description': description,
       if (category != null) 'category': category,
       'estimateAt': estimateAt,
-      'createdBy': createdBy,
     });
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -104,7 +102,6 @@ class ConstructionService {
     String? description,
     String? imageUrl,
     String? estimateAt,
-    required int createdBy,
   }) async {
     final response = await ApiClient.authPost('/construction-tasks', {
       'constructionItemId': constructionItemId,
@@ -112,7 +109,6 @@ class ConstructionService {
       if (description != null) 'description': description,
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (estimateAt != null) 'estimateAt': estimateAt,
-      'createdBy': createdBy,
     });
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);

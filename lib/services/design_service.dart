@@ -9,13 +9,11 @@ class DesignService {
     required int projectWorkingId,
     required String title,
     required String type,
-    required int createdBy,
   }) async {
     final response = await ApiClient.authPost('/designs', {
       'projectWorkingId': projectWorkingId,
       'title': title,
       'type': type,
-      'createdBy': createdBy,
     });
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -71,7 +69,6 @@ class DesignService {
     int designId, {
     required File file,
     String? caption,
-    required int uploadedBy,
   }) async {
     final token = await ApiClient.getAccessToken();
     final uri = Uri.parse('${ApiClient.baseUrl}/designs/$designId/files');
@@ -93,7 +90,6 @@ class DesignService {
     if (caption != null) {
       request.fields['caption'] = caption;
     }
-    request.fields['uploadedBy'] = uploadedBy.toString();
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
