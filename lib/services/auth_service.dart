@@ -29,7 +29,12 @@ class AuthService {
   }) async {
     final response = await ApiClient.post(
       '/auth/register',
-      RegisterRequest(email: email, password: password, role: role, phone: phone).toJson(),
+      RegisterRequest(
+        email: email,
+        password: password,
+        role: role,
+        phone: phone,
+      ).toJson(),
     );
     ApiClient.throwIfError(response);
     final auth = AuthResponse.fromJson(ApiClient.parseBody(response));
@@ -41,6 +46,33 @@ class AuthService {
       email: auth.email,
     );
     return auth;
+  }
+
+  static Future<void> forgotPassword(String email) async {
+    final response = await ApiClient.post(
+      '/auth/forgot-password',
+      ForgotPasswordRequest(email: email).toJson(),
+    );
+    ApiClient.throwIfError(response);
+  }
+
+  /// Resets the password using the OTP emailed by [forgotPassword]. On
+  /// success the backend revokes all existing refresh tokens, so the caller
+  /// must send the user back to `/login` — there is no session to keep.
+  static Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    final response = await ApiClient.post(
+      '/auth/reset-password',
+      ResetPasswordRequest(
+        email: email,
+        code: code,
+        newPassword: newPassword,
+      ).toJson(),
+    );
+    ApiClient.throwIfError(response);
   }
 
   static Future<void> logout() async {
@@ -57,7 +89,9 @@ class AuthService {
 
   static Future<AuthResponse> refreshToken() async {
     final refreshToken = await ApiClient.getRefreshToken();
-    if (refreshToken == null) throw ApiException(statusCode: 401, message: 'No refresh token');
+    if (refreshToken == null) {
+      throw ApiException(statusCode: 401, message: 'No refresh token');
+    }
     final response = await ApiClient.post(
       '/auth/refresh',
       RefreshTokenRequest(refreshToken: refreshToken).toJson(),

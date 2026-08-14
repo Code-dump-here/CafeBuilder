@@ -2,9 +2,107 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/auth_service.dart';
+import '../services/api_client.dart';
 
-class SmsOtpPage extends StatelessWidget {
+class SmsOtpPage extends StatefulWidget {
   const SmsOtpPage({super.key});
+
+  @override
+  State<SmsOtpPage> createState() => _SmsOtpPageState();
+}
+
+class _SmsOtpPageState extends State<SmsOtpPage> {
+  static const _codeLength = 4;
+  final _digitControllers = List.generate(
+    _codeLength,
+    (_) => TextEditingController(),
+  );
+  bool _isResending = false;
+
+  String? get _email {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    return args is Map ? args['email'] as String? : null;
+  }
+
+  @override
+  void dispose() {
+    for (final c in _digitControllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _goBackToForgotPassword() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please start from the forgot password screen.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    Navigator.pushReplacementNamed(context, '/forgot');
+  }
+
+  // There is no standalone "verify OTP" endpoint for password reset — the
+  // code is only actually validated when /auth/reset-password is called on
+  // the next screen. This just checks the code is complete and carries it
+  // forward alongside the email.
+  void _verify() {
+    final email = _email;
+    if (email == null) {
+      _goBackToForgotPassword();
+      return;
+    }
+    final code = _digitControllers.map((c) => c.text).join();
+    if (code.length != _codeLength) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter the full code.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    Navigator.pushReplacementNamed(
+      context,
+      '/sms-change-password',
+      arguments: {'email': email, 'code': code},
+    );
+  }
+
+  Future<void> _resend() async {
+    final email = _email;
+    if (email == null) {
+      _goBackToForgotPassword();
+      return;
+    }
+    setState(() => _isResending = true);
+    try {
+      await AuthService.forgotPassword(email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('A new code has been sent.')),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connection failed. Is the server running?'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isResending = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +116,11 @@ class SmsOtpPage extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: () => Navigator.pushReplacementNamed(context, '/forgot'),
-                child: const Icon(Icons.arrow_back_ios, size: 20, color: AppColors.black),
+                child: const Icon(
+                  Icons.arrow_back_ios,
+                  size: 20,
+                  color: AppColors.black,
+                ),
               ),
               const SizedBox(height: 24),
               Center(
@@ -44,16 +146,22 @@ class SmsOtpPage extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(4, (i) => _buildOtpBox()),
+                children: List.generate(_codeLength, (i) => _buildOtpBox(i)),
               ),
               const SizedBox(height: 24),
               Center(
-                child: Text(
-                  "Didn't receive the code? Resend",
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.textPrimary,
+                child: GestureDetector(
+                  onTap: _isResending ? null : _resend,
+                  child: Text(
+                    _isResending
+                        ? 'Sending…'
+                        : "Didn't receive the code? Resend",
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textPrimary,
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                 ),
               ),
@@ -69,7 +177,7 @@ class SmsOtpPage extends StatelessWidget {
                     ),
                     elevation: 0,
                   ),
-                  onPressed: () => Navigator.pushReplacementNamed(context, '/sms-change-password'),
+                  onPressed: _verify,
                   child: Text(
                     'Verify',
                     style: GoogleFonts.poppins(
@@ -87,7 +195,7 @@ class SmsOtpPage extends StatelessWidget {
     );
   }
 
-  Widget _buildOtpBox() {
+  Widget _buildOtpBox(int index) {
     return Container(
       width: 54,
       height: 54,
@@ -97,6 +205,7 @@ class SmsOtpPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(40),
       ),
       child: TextField(
+        controller: _digitControllers[index],
         textAlign: TextAlign.center,
         maxLength: 1,
         keyboardType: TextInputType.number,
@@ -106,6 +215,11 @@ class SmsOtpPage extends StatelessWidget {
           counterText: '',
         ),
         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+        onChanged: (value) {
+          if (value.isNotEmpty && index < _codeLength - 1) {
+            FocusScope.of(context).nextFocus();
+          }
+        },
       ),
     );
   }
