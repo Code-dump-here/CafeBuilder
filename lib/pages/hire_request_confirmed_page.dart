@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
 
@@ -145,7 +146,12 @@ class HireRequestConfirmedPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Wed, Oct 25th',
+                        // No real ETA is available from the backend for this
+                        // flow — was a hardcoded literal showing a fixed,
+                        // often-past date to everyone regardless of when they
+                        // actually sent the request. +3 business-ish days
+                        // from "now" at least tracks the real send time.
+                        DateFormat('EEE, MMM d').format(DateTime.now().add(const Duration(days: 3))),
                         style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.espresso),
                       ),
                     ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
 
@@ -170,7 +171,10 @@ class BookingConfirmedPage extends StatelessWidget {
                           Text('Submission Date', style: GoogleFonts.inter(fontSize: 9, color: AppColors.textSecondary)),
                           const SizedBox(height: 4),
                           Text(
-                            'October 24, 2023',
+                            // This screen renders immediately after submission, so
+                            // "now" is the real submission date — was a hardcoded
+                            // literal that showed the wrong date to everyone.
+                            DateFormat('MMMM d, yyyy').format(DateTime.now()),
                             style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.espresso),
                           ),
                         ],
