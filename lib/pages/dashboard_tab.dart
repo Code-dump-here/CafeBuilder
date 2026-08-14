@@ -667,7 +667,7 @@ class DashboardTabState extends State<DashboardTab> {
                           MaterialPageRoute(
                             builder: (context) => ProjectDetailPage(projectId: project.id),
                           ),
-                        );
+                        ).then((_) => _loadDashboard());
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryFixed,
@@ -1105,7 +1105,7 @@ class DashboardTabState extends State<DashboardTab> {
           MaterialPageRoute(
             builder: (context) => ProjectDetailPage(projectId: doc.projectId),
           ),
-        );
+        ).then((_) => _loadDashboard());
       },
       child: Container(
         padding: const EdgeInsets.all(16),
