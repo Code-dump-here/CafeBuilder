@@ -1,3 +1,10 @@
+/// Parses a required createdAt/updatedAt-style timestamp. Falls back to
+/// DateTime.now() on a missing or malformed value instead of throwing —
+/// mirrors the tolerant pattern already used by ProjectResponse/CommentResponse,
+/// applied consistently across every response class instead of a handful.
+DateTime _parseDate(dynamic value) =>
+    DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+
 class ResponseData<T> {
   final bool success;
   final String? message;
@@ -18,9 +25,7 @@ class ResponseData<T> {
     return ResponseData(
       success: json['success'] ?? true,
       message: json['message'],
-      data: fromJsonT == null
-          ? null
-          : fromJsonT(json['data'] ?? json),
+      data: fromJsonT == null ? null : fromJsonT(json['data'] ?? json),
       statusCode: json['statusCode'] ?? 200,
     );
   }
@@ -77,12 +82,15 @@ class AuthResponse {
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) => AuthResponse(
-        accessToken: json['accessToken'] ?? json['AccessToken'],
-        refreshToken: json['refreshToken'] ?? json['RefreshToken'],
-        accountId: (json['accountId'] ?? json['AccountId'] as num).toInt(),
-        email: json['email'] ?? json['Email'],
-        role: json['role'] ?? json['Role'],
-      );
+    accessToken: json['accessToken'] ?? json['AccessToken'] ?? '',
+    refreshToken: json['refreshToken'] ?? json['RefreshToken'] ?? '',
+    // `as num` used to bind tighter than `??`, so a missing 'accountId'
+    // fell through to `null as num` and threw instead of trying
+    // 'AccountId'. Parenthesized so both keys are checked before casting.
+    accountId: ((json['accountId'] ?? json['AccountId']) as num?)?.toInt() ?? 0,
+    email: json['email'] ?? json['Email'] ?? '',
+    role: json['role'] ?? json['Role'] ?? '',
+  );
 }
 
 class AccountResponse {
@@ -102,13 +110,14 @@ class AccountResponse {
     required this.createdAt,
   });
 
-  factory AccountResponse.fromJson(Map<String, dynamic> json) => AccountResponse(
+  factory AccountResponse.fromJson(Map<String, dynamic> json) =>
+      AccountResponse(
         id: json['id'],
         email: json['email'],
         phone: json['phone'],
         role: json['role'],
         status: json['status'],
-        createdAt: DateTime.parse(json['createdAt']),
+        createdAt: _parseDate(json['createdAt']),
       );
 }
 
@@ -125,7 +134,8 @@ class ProjectOwnerResponse {
     required this.phone,
   });
 
-  factory ProjectOwnerResponse.fromJson(Map<String, dynamic> json) => ProjectOwnerResponse(
+  factory ProjectOwnerResponse.fromJson(Map<String, dynamic> json) =>
+      ProjectOwnerResponse(
         id: json['id'],
         fullName: json['fullName'] ?? '',
         shopName: json['shopName'] ?? '',
@@ -148,12 +158,15 @@ class OpenPostResponse {
     this.submissionDeadline,
   });
 
-  factory OpenPostResponse.fromJson(Map<String, dynamic> json) => OpenPostResponse(
+  factory OpenPostResponse.fromJson(Map<String, dynamic> json) =>
+      OpenPostResponse(
         id: json['id'],
         serviceKind: json['serviceKind'] ?? '',
         title: json['title'] ?? '',
         status: json['status'] ?? '',
-        submissionDeadline: json['submissionDeadline'] != null ? DateTime.parse(json['submissionDeadline']) : null,
+        submissionDeadline: json['submissionDeadline'] != null
+            ? DateTime.parse(json['submissionDeadline'])
+            : null,
       );
 }
 
@@ -188,7 +201,8 @@ class ProjectResponse {
     this.providers = const [],
   });
 
-  factory ProjectResponse.fromJson(Map<String, dynamic> json) => ProjectResponse(
+  factory ProjectResponse.fromJson(Map<String, dynamic> json) =>
+      ProjectResponse(
         id: json['id'] is num ? (json['id'] as num).toInt() : 0,
         ownerId: json['ownerId'] is num ? (json['ownerId'] as num).toInt() : 0,
         name: json['name'] ?? '',
@@ -196,12 +210,24 @@ class ProjectResponse {
         areaM2: json['areaM2'] is num ? (json['areaM2'] as num).toDouble() : 0,
         budget: json['budget'] is num ? (json['budget'] as num).toDouble() : 0,
         status: json['status'] ?? '',
-        createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
-        updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now(),
-        owner: json['owner'] != null ? ProjectOwnerResponse.fromJson(json['owner']) : null,
-        openPosts: (json['openPosts'] as List?)?.map((e) => OpenPostResponse.fromJson(e)).toList() ?? [],
+        createdAt:
+            DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+            DateTime.now(),
+        updatedAt:
+            DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+            DateTime.now(),
+        owner: json['owner'] != null
+            ? ProjectOwnerResponse.fromJson(json['owner'])
+            : null,
+        openPosts:
+            (json['openPosts'] as List?)
+                ?.map((e) => OpenPostResponse.fromJson(e))
+                .toList() ??
+            [],
         openFor: (json['openFor'] as List?)?.whereType<String>().toList() ?? [],
-        providers: json['providers'] is List ? json['providers'] as List : const [],
+        providers: json['providers'] is List
+            ? json['providers'] as List
+            : const [],
       );
 }
 
@@ -234,19 +260,20 @@ class DesignBriefResponse {
     required this.createdAt,
   });
 
-  factory DesignBriefResponse.fromJson(Map<String, dynamic> json) => DesignBriefResponse(
+  factory DesignBriefResponse.fromJson(Map<String, dynamic> json) =>
+      DesignBriefResponse(
         id: json['id'],
         projectId: (json['projectShopOwnerId'] ?? json['projectId']) as int,
-        targetCustomer: json['targetCustomer'],
-        style: json['style'],
-        mood: json['mood'],
+        targetCustomer: json['targetCustomer'] ?? '',
+        style: json['style'] ?? '',
+        mood: json['mood'] ?? '',
         seatCount: json['seatCount'],
         timeline: json['timeline'],
         brandNote: json['brandNote'],
         businessModel: json['businessModel'],
         businessGoals: json['businessGoals'],
         operationNote: json['operationNote'],
-        createdAt: DateTime.parse(json['createdAt']),
+        createdAt: _parseDate(json['createdAt']),
       );
 }
 
@@ -274,15 +301,15 @@ class AiLayoutZone {
   });
 
   factory AiLayoutZone.fromJson(Map<String, dynamic> json) => AiLayoutZone(
-        id: json['id'] ?? '',
-        label: json['label'] ?? '',
-        purpose: json['purpose'] ?? '',
-        x: (json['x'] as num?)?.toDouble() ?? 0,
-        y: (json['y'] as num?)?.toDouble() ?? 0,
-        w: (json['w'] as num?)?.toDouble() ?? 1,
-        h: (json['h'] as num?)?.toDouble() ?? 1,
-        isStaffOnly: json['is_staff_only'] ?? false,
-      );
+    id: json['id'] ?? '',
+    label: json['label'] ?? '',
+    purpose: json['purpose'] ?? '',
+    x: (json['x'] as num?)?.toDouble() ?? 0,
+    y: (json['y'] as num?)?.toDouble() ?? 0,
+    w: (json['w'] as num?)?.toDouble() ?? 1,
+    h: (json['h'] as num?)?.toDouble() ?? 1,
+    isStaffOnly: json['is_staff_only'] ?? false,
+  );
 }
 
 class AiRecommendationItem {
@@ -318,11 +345,11 @@ class AiRiskNote {
   });
 
   factory AiRiskNote.fromJson(Map<String, dynamic> json) => AiRiskNote(
-        level: json['level'] ?? 'low',
-        title: json['title'] ?? '',
-        description: json['description'] ?? '',
-        mitigation: json['mitigation'],
-      );
+    level: json['level'] ?? 'low',
+    title: json['title'] ?? '',
+    description: json['description'] ?? '',
+    mitigation: json['mitigation'],
+  );
 }
 
 class AiCustomerFlowStage {
@@ -421,7 +448,7 @@ class AiRecommendationResponse {
         estimatedConstructionCost: json['estimatedConstructionCost'] != null
             ? (json['estimatedConstructionCost'] as num).toDouble()
             : null,
-        createdAt: DateTime.parse(json['createdAt']),
+        createdAt: _parseDate(json['createdAt']),
         jobId: json['jobId'],
         state: json['state'],
         lastError: json['lastError'],
@@ -430,7 +457,8 @@ class AiRecommendationResponse {
         layoutWidth: (json['layoutWidth'] as num?)?.toDouble(),
         layoutHeight: (json['layoutHeight'] as num?)?.toDouble(),
         layoutUnit: json['layoutUnit'],
-        layoutZones: (json['layoutZones'] as List?)
+        layoutZones:
+            (json['layoutZones'] as List?)
                 ?.map((e) => AiLayoutZone.fromJson(e))
                 .toList() ??
             [],
@@ -440,21 +468,25 @@ class AiRecommendationResponse {
         equipmentMaxVnd: (json['equipmentMaxVnd'] as num?)?.toDouble(),
         contingencyPercent: (json['contingencyPercent'] as num?)?.toDouble(),
         costNotes: json['costNotes'],
-        recommendations: (json['recommendations'] as List?)
+        recommendations:
+            (json['recommendations'] as List?)
                 ?.map((e) => AiRecommendationItem.fromJson(e))
                 .toList() ??
             [],
-        riskNotes: (json['riskNotes'] as List?)
+        riskNotes:
+            (json['riskNotes'] as List?)
                 ?.map((e) => AiRiskNote.fromJson(e))
                 .toList() ??
             [],
-        customerFlow: (json['customerFlow'] as List?)
+        customerFlow:
+            (json['customerFlow'] as List?)
                 ?.map((e) => AiCustomerFlowStage.fromJson(e))
                 .toList() ??
             [],
         imageView: json['imageView'],
         imageArtifactUrl: json['imageArtifactUrl'],
-        seatCapacityRecommendation: (json['seatCapacityRecommendation'] as num?)?.toInt(),
+        seatCapacityRecommendation: (json['seatCapacityRecommendation'] as num?)
+            ?.toInt(),
       );
 }
 
@@ -500,7 +532,7 @@ class ServiceProviderResponse {
         portfolioHeadline: json['portfolioHeadline'],
         isVerified: json['isVerified'] ?? false,
         avgRating: (json['avgRating'] as num?)?.toDouble() ?? 0.0,
-        createdAt: DateTime.parse(json['createdAt']),
+        createdAt: _parseDate(json['createdAt']),
       );
 }
 
@@ -523,14 +555,15 @@ class ShopOwnerResponse {
     required this.createdAt,
   });
 
-  factory ShopOwnerResponse.fromJson(Map<String, dynamic> json) => ShopOwnerResponse(
+  factory ShopOwnerResponse.fromJson(Map<String, dynamic> json) =>
+      ShopOwnerResponse(
         id: json['id'],
         accountId: json['accountId'],
-        fullName: json['fullName'],
-        shopName: json['shopName'],
-        phone: json['phone'],
-        address: json['address'],
-        createdAt: DateTime.parse(json['createdAt']),
+        fullName: json['fullName'] ?? '',
+        shopName: json['shopName'] ?? '',
+        phone: json['phone'] ?? '',
+        address: json['address'] ?? '',
+        createdAt: _parseDate(json['createdAt']),
       );
 }
 
@@ -564,19 +597,21 @@ class ApplyResponse {
   });
 
   factory ApplyResponse.fromJson(Map<String, dynamic> json) => ApplyResponse(
-        id: json['id'],
-        postId: json['postId'],
-        postTitle: json['postTitle'] ?? '',
-        projectShopOwnerId: json['projectShopOwnerId'],
-        serviceProviderProfileId: json['serviceProviderProfileId'],
-        providerDisplayName: json['providerDisplayName'] ?? '',
-        proposal: json['proposal'] ?? '',
-        estimatedDurationDays: json['estimatedDurationDays'] ?? 0,
-        status: json['status'] ?? '',
-        submittedAt: json['submittedAt'] != null ? DateTime.parse(json['submittedAt']) : null,
-        createdAt: DateTime.parse(json['createdAt']),
-        updatedAt: DateTime.parse(json['updatedAt']),
-      );
+    id: json['id'],
+    postId: json['postId'],
+    postTitle: json['postTitle'] ?? '',
+    projectShopOwnerId: json['projectShopOwnerId'],
+    serviceProviderProfileId: json['serviceProviderProfileId'],
+    providerDisplayName: json['providerDisplayName'] ?? '',
+    proposal: json['proposal'] ?? '',
+    estimatedDurationDays: json['estimatedDurationDays'] ?? 0,
+    status: json['status'] ?? '',
+    submittedAt: json['submittedAt'] != null
+        ? DateTime.parse(json['submittedAt'])
+        : null,
+    createdAt: _parseDate(json['createdAt']),
+    updatedAt: _parseDate(json['updatedAt']),
+  );
 }
 
 class ProjectWorkingResponse {
@@ -599,10 +634,12 @@ class ProjectWorkingResponse {
   // Ending an engagement needs both sides to agree. A request parks here
   // until the other party responds; the engagement stays 'accepted'.
   final DateTime? terminationRequestedAt;
+
   /// 'owner' | 'provider' — which side asked to end it.
   final String? terminationRequestedBy;
   final String? terminationRequestNote;
   final DateTime? terminatedAt;
+
   /// Server-derived: a request is pending the other side's answer.
   final bool isAwaitingTerminationApproval;
 
@@ -630,7 +667,8 @@ class ProjectWorkingResponse {
     this.isAwaitingTerminationApproval = false,
   });
 
-  factory ProjectWorkingResponse.fromJson(Map<String, dynamic> json) => ProjectWorkingResponse(
+  factory ProjectWorkingResponse.fromJson(Map<String, dynamic> json) =>
+      ProjectWorkingResponse(
         id: json['id'],
         projectShopOwnerId: json['projectShopOwnerId'],
         projectName: json['projectName'] ?? '',
@@ -640,11 +678,15 @@ class ProjectWorkingResponse {
         contractType: json['contractType'] ?? '',
         status: json['status'] ?? '',
         requestMessage: json['requestMessage'],
-        startedAt: json['startedAt'] != null ? DateTime.parse(json['startedAt']) : null,
-        createdAt: DateTime.parse(json['createdAt']),
-        updatedAt: DateTime.parse(json['updatedAt']),
+        startedAt: json['startedAt'] != null
+            ? DateTime.parse(json['startedAt'])
+            : null,
+        createdAt: _parseDate(json['createdAt']),
+        updatedAt: _parseDate(json['updatedAt']),
         hasConfirmedContract: json['hasConfirmedContract'] ?? false,
-        completionRequestedAt: json['completionRequestedAt'] != null ? DateTime.parse(json['completionRequestedAt']) : null,
+        completionRequestedAt: json['completionRequestedAt'] != null
+            ? DateTime.parse(json['completionRequestedAt'])
+            : null,
         completionRequestNote: json['completionRequestNote'],
         isAwaitingAcceptance: json['isAwaitingAcceptance'] ?? false,
         terminationRequestedAt: json['terminationRequestedAt'] != null
@@ -679,19 +721,24 @@ class EngagementOverviewResponse {
     this.approvedDesigns = const [],
   });
 
-  factory EngagementOverviewResponse.fromJson(Map<String, dynamic> json) => EngagementOverviewResponse(
+  factory EngagementOverviewResponse.fromJson(Map<String, dynamic> json) =>
+      EngagementOverviewResponse(
         projectWorkingId: json['projectWorkingId'] ?? 0,
         contractType: json['contractType'] ?? '',
         status: json['status'] ?? '',
         projectShopOwner: json['projectShopOwner'] != null
             ? ProjectResponse.fromJson(json['projectShopOwner'])
             : null,
-        brief: json['brief'] != null ? DesignBriefResponse.fromJson(json['brief']) : null,
-        aiRecommendations: (json['aiRecommendations'] as List?)
+        brief: json['brief'] != null
+            ? DesignBriefResponse.fromJson(json['brief'])
+            : null,
+        aiRecommendations:
+            (json['aiRecommendations'] as List?)
                 ?.map((e) => AiRecommendationResponse.fromJson(e))
                 .toList() ??
             [],
-        approvedDesigns: (json['approvedDesigns'] as List?)
+        approvedDesigns:
+            (json['approvedDesigns'] as List?)
                 ?.map((e) => DesignResponse.fromJson(e))
                 .toList() ??
             [],
@@ -720,15 +767,15 @@ class SurveyResponse {
   });
 
   factory SurveyResponse.fromJson(Map<String, dynamic> json) => SurveyResponse(
-        id: json['id'],
-        projectWorkingId: json['projectWorkingId'],
-        version: (json['version'] as num?)?.toDouble() ?? 0.0,
-        conditionNote: json['conditionNote'],
-        reportUrl: json['reportUrl'],
-        createdBy: json['createdBy'] ?? 0,
-        createdAt: DateTime.parse(json['createdAt']),
-        updatedAt: DateTime.parse(json['updatedAt']),
-      );
+    id: json['id'],
+    projectWorkingId: json['projectWorkingId'],
+    version: (json['version'] as num?)?.toDouble() ?? 0.0,
+    conditionNote: json['conditionNote'],
+    reportUrl: json['reportUrl'],
+    createdBy: json['createdBy'] ?? 0,
+    createdAt: _parseDate(json['createdAt']),
+    updatedAt: _parseDate(json['updatedAt']),
+  );
 }
 
 class ContractResponse {
@@ -764,7 +811,8 @@ class ContractResponse {
     required this.updatedAt,
   });
 
-  factory ContractResponse.fromJson(Map<String, dynamic> json) => ContractResponse(
+  factory ContractResponse.fromJson(Map<String, dynamic> json) =>
+      ContractResponse(
         id: json['id'],
         projectWorkingId: json['projectWorkingId'],
         title: json['title'] ?? '',
@@ -773,12 +821,16 @@ class ContractResponse {
         agreedValue: (json['agreedValue'] as num?)?.toDouble() ?? 0.0,
         documentUrl: json['documentUrl'],
         documentViewUrl: json['documentViewUrl'],
-        otpExpiresAt: json['otpExpiresAt'] != null ? DateTime.parse(json['otpExpiresAt']) : null,
-        confirmedAt: json['confirmedAt'] != null ? DateTime.parse(json['confirmedAt']) : null,
+        otpExpiresAt: json['otpExpiresAt'] != null
+            ? DateTime.parse(json['otpExpiresAt'])
+            : null,
+        confirmedAt: json['confirmedAt'] != null
+            ? DateTime.parse(json['confirmedAt'])
+            : null,
         confirmedBy: json['confirmedBy'],
         status: json['status'] ?? '',
-        createdAt: DateTime.parse(json['createdAt']),
-        updatedAt: DateTime.parse(json['updatedAt']),
+        createdAt: _parseDate(json['createdAt']),
+        updatedAt: _parseDate(json['updatedAt']),
       );
 }
 
@@ -810,21 +862,22 @@ class DesignResponse {
   });
 
   factory DesignResponse.fromJson(Map<String, dynamic> json) => DesignResponse(
-        id: json['id'],
-        projectWorkingId: json['projectWorkingId'],
-        title: json['title'] ?? '',
-        version: (json['version'] as num?)?.toDouble() ?? 0.0,
-        type: json['type'] ?? '',
-        reason: json['reason'],
-        status: json['status'] ?? '',
-        createdBy: json['createdBy'] ?? 0,
-        createdAt: DateTime.parse(json['createdAt']),
-        updatedAt: DateTime.parse(json['updatedAt']),
-        images: (json['images'] as List?)
-                ?.map((e) => DesignImageResponse.fromJson(e))
-                .toList() ??
-            [],
-      );
+    id: json['id'],
+    projectWorkingId: json['projectWorkingId'],
+    title: json['title'] ?? '',
+    version: (json['version'] as num?)?.toDouble() ?? 0.0,
+    type: json['type'] ?? '',
+    reason: json['reason'],
+    status: json['status'] ?? '',
+    createdBy: json['createdBy'] ?? 0,
+    createdAt: _parseDate(json['createdAt']),
+    updatedAt: _parseDate(json['updatedAt']),
+    images:
+        (json['images'] as List?)
+            ?.map((e) => DesignImageResponse.fromJson(e))
+            .toList() ??
+        [],
+  );
 }
 
 class DesignImageResponse {
@@ -846,14 +899,15 @@ class DesignImageResponse {
     required this.createdAt,
   });
 
-  factory DesignImageResponse.fromJson(Map<String, dynamic> json) => DesignImageResponse(
+  factory DesignImageResponse.fromJson(Map<String, dynamic> json) =>
+      DesignImageResponse(
         id: json['id'],
         designId: json['designId'],
         imageUrl: json['imageUrl'] ?? '',
         viewUrl: json['viewUrl'] ?? '',
         caption: json['caption'],
         uploadedBy: json['uploadedBy'] ?? 0,
-        createdAt: DateTime.parse(json['createdAt']),
+        createdAt: _parseDate(json['createdAt']),
       );
 }
 
@@ -886,19 +940,24 @@ class ConstructionItemResponse {
     required this.updatedAt,
   });
 
-  factory ConstructionItemResponse.fromJson(Map<String, dynamic> json) => ConstructionItemResponse(
+  factory ConstructionItemResponse.fromJson(Map<String, dynamic> json) =>
+      ConstructionItemResponse(
         id: json['id'],
         projectWorkingId: json['projectWorkingId'],
         parentId: json['parentId'],
         name: json['name'] ?? '',
         description: json['description'],
         category: json['category'],
-        estimateAt: json['estimateAt'] != null ? DateTime.parse(json['estimateAt']) : null,
-        actualAt: json['actualAt'] != null ? DateTime.parse(json['actualAt']) : null,
+        estimateAt: json['estimateAt'] != null
+            ? DateTime.parse(json['estimateAt'])
+            : null,
+        actualAt: json['actualAt'] != null
+            ? DateTime.parse(json['actualAt'])
+            : null,
         status: json['status'] ?? '',
         createdBy: json['createdBy'] ?? 0,
-        createdAt: DateTime.parse(json['createdAt']),
-        updatedAt: DateTime.parse(json['updatedAt']),
+        createdAt: _parseDate(json['createdAt']),
+        updatedAt: _parseDate(json['updatedAt']),
       );
 }
 
@@ -931,19 +990,24 @@ class ConstructionTaskResponse {
     required this.updatedAt,
   });
 
-  factory ConstructionTaskResponse.fromJson(Map<String, dynamic> json) => ConstructionTaskResponse(
+  factory ConstructionTaskResponse.fromJson(Map<String, dynamic> json) =>
+      ConstructionTaskResponse(
         id: json['id'],
         constructionItemId: json['constructionItemId'],
         name: json['name'] ?? '',
         description: json['description'],
         imageUrl: json['imageUrl'],
-        estimateAt: json['estimateAt'] != null ? DateTime.parse(json['estimateAt']) : null,
-        actualAt: json['actualAt'] != null ? DateTime.parse(json['actualAt']) : null,
+        estimateAt: json['estimateAt'] != null
+            ? DateTime.parse(json['estimateAt'])
+            : null,
+        actualAt: json['actualAt'] != null
+            ? DateTime.parse(json['actualAt'])
+            : null,
         reason: json['reason'],
         status: json['status'] ?? '',
         createdBy: json['createdBy'] ?? 0,
-        createdAt: DateTime.parse(json['createdAt']),
-        updatedAt: DateTime.parse(json['updatedAt']),
+        createdAt: _parseDate(json['createdAt']),
+        updatedAt: _parseDate(json['updatedAt']),
       );
 }
 
@@ -971,19 +1035,20 @@ class ReviewResponse {
   });
 
   factory ReviewResponse.fromJson(Map<String, dynamic> json) => ReviewResponse(
-        id: json['id'],
-        projectWorkingId: json['projectWorkingId'],
-        projectShopOwnerId: json['projectShopOwnerId'],
-        serviceProviderProfileId: json['serviceProviderProfileId'],
-        overallRating: (json['overallRating'] as num?)?.toDouble() ?? 0.0,
-        comment: json['comment'],
-        scores: (json['scores'] as List?)
-                ?.map((e) => ReviewScore.fromJson(e))
-                .toList() ??
-            [],
-        createdAt: DateTime.parse(json['createdAt']),
-        updatedAt: DateTime.parse(json['updatedAt']),
-      );
+    id: json['id'],
+    projectWorkingId: json['projectWorkingId'],
+    projectShopOwnerId: json['projectShopOwnerId'],
+    serviceProviderProfileId: json['serviceProviderProfileId'],
+    overallRating: (json['overallRating'] as num?)?.toDouble() ?? 0.0,
+    comment: json['comment'],
+    scores:
+        (json['scores'] as List?)
+            ?.map((e) => ReviewScore.fromJson(e))
+            .toList() ??
+        [],
+    createdAt: _parseDate(json['createdAt']),
+    updatedAt: _parseDate(json['updatedAt']),
+  );
 }
 
 class ReviewScore {
@@ -991,17 +1056,13 @@ class ReviewScore {
   final String dimension;
   final double score;
 
-  ReviewScore({
-    required this.id,
-    required this.dimension,
-    required this.score,
-  });
+  ReviewScore({required this.id, required this.dimension, required this.score});
 
   factory ReviewScore.fromJson(Map<String, dynamic> json) => ReviewScore(
-        id: json['id'],
-        dimension: json['dimension'] ?? '',
-        score: (json['score'] as num?)?.toDouble() ?? 0.0,
-      );
+    id: json['id'],
+    dimension: json['dimension'] ?? '',
+    score: (json['score'] as num?)?.toDouble() ?? 0.0,
+  );
 }
 
 class ProviderReviewSummary {
@@ -1052,8 +1113,11 @@ class PostResponse {
   // Bridge getters for backward compatibility with UI components (like MarketplacePage)
   String get location => projectAddress ?? 'Remote';
   String get style => serviceKind;
-  String get budgetTier => projectBudget != null ? '${projectBudget!.toStringAsFixed(0)} ₫' : 'TBD';
-  String get expectedStart => submissionDeadline != null ? submissionDeadline!.toString().substring(0, 10) : '';
+  String get budgetTier =>
+      projectBudget != null ? '${projectBudget!.toStringAsFixed(0)} ₫' : 'TBD';
+  String get expectedStart => submissionDeadline != null
+      ? submissionDeadline!.toString().substring(0, 10)
+      : '';
   List<String> get requirements => [serviceKind];
 
   PostResponse({
@@ -1073,20 +1137,22 @@ class PostResponse {
   });
 
   factory PostResponse.fromJson(Map<String, dynamic> json) => PostResponse(
-        id: json['id'],
-        projectShopOwnerId: json['projectShopOwnerId'],
-        projectName: json['projectName'],
-        projectAddress: json['projectAddress'],
-        projectBudget: (json['projectBudget'] as num?)?.toDouble(),
-        projectAreaM2: (json['projectAreaM2'] as num?)?.toDouble(),
-        serviceKind: json['serviceKind'] ?? '',
-        title: json['title'] ?? '',
-        description: json['description'] ?? '',
-        status: json['status'] ?? '',
-        submissionDeadline: json['submissionDeadline'] != null ? DateTime.parse(json['submissionDeadline']) : null,
-        createdAt: DateTime.parse(json['createdAt']),
-        updatedAt: DateTime.parse(json['updatedAt']),
-      );
+    id: json['id'],
+    projectShopOwnerId: json['projectShopOwnerId'],
+    projectName: json['projectName'],
+    projectAddress: json['projectAddress'],
+    projectBudget: (json['projectBudget'] as num?)?.toDouble(),
+    projectAreaM2: (json['projectAreaM2'] as num?)?.toDouble(),
+    serviceKind: json['serviceKind'] ?? '',
+    title: json['title'] ?? '',
+    description: json['description'] ?? '',
+    status: json['status'] ?? '',
+    submissionDeadline: json['submissionDeadline'] != null
+        ? DateTime.parse(json['submissionDeadline'])
+        : null,
+    createdAt: _parseDate(json['createdAt']),
+    updatedAt: _parseDate(json['updatedAt']),
+  );
 }
 
 class NotificationResponse {
@@ -1114,7 +1180,8 @@ class NotificationResponse {
     required this.createdAt,
   });
 
-  factory NotificationResponse.fromJson(Map<String, dynamic> json) => NotificationResponse(
+  factory NotificationResponse.fromJson(Map<String, dynamic> json) =>
+      NotificationResponse(
         id: json['id'],
         accountId: json['accountId'],
         type: json['type'] ?? '',
@@ -1123,8 +1190,10 @@ class NotificationResponse {
         referenceType: json['referenceType'],
         referenceId: json['referenceId'],
         isRead: json['isRead'] ?? false,
-        emailSentAt: json['emailSentAt'] != null ? DateTime.parse(json['emailSentAt']) : null,
-        createdAt: DateTime.parse(json['createdAt']),
+        emailSentAt: json['emailSentAt'] != null
+            ? DateTime.parse(json['emailSentAt'])
+            : null,
+        createdAt: _parseDate(json['createdAt']),
       );
 }
 
@@ -1153,14 +1222,23 @@ class CommentResponse {
     required this.updatedAt,
   });
 
-  factory CommentResponse.fromJson(Map<String, dynamic> json) => CommentResponse(
+  factory CommentResponse.fromJson(Map<String, dynamic> json) =>
+      CommentResponse(
         id: json['id'] is num ? (json['id'] as num).toInt() : 0,
         targetType: json['targetType']?.toString() ?? '',
-        targetId: json['targetId'] is num ? (json['targetId'] as num).toInt() : 0,
+        targetId: json['targetId'] is num
+            ? (json['targetId'] as num).toInt()
+            : 0,
         body: json['body']?.toString() ?? '',
-        createdBy: json['createdBy'] is num ? (json['createdBy'] as num).toInt() : null,
+        createdBy: json['createdBy'] is num
+            ? (json['createdBy'] as num).toInt()
+            : null,
         createdByName: json['createdByName']?.toString(),
-        createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
-        updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+        createdAt:
+            DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+            DateTime.now(),
+        updatedAt:
+            DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+            DateTime.now(),
       );
 }
