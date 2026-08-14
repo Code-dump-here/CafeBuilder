@@ -40,11 +40,19 @@ class _HomePageState extends State<HomePage> {
         });
       }
     };
+    // Screens deep in the stack (project creation, posting to marketplace)
+    // pop straight back to this same Home instance instead of pushing a
+    // new one, so their own "we're done" moment can't call
+    // `_refreshDashboard()` directly — they call this instead.
+    MarketplaceState.onNeedsRefresh = () {
+      if (mounted) _refreshDashboard();
+    };
   }
 
   @override
   void dispose() {
     MarketplaceState.onRoleChanged = null;
+    MarketplaceState.onNeedsRefresh = null;
     super.dispose();
   }
 
@@ -60,7 +68,10 @@ class _HomePageState extends State<HomePage> {
         child: IndexedStack(
           index: _currentIndex,
           children: [
-            DashboardTab(key: _dashboardKey), // 0
+            DashboardTab(
+              key: _dashboardKey,
+              onSeeAllInspiration: () => setState(() => _currentIndex = 1),
+            ), // 0
             const DiscoveryPage(),            // 1
             const ServicesTab(),              // 2 — always present
             const MarketplacePage(),          // 3 — always present

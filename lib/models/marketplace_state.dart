@@ -42,6 +42,14 @@ class MarketplaceState {
   /// MarketplacePage subscribes to this to trigger a rebuild.
   static VoidCallback? onBroadcastsChanged;
 
+  /// Called when a screen wants Home's dashboard refreshed the next time
+  /// it's back on screen — e.g. after popping back to it following a
+  /// project creation deep in the navigation stack, where a plain
+  /// `Navigator.pop`/`popUntil` doesn't run any of Home's own refresh
+  /// logic on its own. HomePage subscribes to this the same way it
+  /// subscribes to [onRoleChanged].
+  static VoidCallback? onNeedsRefresh;
+
   static void toggleRole() {
     isServiceProvider = !isServiceProvider;
     initialIndex = isServiceProvider ? 2 : 0; // If switching to provider, default to Marketplace tab

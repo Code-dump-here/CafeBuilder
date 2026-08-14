@@ -214,9 +214,15 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
         MarketplaceState.activeProject = newBroadcast;
         MarketplaceState.addBroadcast(newBroadcast);
 
-        setState(() {
-          _flowSubStep = 2;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Project posted to marketplace.')),
+        );
+        // Straight to Home instead of the "Project Live" splash (step 2).
+        // `onNeedsRefresh` tells the still-alive Home instance to
+        // re-fetch, since popping back to it doesn't run any of its own
+        // refresh logic on its own.
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        MarketplaceState.onNeedsRefresh?.call();
       }
     } catch (e) {
       if (mounted) {

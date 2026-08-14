@@ -5,6 +5,7 @@ import '../theme/app_colors.dart';
 import 'project_success_page.dart';
 import '../services/ai_recommendation_service.dart';
 import '../models/responses/api_responses.dart';
+import '../models/marketplace_state.dart';
 
 // ── Loading / Synthesis page ─────────────────────────────────────────────────
 
@@ -513,24 +514,17 @@ class AiDesignReportPage extends StatelessWidget {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProjectSuccessPage(
-                                    cafeName: cafeName,
-                                    location: location,
-                                    style: style,
-                                    budgetLevel: budgetLevel,
-                                    totalBudget: totalBudget,
-                                    mood: mood,
-                                    role: role,
-                                    area: area,
-                                    projectId: projectId,
-                                    initialStep: 0,
-                                    aiReport: report,
-                                  ),
-                                ),
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Project saved to dashboard.')),
                               );
+                              // Straight to Home instead of the
+                              // "Project Successfully Created!" splash.
+                              // `onNeedsRefresh` tells the still-alive Home
+                              // instance to re-fetch, since popping back to
+                              // it doesn't run any of its own refresh logic
+                              // on its own.
+                              Navigator.of(context).popUntil((route) => route.isFirst);
+                              MarketplaceState.onNeedsRefresh?.call();
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.espresso,

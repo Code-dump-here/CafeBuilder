@@ -5,6 +5,7 @@ import '../theme/app_colors.dart';
 import '../services/project_service.dart';
 import '../services/service_provider_service.dart';
 import '../models/requests/project_requests.dart';
+import '../models/marketplace_state.dart';
 import '../services/api_client.dart';
 
 class ProjectManualCreatePage extends StatefulWidget {
@@ -76,7 +77,14 @@ class _ProjectManualCreatePageState extends State<ProjectManualCreatePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Project created successfully!')),
         );
-        Navigator.pop(context, true); // Return true to indicate success
+        // Straight to Home instead of popping back to wherever this was
+        // opened from (My Projects, etc.) — Home is always the first
+        // route (see main.dart), so this lands there regardless of how
+        // deep this page was pushed from. `onNeedsRefresh` tells the
+        // still-alive Home instance to re-fetch, since popping back to it
+        // doesn't run any of its own refresh logic on its own.
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        MarketplaceState.onNeedsRefresh?.call();
       }
     } on ApiException catch (e) {
       if (mounted) {

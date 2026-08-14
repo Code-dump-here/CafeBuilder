@@ -9,9 +9,11 @@ import '../services/construction_service.dart';
 import '../services/api_client.dart';
 import '../services/notification_service.dart';
 import '../models/responses/api_responses.dart';
+import '../models/inspiration_catalog.dart';
 import 'ai_advice_page.dart';
 import 'project_detail_page.dart';
 import 'project_onboarding_page.dart';
+import 'style_detail_page.dart';
 
 /// Unified document item shown in the "Project documents" section.
 class _DocItem {
@@ -33,7 +35,11 @@ class _DocItem {
 }
 
 class DashboardTab extends StatefulWidget {
-  const DashboardTab({super.key});
+  /// Switches Home to the Gallery tab — the "Inspiration for you" section's
+  /// "See all" falls back to a "coming soon" toast when this is omitted.
+  final VoidCallback? onSeeAllInspiration;
+
+  const DashboardTab({super.key, this.onSeeAllInspiration});
 
   @override
   State<DashboardTab> createState() => DashboardTabState();
@@ -807,7 +813,13 @@ class DashboardTabState extends State<DashboardTab> {
               ),
             ),
             GestureDetector(
-              onTap: () => _showComingSoon(context),
+              onTap: () {
+                if (widget.onSeeAllInspiration != null) {
+                  widget.onSeeAllInspiration!();
+                } else {
+                  _showComingSoon(context);
+                }
+              },
               child: Text(
                 'See all',
                 style: GoogleFonts.inter(
@@ -823,29 +835,22 @@ class DashboardTabState extends State<DashboardTab> {
         const SizedBox(height: 20),
         SizedBox(
           height: 460,
-          child: ListView(
+          child: ListView.separated(
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
-            children: [
-              _buildInspirationCard(
-                imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDzWV39I7awqkhB9R7aFYTtS2b9QHLnzYdCdatXXx4-SVlmu2fNk59JXajSnX13L2vnGPwPk2HPvuQDOijoIKlt4SVAw3DawdtAmB6yUdPWw4-SP65ye90zOtLnUp7S8_AW1tS19rGwCRYCJ9_KvewKYPjag6qcC3ZRzEjJIcNEOsNtgf5AOZoqtWDsuYwE5PZuDyVi_FOAn81vupeGes272RFTmLg6_uKI0O4kpM_eXpGjRXNc4uJe8jgNpOYKyK2ciQexj8LpTWey',
-                tag: 'JAPANDI',
-                title: 'Wood Tea House',
-                subtitle: 'The perfect balance between oak and light.',
-                width: 280,
-              ),
-              const SizedBox(width: 20),
-              _buildInspirationCard(
-                imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDxoZIlfGLUkHEV4ojJ-fQellwEvg21BHHDxw_7YIWdPa8iebzrz8E0bqMUSVopsgaGHD2nZs-WWYMprTtK-qUJ54uEQZgfNhOfetmKb4gpnUuPwRCy6Lce4gIhaiYFyfj9gLGjMbs4q80RxZAupCTu4DLUDWcY3quYao8sdSiqoadmjoVeC_7-fg3M_aSvYMuaKX_reoLCB0tO_baSqFX3l6AxmMNcCwFuuEd-SeIQFIGnX6bmGvhNRLg5KNOpGd1LDMKBf1rok475',
-                tag: 'MINIMALIST',
-                title: 'Urban Brew Lab',
-                subtitle: 'The raw beauty of concrete and steel.',
+            // Same catalog the Gallery tab (DiscoveryPage) browses — this
+            // used to be two hardcoded cards that didn't match Gallery's
+            // list and weren't tappable at all.
+            itemCount: kInspirationCatalog.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 20),
+            itemBuilder: (context, index) {
+              final item = kInspirationCatalog[index];
+              return _buildInspirationCard(
+                item: item,
                 width: 260,
-                paddingTop: 32,
-              ),
-              const SizedBox(width: 20),
-              _buildInspirationPlaceholder(),
-            ],
+                paddingTop: index.isOdd ? 32 : 0,
+              );
+            },
           ),
         ),
       ],
@@ -853,111 +858,88 @@ class DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _buildInspirationCard({
-    required String imageUrl,
-    required String tag,
-    required String title,
-    required String subtitle,
+    required InspirationItem item,
     required double width,
     double paddingTop = 0,
   }) {
     return Padding(
       padding: EdgeInsets.only(top: paddingTop),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: width,
-            height: width * 1.33,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => StyleDetailPage(item: item)),
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: width,
+              height: width * 1.33,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+                image: DecorationImage(
+                  image: NetworkImage(item.imageUrl),
+                  fit: BoxFit.cover,
                 ),
-              ],
-              image: DecorationImage(
-                image: NetworkImage(imageUrl),
-                fit: BoxFit.cover,
               ),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  bottom: 20,
-                  left: 20,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryFixed.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      tag,
-                      style: const TextStyle(
-                        color: AppColors.espresso,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
+              child: Stack(
+                children: [
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryFixed.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        item.category.toUpperCase(),
+                        style: const TextStyle(
+                          color: AppColors.espresso,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.espresso,
-            ),
-          ),
-          SizedBox(
-            width: width,
-            child: Text(
-              subtitle,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: AppColors.textSecondary,
+                ],
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              item.title,
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.espresso,
+              ),
+            ),
+            SizedBox(
+              width: width,
+              child: Text(
+                item.category,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildInspirationPlaceholder() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 260,
-          height: 260 * 1.33,
-          decoration: BoxDecoration(
-            color: const Color(0xFFEAE7E7),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Center(
-            child: Icon(Icons.add_photo_alternate_outlined, color: AppColors.outlineVariant, size: 40),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Explore more',
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.espresso,
-          ),
-        ),
-      ],
     );
   }
 
