@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
-import '../services/auth_service.dart';
-import '../services/api_client.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -14,7 +12,6 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
   bool _agreedToTerms = false;
-  bool _isLoading = false;
 
   final _fullNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
@@ -30,32 +27,21 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  Future<void> _register() async {
+  // The actual `AuthService.register` call (and its role value) is deferred
+  // to RoleSelectionPage, which is the first screen that actually knows
+  // which role the user wants — sending 'owner' here regardless of choice
+  // would silently register everyone as an owner.
+  void _continueToRoleSelection() {
     if (_emailCtrl.text.isEmpty || _passwordCtrl.text.isEmpty) return;
-    setState(() => _isLoading = true);
-    try {
-      await AuthService.register(
-        email: _emailCtrl.text.trim(),
-        password: _passwordCtrl.text,
-        role: 'owner',
-        phone: _phoneCtrl.text.isNotEmpty ? _phoneCtrl.text.trim() : null,
-      );
-      if (mounted) Navigator.pushNamed(context, '/role-selection');
-    } on ApiException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Connection failed. Is the server running?'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    Navigator.pushNamed(
+      context,
+      '/role-selection',
+      arguments: {
+        'email': _emailCtrl.text.trim(),
+        'password': _passwordCtrl.text,
+        'phone': _phoneCtrl.text.isNotEmpty ? _phoneCtrl.text.trim() : null,
+      },
+    );
   }
 
   @override
@@ -118,13 +104,24 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 40),
                     // Form Fields
                     _buildLabel('Full Name', 'full-name'),
-                    _buildInputField(hint: 'John Doe', controller: _fullNameCtrl),
+                    _buildInputField(
+                      hint: 'John Doe',
+                      controller: _fullNameCtrl,
+                    ),
                     const SizedBox(height: 24),
                     _buildLabel('Email', 'email'),
-                    _buildInputField(hint: 'example@architect.studio', controller: _emailCtrl, keyboardType: TextInputType.emailAddress),
+                    _buildInputField(
+                      hint: 'example@architect.studio',
+                      controller: _emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
                     const SizedBox(height: 24),
                     _buildLabel('Phone Number', 'phone'),
-                    _buildInputField(hint: '090 123 4567', controller: _phoneCtrl, keyboardType: TextInputType.phone),
+                    _buildInputField(
+                      hint: '090 123 4567',
+                      controller: _phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                    ),
                     const SizedBox(height: 24),
                     _buildLabel('Password', 'password'),
                     _buildPasswordField(),
@@ -138,10 +135,15 @@ class _RegisterPageState extends State<RegisterPage> {
                           width: 24,
                           child: Checkbox(
                             value: _agreedToTerms,
-                            onChanged: (value) => setState(() => _agreedToTerms = value ?? false),
+                            onChanged: (value) =>
+                                setState(() => _agreedToTerms = value ?? false),
                             activeColor: AppColors.espresso,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                            side: const BorderSide(color: AppColors.outlineVariant),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            side: const BorderSide(
+                              color: AppColors.outlineVariant,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -193,14 +195,10 @@ class _RegisterPageState extends State<RegisterPage> {
                           elevation: 2,
                           shadowColor: AppColors.espresso.withOpacity(0.2),
                         ),
-                        onPressed: (_agreedToTerms && !_isLoading) ? _register : null,
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : Text(
+                        onPressed: _agreedToTerms
+                            ? _continueToRoleSelection
+                            : null,
+                        child: Text(
                           'Continue',
                           style: GoogleFonts.inter(
                             fontSize: 14,
@@ -230,7 +228,10 @@ class _RegisterPageState extends State<RegisterPage> {
                             const TextSpan(text: 'Already have an account? '),
                             WidgetSpan(
                               child: GestureDetector(
-                                onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+                                onTap: () => Navigator.pushReplacementNamed(
+                                  context,
+                                  '/login',
+                                ),
                                 child: Text(
                                   'Login now',
                                   style: TextStyle(
@@ -269,7 +270,11 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildInputField({required String hint, TextEditingController? controller, TextInputType? keyboardType}) {
+  Widget _buildInputField({
+    required String hint,
+    TextEditingController? controller,
+    TextInputType? keyboardType,
+  }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
@@ -282,7 +287,10 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
         filled: true,
         fillColor: AppColors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.outlineVariant),
@@ -312,10 +320,15 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
         filled: true,
         fillColor: AppColors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         suffixIcon: IconButton(
           icon: Icon(
-            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscurePassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: AppColors.outline,
             size: 20,
           ),
@@ -346,9 +359,7 @@ class _RegisterPageState extends State<RegisterPage> {
       },
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         side: const BorderSide(color: AppColors.outlineVariant),
         foregroundColor: AppColors.espresso,
       ),
@@ -356,11 +367,15 @@ class _RegisterPageState extends State<RegisterPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.network(
-              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+            webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
             'https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png',
             height: 20,
             errorBuilder: (context, error, stackTrace) {
-              return const Icon(Icons.account_circle_outlined, size: 20, color: AppColors.espresso);
+              return const Icon(
+                Icons.account_circle_outlined,
+                size: 20,
+                color: AppColors.espresso,
+              );
             },
           ),
           const SizedBox(width: 12),
