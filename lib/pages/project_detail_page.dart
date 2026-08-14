@@ -728,21 +728,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     );
   }
 
-  /// Engagements that belong on the Project Team card.
-  ///
-  /// A provider who declined the invitation, or whose engagement was ended,
-  /// isn't on the team — listing them as "Designer (Rejected)" just leaves
-  /// dead rows the owner can't act on. Pending invites stay visible so the
-  /// owner can see who they're still waiting on, and completed engagements
-  /// stay so finished work keeps its attribution.
+  /// Engagements that belong on the Project Team card. The rule lives in
+  /// ProjectWorkingService so this and the provider app agree on who counts
+  /// as a member.
   ///
   /// Only the display is filtered — `_projectWorkings` still holds every row,
   /// because the slot rules and the project-completion check read it.
-  static const _teamVisibleStatuses = {'requested', 'accepted', 'completed'};
-
-  List<ProjectWorkingResponse> get _teamMembers => _projectWorkings
-      .where((pw) => _teamVisibleStatuses.contains(pw.status.toLowerCase()))
-      .toList();
+  List<ProjectWorkingResponse> get _teamMembers =>
+      ProjectWorkingService.visibleTeam(_projectWorkings);
 
   Widget _buildProjectTeam() {
     return Container(

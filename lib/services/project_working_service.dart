@@ -12,6 +12,27 @@ class ProjectWorkingService {
   /// double-book. 'completed', 'rejected' and 'terminated' release the slot.
   static const engagedStatuses = {'requested', 'accepted'};
 
+  // ── Engagement visibility ────────────────────────────────────────────────
+
+  /// Engagement statuses worth showing as part of a project's team.
+  ///
+  /// Distinct from [engagedStatuses], which is about *holding a slot*:
+  /// 'completed' shows in the team (that provider did the work) but doesn't
+  /// hold a slot, so a replacement can be hired. 'rejected' and 'terminated'
+  /// appear in neither — the provider declined, or the engagement ended, and
+  /// listing them leaves rows nobody can act on.
+  static const visibleTeamStatuses = {'requested', 'accepted', 'completed'};
+
+  /// Whether [working] belongs on a team / member list.
+  static bool isVisibleTeamMember(ProjectWorkingResponse working) =>
+      visibleTeamStatuses.contains(working.status.toLowerCase());
+
+  /// [workings] filtered to what a team list should show.
+  static List<ProjectWorkingResponse> visibleTeam(
+    Iterable<ProjectWorkingResponse> workings,
+  ) =>
+      workings.where(isVisibleTeamMember).toList();
+
   /// Whether two scopes of work collide. 'both' collides with everything.
   static bool kindsOverlap(String a, String b) =>
       a == 'both' || b == 'both' || a == b;
