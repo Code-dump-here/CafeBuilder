@@ -357,6 +357,9 @@ class ApiException implements Exception {
 
   ApiException({required this.statusCode, required this.message});
 
+  // Several call sites show this directly to the user via `Text(e.toString())`
+  // — keep it to just the backend-facing message, no "ApiException(409):"
+  // implementation-detail prefix.
   @override
-  String toString() => 'ApiException($statusCode): $message';
+  String toString() => message;
 }
