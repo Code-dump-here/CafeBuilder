@@ -33,6 +33,10 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
   bool _loading = true;
   String? _error;
   Timer? _debounce;
+  // Bumped on every _loadConstructors call — a response is only applied if
+  // it's still the most recent request, so a slow earlier response can't
+  // overwrite a newer search's results.
+  int _requestSeq = 0;
 
   @override
   void initState() {
@@ -54,6 +58,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
   }
 
   Future<void> _loadConstructors() async {
+    final seq = ++_requestSeq;
     setState(() {
       _loading = true;
       _error = null;
@@ -64,21 +69,21 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
         pageSize: 50,
         search: _searchController.text.trim().isEmpty ? null : _searchController.text.trim(),
       );
-      if (mounted) {
+      if (mounted && seq == _requestSeq) {
         setState(() {
           _constructors = result.items;
           _loading = false;
         });
       }
     } on ApiException catch (e) {
-      if (mounted) {
+      if (mounted && seq == _requestSeq) {
         setState(() {
           _loading = false;
           _error = e.message;
         });
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && seq == _requestSeq) {
         setState(() {
           _loading = false;
           _error = 'Failed to load contractors';
