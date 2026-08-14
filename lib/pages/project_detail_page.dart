@@ -292,13 +292,6 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           ),
         ],
       ),
-      floatingActionButton: project == null
-          ? null
-          : FloatingActionButton(
-              onPressed: () {},
-              backgroundColor: AppColors.espresso,
-              child: const Icon(Icons.add, color: Colors.white),
-            ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.espresso))
           : _error != null
@@ -1484,7 +1477,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     try {
       final allContracts = <ContractResponse>[];
       for (final working in _projectWorkings) {
-        final res = await ContractService.getContracts(projectWorkingId: working.id, pageSize: 1);
+        // pageSize: 1 silently hid every contract past the first one on an
+        // engagement (e.g. a renegotiated/amended contract) from the
+        // "Select Contract" picker below.
+        final res = await ContractService.getContracts(projectWorkingId: working.id, pageSize: 50);
         if (res.items.isNotEmpty) {
           allContracts.addAll(res.items);
         }
