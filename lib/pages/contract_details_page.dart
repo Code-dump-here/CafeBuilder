@@ -11,7 +11,15 @@ import '../widgets/confirm_dialog.dart';
 class ContractDetailsPage extends StatefulWidget {
   final ContractResponse contract;
 
-  const ContractDetailsPage({super.key, required this.contract});
+  /// The provider this contract came from, e.g. "Studio X · Designer".
+  /// Resolved by the caller from the engagement; empty when unknown.
+  final String providerName;
+
+  const ContractDetailsPage({
+    super.key,
+    required this.contract,
+    this.providerName = '',
+  });
 
   @override
   State<ContractDetailsPage> createState() => _ContractDetailsPageState();
@@ -159,8 +167,18 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionTitle('Project Working ID'),
-                          _buildText('#${_contract.projectWorkingId}', isBold: true),
+                          // The engagement id meant nothing to an owner
+                          // holding two contracts; the provider's name is
+                          // what tells them whose contract this is.
+                          _buildSectionTitle(
+                            widget.providerName.isEmpty ? 'Engagement' : 'From',
+                          ),
+                          _buildText(
+                            widget.providerName.isEmpty
+                                ? '#${_contract.projectWorkingId}'
+                                : widget.providerName,
+                            isBold: true,
+                          ),
                         ],
                       ),
                       Column(

@@ -49,6 +49,28 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     return null;
   }
 
+  /// Who a contract came from. Contracts are fetched per engagement and carry
+  /// its id, so the provider is resolved from the engagement list rather than
+  /// from the contract's own free-text party info, which the provider may
+  /// leave blank. A project can run a designer and a contractor at once, and
+  /// "Contract" on its own gives the owner no way to tell them apart.
+  String _providerForContract(ContractResponse c) {
+    for (final w in _projectWorkings) {
+      if (w.id != c.projectWorkingId) continue;
+      final name = w.providerDisplayName.isNotEmpty
+          ? w.providerDisplayName
+          : 'Provider #${w.serviceProviderProfileId}';
+      final role = switch (w.contractType.toLowerCase()) {
+        'design' => 'Designer',
+        'construction' => 'Contractor',
+        'both' => 'Design & Build',
+        _ => '',
+      };
+      return role.isEmpty ? name : '$name · $role';
+    }
+    return '';
+  }
+
   /// Designs still waiting on the owner's approve/revision decision.
   List<DesignResponse> get _designsAwaitingReview => _designs
       .where((d) => const {'pending', 'submitted'}.contains(d.status.toLowerCase()))
@@ -661,7 +683,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           // only appear when there is genuinely something to act on.
           if (_pendingContract != null)
             _buildApprovalItem(
-              'Sign contract: ${_pendingContract!.title}',
+              () {
+                final from = _providerForContract(_pendingContract!);
+                final title = _pendingContract!.title;
+                return from.isEmpty
+                    ? 'Sign contract: $title'
+                    : 'Sign contract from $from: $title';
+              }(),
               onTap: () {
                 Navigator.push(
                   context,
@@ -1525,7 +1553,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ContractDetailsPage(contract: allContracts.first),
+              builder: (context) => ContractDetailsPage(
+                contract: allContracts.first,
+                providerName: _providerForContract(allContracts.first),
+              ),
             ),
           ).then((_) => _loadProject());
         } else {
@@ -1544,17 +1575,26 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ),
-                ...allContracts.map((c) => ListTile(
-                  leading: const Icon(Icons.description_outlined, color: AppColors.espresso),
-                  title: Text(c.title.isNotEmpty ? c.title : 'Contract #${c.id}'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ContractDetailsPage(contract: c)),
-                    ).then((_) => _loadProject());
-                  },
-                )),
+                ...allContracts.map((c) {
+                  final from = _providerForContract(c);
+                  return ListTile(
+                    leading: const Icon(Icons.description_outlined, color: AppColors.espresso),
+                    title: Text(c.title.isNotEmpty ? c.title : 'Contract #${c.id}'),
+                    // Which provider drew this one up — the whole point of the
+                    // picker when a project has more than one of them.
+                    subtitle: from.isEmpty ? null : Text(from),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ContractDetailsPage(contract: c, providerName: from),
+                        ),
+                      ).then((_) => _loadProject());
+                    },
+                  );
+                }),
                 const SizedBox(height: 16),
               ],
             ),
