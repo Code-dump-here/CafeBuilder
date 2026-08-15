@@ -703,9 +703,19 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(text, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+            // The label carries a contract or design title, so its length is
+            // whatever the provider typed — it has to be bounded or it runs
+            // straight out of the card.
+            Expanded(
+              child: Text(
+                text,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
+              ),
+            ),
+            const SizedBox(width: 8),
             const Icon(Icons.chevron_right, size: 16, color: AppColors.placeholder),
           ],
         ),
@@ -1338,12 +1348,16 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       children: [
         CircleAvatar(radius: 16, backgroundImage: NetworkImage(avatarUrl)),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(name, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.espresso)),
-            Text(role, style: GoogleFonts.inter(fontSize: 9, color: AppColors.textSecondary)),
-          ],
+        // Provider display names are free text too — same overflow as the
+        // approval rows if the column isn't given a bound.
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+              Text(role, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 9, color: AppColors.textSecondary)),
+            ],
+          ),
         )
       ],
     );
