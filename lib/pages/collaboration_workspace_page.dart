@@ -98,7 +98,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               .catchError((_) => null),
         ]);
 
-        allContracts.addAll((results[0] as PaginationResponse<ContractResponse>).items);
+        allContracts.addAll(ContractService.ownerVisible(
+            (results[0] as PaginationResponse<ContractResponse>).items));
         allDesigns.addAll((results[1] as PaginationResponse<DesignResponse>).items);
         final itemsRes = (results[2] as PaginationResponse<ConstructionItemResponse>);
         allItems.addAll(itemsRes.items);

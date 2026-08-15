@@ -91,4 +91,15 @@ class ContractService {
     final body = ApiClient.parseBody(response);
     return ContractResponse.fromJson(body);
   }
+
+  /// A cancelled contract is dead — it can't be signed, it unlocks nothing and
+  /// it can't return to any other status. Listing it beside live contracts only
+  /// invites the owner to open something they can't act on, so every
+  /// owner-facing list leaves it out. The rule lives here so those lists agree.
+  static bool isVisibleToOwner(ContractResponse c) =>
+      c.status.toLowerCase() != 'cancelled';
+
+  /// [getContracts] filtered to what the owner should actually see.
+  static List<ContractResponse> ownerVisible(Iterable<ContractResponse> contracts) =>
+      contracts.where(isVisibleToOwner).toList();
 }

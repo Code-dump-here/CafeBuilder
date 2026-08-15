@@ -158,7 +158,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           if (r is PaginationResponse<DesignResponse>) {
             designs.addAll(DesignService.ownerVisible(r.items));
           }
-          if (r is PaginationResponse<ContractResponse>) contracts.addAll(r.items);
+          if (r is PaginationResponse<ContractResponse>) {
+            contracts.addAll(ContractService.ownerVisible(r.items));
+          }
         }
       }
 
@@ -1512,15 +1514,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         // engagement (e.g. a renegotiated/amended contract) from the
         // "Select Contract" picker below.
         final res = await ContractService.getContracts(projectWorkingId: working.id, pageSize: 50);
-        if (res.items.isNotEmpty) {
-          allContracts.addAll(res.items);
-        }
+        allContracts.addAll(ContractService.ownerVisible(res.items));
       }
 
       if (mounted) {
         Navigator.pop(context); // close loading
         if (allContracts.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No contracts found.')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No active contracts for this project.')));
         } else if (allContracts.length == 1) {
           Navigator.push(
             context,
