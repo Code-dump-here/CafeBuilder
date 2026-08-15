@@ -343,14 +343,15 @@ class DashboardTabState extends State<DashboardTab> {
                 
                 // Smart AI Assistant Banner
                 _buildAiBanner(context),
-                
+
                 const SizedBox(height: 40),
-                
-                // Quick Actions
-                _buildQuickActions(),
-                
-                const SizedBox(height: 40),
-                
+
+                // Quick Actions — hidden for now, these three cards
+                // (Scan floor plan / Find inspiration / Hire expert) have no
+                // onTap wiring yet. Re-enable once they're wired up.
+                // _buildQuickActions(),
+                // const SizedBox(height: 40),
+
                 // Inspiration Section
                 _buildInspirationSection(),
                 
@@ -742,6 +743,7 @@ class DashboardTabState extends State<DashboardTab> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildQuickActions() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

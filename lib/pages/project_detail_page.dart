@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../services/project_service.dart';
 import '../services/api_client.dart';
-import '../services/service_provider_service.dart';
 import '../models/responses/api_responses.dart';
 import 'proposals_page.dart';
 import 'contract_otp_page.dart';
@@ -35,7 +34,6 @@ class ProjectDetailPage extends StatefulWidget {
 
 class _ProjectDetailPageState extends State<ProjectDetailPage> {
   ProjectResponse? _project;
-  String _ownerFirstName = 'Owner';
   List<ProjectWorkingResponse> _projectWorkings = [];
   List<ConstructionItemResponse> _constructionItems = [];
   List<DesignResponse> _designs = [];
@@ -130,10 +128,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     try {
       final results = await Future.wait([
         ProjectService.getProject(widget.projectId),
-        ShopOwnerService.getCurrentOwnerFirstName(),
         ProjectWorkingService.getProjectWorkings(projectShopOwnerId: widget.projectId, pageSize: 50),
       ]);
-      final workings = (results[2] as PaginationResponse<ProjectWorkingResponse>).items;
+      final workings = (results[1] as PaginationResponse<ProjectWorkingResponse>).items;
 
       // Real milestone + activity data lives per-engagement, so gather it in
       // parallel rather than serially.
@@ -169,7 +166,6 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       if (mounted) {
         setState(() {
           _project = results[0] as ProjectResponse;
-          _ownerFirstName = results[1] as String;
           _projectWorkings = workings;
           _constructionItems = items;
           _designs = designs;
@@ -638,7 +634,6 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           else
             for (final a in _recentActivity)
               _buildActivityItem(a.title, _relativeDay(a.at), const Color(0xFFD9EAA3)),
-          _buildActivityItem('$_ownerFirstName approved Floor Layout v.2', 'Oct 24', AppColors.outlineVariant, hasLine: false),
         ],
       )
     );
@@ -1199,11 +1194,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                   const SizedBox(height: 8),
                   GestureDetector(
                     onTap: () async {
+                      final today = DateTime.now();
+                      final todayDateOnly = DateTime(today.year, today.month, today.day);
                       final picked = await showDatePicker(
                         context: sheetContext,
                         initialDate: submissionDeadline,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        firstDate: todayDateOnly,
+                        lastDate: todayDateOnly.add(const Duration(days: 365)),
                         builder: (context, child) {
                           return Theme(
                             data: Theme.of(context).copyWith(
@@ -1218,18 +1215,21 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                         },
                       );
                       if (picked == null) return;
-                      final deadline = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
-                      if (!deadline.isAfter(DateTime.now())) {
+                      // The backend accepts any deadline from today onward (it stores
+                      // end-of-day, Vietnam time) — comparing dates rather than exact
+                      // instants keeps "today" pickable no matter what time it is here.
+                      if (picked.isBefore(todayDateOnly)) {
                         if (sheetContext.mounted) {
                           ScaffoldMessenger.of(sheetContext).showSnackBar(
                             const SnackBar(
-                              content: Text('Submission deadline must be later than the current time.'),
+                              content: Text('Submission deadline must be today or later.'),
                               backgroundColor: Colors.red,
                             ),
                           );
                         }
                         return;
                       }
+                      final deadline = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
                       setSheetState(() => submissionDeadline = deadline);
                     },
                     child: Container(
@@ -1261,10 +1261,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       onPressed: submitting
                           ? null
                           : () async {
-                              if (!submissionDeadline.isAfter(DateTime.now())) {
+                              final now = DateTime.now();
+                              final deadlineDateOnly = DateTime(
+                                submissionDeadline.year, submissionDeadline.month, submissionDeadline.day,
+                              );
+                              if (deadlineDateOnly.isBefore(DateTime(now.year, now.month, now.day))) {
                                 ScaffoldMessenger.of(sheetContext).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Submission deadline must be later than the current time.'),
+                                    content: Text('Submission deadline must be today or later.'),
                                     backgroundColor: Colors.red,
                                   ),
                                 );
