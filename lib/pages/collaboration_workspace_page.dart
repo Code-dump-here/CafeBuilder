@@ -96,7 +96,11 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
 
         for (final item in itemsRes.items) {
           try {
-            final tList = await ConstructionService.getTasks(constructionItemId: item.id);
+            // Without an explicit pageSize this defaulted to 10, so a milestone
+            // with more tasks than that had its progress computed over a
+            // truncated list — the bar could never reach 100%.
+            final tList = await ConstructionService.getTasks(
+                constructionItemId: item.id, pageSize: 100);
             allTasks.addAll(tList.items);
           } catch (_) {}
         }
@@ -1157,7 +1161,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                         allTasks: _allTasks,
                       ),
                     ),
-                  );
+                  ).then((_) => _loadWorkspaceData());
                 },
                 child: Row(
                   children: [
@@ -1193,7 +1197,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                       allTasks: _allTasks,
                     ),
                   ),
-                );
+                ).then((_) => _loadWorkspaceData());
               },
               child: Container(
                 width: double.infinity,

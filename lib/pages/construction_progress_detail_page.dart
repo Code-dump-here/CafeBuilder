@@ -26,26 +26,81 @@ class _ConstructionProgressDetailPageState
   String _selectedFilter = 'All';
   final _filters = ['All', 'Pending', 'In Progress', 'Completed'];
 
+  /// Top-level milestones only. `GET /api/construction-items` returns the whole
+  /// tree flattened when no `parentId` is passed, so sub-items arrive alongside
+  /// their parents. Counting them as milestones inflated every denominator and
+  /// the "N Milestones" chip.
+  List<ConstructionItemResponse> get _milestones =>
+      widget.items.where((i) => i.parentId == null).toList();
+
   List<ConstructionItemResponse> get _filteredItems {
-    if (_selectedFilter == 'All') return widget.items;
+    if (_selectedFilter == 'All') return _milestones;
     if (_selectedFilter == 'In Progress') {
-      return widget.items.where((i) => i.status == 'in_progress').toList();
+      return _milestones.where((i) => i.status == 'in_progress').toList();
     }
-    return widget.items
+    return _milestones
         .where(
             (i) => i.status.toLowerCase() == _selectedFilter.toLowerCase())
         .toList();
   }
 
+  /// [item] plus every descendant, so a milestone's progress accounts for work
+  /// filed under its sub-items too. Walks breadth-first with a visited set, so
+  /// a malformed parent chain can't loop forever.
+  Set<int> _subtreeIds(ConstructionItemResponse item) {
+    final ids = <int>{item.id};
+    var frontier = <int>{item.id};
+    while (frontier.isNotEmpty) {
+      final next = widget.items
+          .where((i) =>
+              i.parentId != null &&
+              frontier.contains(i.parentId) &&
+              !ids.contains(i.id))
+          .map((i) => i.id)
+          .toSet();
+      ids.addAll(next);
+      frontier = next;
+    }
+    return ids;
+  }
+
+  /// How far along one milestone is, in 0..1.
+  ///
+  /// An explicit `completed` status wins outright — the constructor said it's
+  /// done. Otherwise it's derived from the tasks under it (its own and its
+  /// sub-items'), which is the fix for the real complaint: ticking tasks used
+  /// to move nothing, because progress read milestone status alone and the
+  /// backend never rolls task completion up into the parent item.
+  ///
+  /// A milestone with no tasks and no completed status contributes 0. We don't
+  /// invent a part-score for `in_progress` — the status chip already says so,
+  /// and a made-up number is worse than an honest zero.
+  double _milestoneProgress(ConstructionItemResponse item) {
+    if (item.status == 'completed') return 1.0;
+    final ids = _subtreeIds(item);
+    final tasks =
+        widget.allTasks.where((t) => ids.contains(t.constructionItemId));
+    if (tasks.isEmpty) return 0.0;
+    final done = tasks.where((t) => t.status == 'completed').length;
+    return done / tasks.length;
+  }
+
+  /// Counts a milestone as complete when it has actually reached 100%, so the
+  /// chip agrees with the bar rather than tracking status in isolation.
   int get _completedCount =>
-      widget.items.where((i) => i.status == 'completed').length;
+      _milestones.where((i) => _milestoneProgress(i) >= 1.0).length;
   int get _inProgressCount =>
-      widget.items.where((i) => i.status == 'in_progress').length;
+      _milestones.where((i) => i.status == 'in_progress').length;
   int get _pendingCount =>
-      widget.items.where((i) => i.status == 'pending').length;
-  double get _overallProgress => widget.items.isEmpty
-      ? 0
-      : _completedCount / widget.items.length;
+      _milestones.where((i) => i.status == 'pending').length;
+
+  double get _overallProgress {
+    final milestones = _milestones;
+    if (milestones.isEmpty) return 0;
+    final total =
+        milestones.map(_milestoneProgress).fold<double>(0, (a, b) => a + b);
+    return total / milestones.length;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -265,12 +320,15 @@ class _ConstructionProgressDetailPageState
   }
 
   Widget _buildMilestoneCard(ConstructionItemResponse item, int index) {
-    final itemTasks =
-        widget.allTasks.where((t) => t.constructionItemId == item.id).toList();
+    // Same subtree the summary counts, so a card's bar can't disagree with the
+    // overall figure it feeds into.
+    final subtree = _subtreeIds(item);
+    final itemTasks = widget.allTasks
+        .where((t) => subtree.contains(t.constructionItemId))
+        .toList();
     final completedTasks =
         itemTasks.where((t) => t.status == 'completed').length;
-    final taskProgress =
-        itemTasks.isEmpty ? 0.0 : completedTasks / itemTasks.length;
+    final taskProgress = _milestoneProgress(item);
 
     final statusColor = item.status == 'completed'
         ? const Color(0xFF2E7D32)
