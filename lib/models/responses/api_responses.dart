@@ -575,7 +575,10 @@ class ApplyResponse {
   final int serviceProviderProfileId;
   final String providerDisplayName;
   final String proposal;
-  final int estimatedDurationDays;
+
+  /// `int?` server-side — the provider may leave it out. Coercing a missing
+  /// value to 0 made "not stated" read as a firm estimate of zero days.
+  final int? estimatedDurationDays;
   final String status;
   final DateTime? submittedAt;
   final DateTime createdAt;
@@ -589,7 +592,7 @@ class ApplyResponse {
     required this.serviceProviderProfileId,
     required this.providerDisplayName,
     required this.proposal,
-    required this.estimatedDurationDays,
+    this.estimatedDurationDays,
     required this.status,
     this.submittedAt,
     required this.createdAt,
@@ -604,7 +607,7 @@ class ApplyResponse {
     serviceProviderProfileId: json['serviceProviderProfileId'],
     providerDisplayName: json['providerDisplayName'] ?? '',
     proposal: json['proposal'] ?? '',
-    estimatedDurationDays: json['estimatedDurationDays'] ?? 0,
+    estimatedDurationDays: json['estimatedDurationDays'] as int?,
     status: json['status'] ?? '',
     submittedAt: json['submittedAt'] != null
         ? DateTime.parse(json['submittedAt'])

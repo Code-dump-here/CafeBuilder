@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/apply_service.dart';
+import '../widgets/confirm_dialog.dart';
 import 'collaboration_workspace_page.dart';
 
 class ProposalsPage extends StatefulWidget {
@@ -29,6 +30,10 @@ class _ProposalsPageState extends State<ProposalsPage> {
   bool _loading = true;
   String? _error;
   List<ApplyResponse> _applies = [];
+
+  /// Id of the application currently being declined, so only that card shows a
+  /// spinner and the rest stay interactive.
+  int? _rejectingId;
 
   // Local copies, updated on a successful accept, so a slot filled during this
   // visit still blocks a second accept if we haven't navigated away yet.
@@ -140,6 +145,41 @@ class _ProposalsPageState extends State<ProposalsPage> {
           SnackBar(content: Text('Error accepting proposal: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _rejectApply(ApplyResponse apply) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Decline this application?',
+      message:
+          '${apply.providerDisplayName} will be told their application wasn\'t '
+          'selected. This cannot be undone, but they can apply again while the '
+          'post is open.',
+      confirmLabel: 'Decline',
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _rejectingId = apply.id);
+
+    try {
+      await ApplyService.rejectApply(apply.id);
+      if (!mounted) return;
+      // Refetch rather than patching locally: the row's status is the server's
+      // to decide, and a refresh also picks up anything else that moved while
+      // this page was open.
+      await _fetchApplies();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Application declined.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not decline: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _rejectingId = null);
     }
   }
 
@@ -259,9 +299,19 @@ class _ProposalsPageState extends State<ProposalsPage> {
             children: [
               const Icon(Icons.timer_outlined, size: 14, color: AppColors.placeholder),
               const SizedBox(width: 6),
+              // Duration is optional on the wire; say so rather than printing
+              // a zero the provider never claimed.
               Text(
-                'Est. Duration: ${apply.estimatedDurationDays} days',
-                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                apply.estimatedDurationDays != null
+                    ? 'Est. Duration: ${apply.estimatedDurationDays} days'
+                    : 'Est. Duration: not stated',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: apply.estimatedDurationDays != null
+                      ? AppColors.espresso
+                      : AppColors.placeholder,
+                ),
               ),
             ],
           ),
@@ -271,14 +321,25 @@ class _ProposalsPageState extends State<ProposalsPage> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {},
+                    // Declining stays available even when the slot is full —
+                    // that's precisely when an owner wants to clear the queue,
+                    // and the server allows it for any pending application.
+                    onPressed: _rejectingId != null ? null : () => _rejectApply(apply),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.outlineVariant),
-                      foregroundColor: AppColors.espresso,
+                      side: BorderSide(color: Colors.red.shade200),
+                      foregroundColor: Colors.red.shade700,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: Text('Message', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+                    child: _rejectingId == apply.id
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text('Decline',
+                            style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold, fontSize: 13)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -286,7 +347,9 @@ class _ProposalsPageState extends State<ProposalsPage> {
                   child: ElevatedButton(
                     // Greyed out rather than hidden, so it's clear the applicant
                     // is still there and why they can't be taken on.
-                    onPressed: blockedReason != null ? null : () => _acceptApply(apply),
+                    onPressed: blockedReason != null || _rejectingId != null
+                        ? null
+                        : () => _acceptApply(apply),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.espresso,
                       foregroundColor: Colors.white,

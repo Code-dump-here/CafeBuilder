@@ -47,4 +47,16 @@ class ApplyService {
     final body = ApiClient.parseBody(response);
     return ProjectWorkingResponse.fromJson(body);
   }
+
+  /// Owner declines an application. Only valid while it's still `pending` —
+  /// the server 409s once it has been accepted or already rejected.
+  ///
+  /// Unlike accept, this creates no engagement: the row just moves to
+  /// `rejected` and the provider is notified.
+  static Future<ApplyResponse> rejectApply(int applyId) async {
+    final response = await ApiClient.authPost('/applies/$applyId/reject', {});
+    ApiClient.throwIfError(response);
+    final body = ApiClient.parseBody(response);
+    return ApplyResponse.fromJson(body);
+  }
 }

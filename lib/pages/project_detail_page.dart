@@ -776,10 +776,15 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       ))
                   .toList(),
             ),
+          ],
+          // Deliberately outside the `_stillRecruiting` block above, and fed
+          // `_openPosts` rather than `_stillRecruiting`. Applications keep
+          // arriving on a post whose slot is now filled; the owner still needs
+          // to see and decline them. `ProposalsPage` disables Accept per-card
+          // with a reason when the slot is gone, so nothing unacceptable can be
+          // accepted from here.
+          if (_openPosts.isNotEmpty) ...[
             const SizedBox(height: 10),
-            // Applications only used to be reachable from the no-providers
-            // state, so once anyone joined you could no longer accept people
-            // applying to your still-open posts.
             Center(
               child: TextButton.icon(
                 onPressed: () {
@@ -787,7 +792,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ProposalsPage(
-                        openPosts: _stillRecruiting,
+                        openPosts: _openPosts,
                         designTaken: _designTaken,
                         constructionTaken: _constructionTaken,
                       ),
@@ -903,10 +908,20 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     }
   }
 
-  List<OpenPostResponse> get _stillRecruiting =>
+  /// Every post still open, whether or not its role has since been filled.
+  ///
+  /// Distinct from [_stillRecruiting]: a stale post is one whose slot is taken,
+  /// so it shouldn't be advertised as recruiting — but it stays open on the
+  /// marketplace and keeps collecting applications, and the owner still needs
+  /// to reach those applicants to decline them. Gating "View applications" on
+  /// [_stillRecruiting] hid the button exactly when the queue needed clearing.
+  List<OpenPostResponse> get _openPosts =>
       (_project?.openPosts ?? const <OpenPostResponse>[])
-          .where((p) => p.status.toLowerCase() == 'open' && !_postIsStale(p))
+          .where((p) => p.status.toLowerCase() == 'open')
           .toList();
+
+  List<OpenPostResponse> get _stillRecruiting =>
+      _openPosts.where((p) => !_postIsStale(p)).toList();
 
   List<OpenPostResponse> get _stalePosts =>
       (_project?.openPosts ?? const <OpenPostResponse>[]).where(_postIsStale).toList();
