@@ -107,12 +107,12 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
   /// Design & Build" — title/CTA read from the loaded provider's actual
   /// capability rather than always saying "Designer".
   String get _pageTitle => switch (_provider?.capability) {
-        'constructor' => 'Contractor Detail',
+        'constructor' => 'Constructor Detail',
         'both' => 'Studio Detail',
         _ => 'Designer Detail',
       };
   String get _bookCta => switch (_provider?.capability) {
-        'constructor' => 'Book Contractor',
+        'constructor' => 'Book Constructor',
         'both' => 'Book Design & Build Studio',
         _ => 'Book Designer',
       };

@@ -10,7 +10,7 @@ import 'chat_thread_page.dart';
 ///
 /// Chat used to be a single button that resolved the design engagement — or,
 /// when there wasn't one, whichever engagement the API happened to return
-/// first. On a project with both a designer and a contractor that meant one of
+/// first. On a project with both a designer and a constructor that meant one of
 /// them was unreachable, and the thread could open against someone who had
 /// already been rejected. Every conversation now starts from an explicit
 /// choice on this screen.
@@ -88,7 +88,7 @@ class _MessagesPageState extends State<MessagesPage> {
 
   String _roleLabel(String contractType) => switch (contractType.toLowerCase()) {
     'design' => 'Designer',
-    'construction' => 'Contractor',
+    'construction' => 'Constructor',
     'both' => 'Design & Build',
     final other => other.isEmpty ? 'Provider' : other,
   };
@@ -212,7 +212,7 @@ class _MessagesPageState extends State<MessagesPage> {
         icon: Icons.forum_outlined,
         title: 'No one to message yet',
         body:
-            'Once you invite a designer or a contractor to this project — or '
+            'Once you invite a designer or a constructor to this project — or '
             'accept an application — they will show up here and you can start '
             'the conversation.',
       );

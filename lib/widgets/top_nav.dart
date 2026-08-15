@@ -67,15 +67,20 @@ class _TopNavState extends State<TopNav> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              widget.title,
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                color: AppColors.espresso,
-                letterSpacing: -0.5,
+            Expanded(
+              child: Text(
+                widget.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.espresso,
+                  letterSpacing: -0.5,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             Row(
               children: [
                 GestureDetector(

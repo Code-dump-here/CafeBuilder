@@ -866,10 +866,14 @@ class AiDesignReportPage extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            z.label,
-                            style: GoogleFonts.inter(
-                                fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                          Flexible(
+                            child: Text(
+                              z.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                  fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                            ),
                           ),
                           if (z.isStaffOnly) ...[
                             const SizedBox(width: 6),

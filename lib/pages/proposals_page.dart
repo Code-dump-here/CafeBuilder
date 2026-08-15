@@ -259,9 +259,13 @@ class _ProposalsPageState extends State<ProposalsPage> {
                     child: Icon(Icons.person, color: AppColors.espresso, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    apply.providerDisplayName,
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                  Flexible(
+                    child: Text(
+                      apply.providerDisplayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                    ),
                   ),
                 ],
               ),

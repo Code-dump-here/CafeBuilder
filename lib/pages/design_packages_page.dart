@@ -154,13 +154,21 @@ class DesignPackagesPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(designerName, style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.espresso)),
-                  const SizedBox(height: 4),
-                  Text(designerRole, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(designerName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                    const SizedBox(height: 4),
+                    Text(designerRole,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
               ),
             ],
           ),

@@ -1160,11 +1160,15 @@ class DashboardTabState extends State<DashboardTab> {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      doc.subtitle,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
+                    Expanded(
+                      child: Text(
+                        doc.subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ],

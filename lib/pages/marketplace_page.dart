@@ -482,16 +482,24 @@ class _MarketplacePageState extends State<MarketplacePage>
                     const Icon(Icons.location_on,
                         size: 12, color: AppColors.placeholder),
                     const SizedBox(width: 4),
-                    Text(project.location,
-                        style: GoogleFonts.inter(
-                            fontSize: 11, color: AppColors.textSecondary)),
+                    Flexible(
+                      child: Text(project.location,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                              fontSize: 11, color: AppColors.textSecondary)),
+                    ),
                     const SizedBox(width: 12),
                     const Icon(Icons.color_lens_outlined,
                         size: 12, color: AppColors.placeholder),
                     const SizedBox(width: 4),
-                    Text(project.style,
-                        style: GoogleFonts.inter(
-                            fontSize: 11, color: AppColors.textSecondary)),
+                    Flexible(
+                      child: Text(project.style,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                              fontSize: 11, color: AppColors.textSecondary)),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),

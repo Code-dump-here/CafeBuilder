@@ -52,7 +52,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   /// Who a contract came from. Contracts are fetched per engagement and carry
   /// its id, so the provider is resolved from the engagement list rather than
   /// from the contract's own free-text party info, which the provider may
-  /// leave blank. A project can run a designer and a contractor at once, and
+  /// leave blank. A project can run a designer and a constructor at once, and
   /// "Contract" on its own gives the owner no way to tell them apart.
   String _providerForContract(ContractResponse c) {
     for (final w in _projectWorkings) {
@@ -62,7 +62,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           : 'Provider #${w.serviceProviderProfileId}';
       final role = switch (w.contractType.toLowerCase()) {
         'design' => 'Designer',
-        'construction' => 'Contractor',
+        'construction' => 'Constructor',
         'both' => 'Design & Build',
         _ => '',
       };
@@ -70,6 +70,18 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     }
     return '';
   }
+
+  /// Whether the owner has signed a contract yet, in the owner's own terms.
+  /// The raw status ('pending_otp') answers the question in the API's words,
+  /// not in words the person being asked to sign would use.
+  String _signingStateLabel(ContractResponse c) =>
+      switch (c.status.toLowerCase()) {
+        'confirmed' => 'Signed',
+        'pending_otp' => 'Not signed yet — waiting for your OTP',
+        'drafted' => 'Not signed yet — not sent for signing',
+        'cancelled' => 'Cancelled',
+        final other => other,
+      };
 
   /// Designs still waiting on the owner's approve/revision decision.
   List<DesignResponse> get _designsAwaitingReview => _designs
@@ -539,17 +551,22 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              Expanded(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Total Budget', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
                   Text(
                     _formatMoneyFull(project.budget),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
                   ),
                 ],
+                ),
               ),
+              const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -1580,9 +1597,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                   return ListTile(
                     leading: const Icon(Icons.description_outlined, color: AppColors.espresso),
                     title: Text(c.title.isNotEmpty ? c.title : 'Contract #${c.id}'),
-                    // Which provider drew this one up — the whole point of the
-                    // picker when a project has more than one of them.
-                    subtitle: from.isEmpty ? null : Text(from),
+                    // Which provider drew this one up, and whether it still
+                    // needs signing — the two things the picker is for.
+                    subtitle: Text(
+                      [from, _signingStateLabel(c)]
+                          .where((part) => part.isNotEmpty)
+                          .join('  ·  '),
+                    ),
                     onTap: () {
                       Navigator.pop(ctx);
                       Navigator.push(

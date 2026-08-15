@@ -164,23 +164,27 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // The engagement id meant nothing to an owner
-                          // holding two contracts; the provider's name is
-                          // what tells them whose contract this is.
-                          _buildSectionTitle(
-                            widget.providerName.isEmpty ? 'Engagement' : 'From',
-                          ),
-                          _buildText(
-                            widget.providerName.isEmpty
-                                ? '#${_contract.projectWorkingId}'
-                                : widget.providerName,
-                            isBold: true,
-                          ),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // The engagement id meant nothing to an owner
+                            // holding two contracts; the provider's name is
+                            // what tells them whose contract this is.
+                            _buildSectionTitle(
+                              widget.providerName.isEmpty ? 'Engagement' : 'From',
+                            ),
+                            _buildText(
+                              widget.providerName.isEmpty
+                                  ? '#${_contract.projectWorkingId}'
+                                  : widget.providerName,
+                              isBold: true,
+                              maxLines: 2,
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -190,6 +194,8 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
                       )
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  _buildSigningNotice(),
                   const SizedBox(height: 24),
                   const Divider(color: Color(0xFFEEEEEE), thickness: 1),
                   const SizedBox(height: 20),
@@ -374,6 +380,89 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
     );
   }
 
+  /// Says plainly whether this contract has been signed.
+  ///
+  /// The status chip above answers in the API's vocabulary — 'pending_otp'
+  /// means nothing to the person being asked to sign — so this states it in
+  /// the owner's terms and names the next step when there is one.
+  Widget _buildSigningNotice() {
+    final status = _contract.status.toLowerCase();
+
+    final (IconData icon, Color fg, Color bg, String title, String detail) =
+        switch (status) {
+      'confirmed' => (
+        Icons.verified_rounded,
+        const Color(0xFF2E7D32),
+        const Color(0xFFE8F5E9),
+        'You have signed this contract',
+        _contract.confirmedAt != null
+            ? 'Signed on ${DateFormat('MMM dd, yyyy').format(_contract.confirmedAt!.toLocal())} at ${DateFormat('hh:mm a').format(_contract.confirmedAt!.toLocal())}.'
+            : 'The work it covers is unlocked.',
+      ),
+      'pending_otp' => (
+        Icons.hourglass_bottom_rounded,
+        const Color(0xFFF57F17),
+        const Color(0xFFFFF8E1),
+        'You have not signed this yet',
+        'An OTP has been sent to your email. Enter it below to sign.',
+      ),
+      'cancelled' => (
+        Icons.cancel_outlined,
+        const Color(0xFFC62828),
+        const Color(0xFFFFEBEE),
+        'This contract was cancelled',
+        'It cannot be signed. A new one has to be drawn up.',
+      ),
+      _ => (
+        Icons.edit_document,
+        const Color(0xFF616161),
+        const Color(0xFFF5F5F5),
+        'You have not signed this yet',
+        'It is still a draft — send the OTP when you are ready to sign.',
+      ),
+    };
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: fg),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: fg,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  detail,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDateColumn(String title, DateTime date) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,9 +489,11 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
     );
   }
 
-  Widget _buildText(String text, {bool isBold = false, Color color = AppColors.textPrimary, double fontSize = 14}) {
+  Widget _buildText(String text, {bool isBold = false, Color color = AppColors.textPrimary, double fontSize = 14, int? maxLines}) {
     return Text(
       text,
+      maxLines: maxLines,
+      overflow: maxLines == null ? null : TextOverflow.ellipsis,
       style: GoogleFonts.inter(
         fontSize: fontSize,
         fontWeight: isBold ? FontWeight.bold : FontWeight.normal,

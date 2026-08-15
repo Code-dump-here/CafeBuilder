@@ -92,13 +92,13 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = 'Failed to load contractor profile';
+          _error = 'Failed to load constructor profile';
         });
       }
     }
   }
 
-  String get _displayName => _provider?.displayName ?? 'Contractor';
+  String get _displayName => _provider?.displayName ?? 'Constructor';
   String get _initial => _displayName.isNotEmpty ? _displayName[0].toUpperCase() : 'C';
 
   @override
@@ -279,7 +279,7 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
                       elevation: 0,
                     ),
                     child: Text(
-                      'Hire Contractor',
+                      'Hire Constructor',
                       style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                     ),
                   ),
@@ -542,18 +542,24 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
-                  ),
-                  Text(
-                    role,
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                    ),
+                    Text(
+                      role,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
