@@ -10,10 +10,15 @@ class ChatThreadPage extends StatefulWidget {
   final int conversationId;
   final String title;
 
+  /// Optional line under the title — the other party's role, so the thread
+  /// always says who is on the far end of it.
+  final String? subtitle;
+
   const ChatThreadPage({
     super.key,
     required this.conversationId,
     required this.title,
+    this.subtitle,
   });
 
   @override
@@ -200,20 +205,32 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
           icon: const Icon(Icons.arrow_back, color: AppColors.espresso),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          widget.title,
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.espresso,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.espresso,
+              ),
+            ),
+            if ((widget.subtitle ?? '').isNotEmpty)
+              Text(
+                widget.subtitle!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+          ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline, color: AppColors.espresso),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: Column(
         children: [

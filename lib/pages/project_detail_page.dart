@@ -15,8 +15,7 @@ import '../services/construction_service.dart';
 import '../services/design_service.dart';
 import '../widgets/notifications_sheet.dart';
 import 'home_page.dart';
-import 'chat_thread_page.dart';
-import '../services/chat_service.dart';
+import 'messages_page.dart';
 import '../services/post_service.dart';
 import 'edit_project_page.dart';
 import 'ai_advice_page.dart';
@@ -1352,9 +1351,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
   Future<void> _navigateToWorkspace(
     BuildContext context,
-    String targetContractType, {
-    bool isChat = false,
-  }) async {
+    String targetContractType,
+  ) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1377,8 +1375,15 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         final other => other,
       };
 
+      // A rejected or terminated engagement is over — opening its workspace
+      // would show the work of a provider no longer on the project.
+      const live = {'requested', 'accepted', 'completed'};
+      final candidates = workings.items
+          .where((w) => live.contains(w.status.toLowerCase()))
+          .toList();
+
       ProjectWorkingResponse? matchedWorking;
-      for (final w in workings.items) {
+      for (final w in candidates) {
         final type = w.contractType.toLowerCase();
         // 'both' means one provider covering design and construction.
         if (type == target || type == 'both') {
@@ -1387,9 +1392,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         }
       }
 
-      if (matchedWorking == null && workings.items.isNotEmpty) {
+      if (matchedWorking == null && candidates.isNotEmpty) {
         // Fallback to first available if we are looking for a generic one
-        matchedWorking = workings.items.first;
+        matchedWorking = candidates.first;
       }
 
       if (matchedWorking == null) {
@@ -1402,23 +1407,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         return;
       }
 
-      if (isChat) {
-        // conversationId is a separate entity from the engagement id —
-        // find (or create) the real thread before opening it.
-        final conversationId = await ChatService.getOrCreateConversation(matchedWorking.id);
-        if (mounted) {
-          Navigator.pop(context); // close dialog
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatThreadPage(
-                conversationId: conversationId,
-                title: matchedWorking!.providerDisplayName.isNotEmpty ? 'Chat with ${matchedWorking.providerDisplayName}' : 'Chat',
-              ),
-            ),
-          );
-        }
-      } else if (mounted) {
+      if (mounted) {
         final workingId = matchedWorking.id;
         Navigator.pop(context); // close dialog
         Navigator.push(
@@ -1469,7 +1458,18 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 Icons.forum_outlined,
                 'Message',
                 onTap: () {
-                  _navigateToWorkspace(context, 'designer', isChat: true);
+                  // Always let the owner pick the person first — a project can
+                  // have a designer and a contractor, and guessing picked one
+                  // of them and hid the other.
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MessagesPage(
+                        projectId: widget.projectId,
+                        projectName: _project?.name,
+                      ),
+                    ),
+                  );
                 },
               ),
             ],
