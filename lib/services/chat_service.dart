@@ -57,10 +57,18 @@ class ChatService {
   /// (projectWorkingId). Finds the existing thread for this engagement, or
   /// creates one if none exists yet. Always resolve this before opening a
   /// chat thread — the engagement id is NOT a valid conversationId.
+  ///
+  /// The server uses `projectWorkingId` only to locate the project and check
+  /// membership: the list it returns holds the threads of *every* engagement
+  /// on that project, most recently active first. Taking the first row would
+  /// therefore open whichever thread was last touched — quite possibly the
+  /// other provider's. The engagement has to be matched here, on the way back.
   static Future<int> getOrCreateConversation(int projectWorkingId) async {
     final listResponse = await ApiClient.authGet('/chat/conversations', {
       'projectWorkingId': projectWorkingId,
-      'pageSize': 1,
+      // Page size is the server's maximum: this project's other engagements
+      // share the page, so a small one could push our thread off it.
+      'pageSize': 100,
     });
     ApiClient.throwIfError(listResponse);
     final listBody = ApiClient.parseBody(listResponse);
@@ -68,14 +76,22 @@ class ChatService {
       listBody,
       ConversationResponse.fromJson,
     );
-    if (existing.items.isNotEmpty) return existing.items.first.id;
+    for (final conversation in existing.items) {
+      if (conversation.projectWorkingId == projectWorkingId) {
+        return conversation.id;
+      }
+    }
 
     final createResponse = await ApiClient.authPost('/chat/conversations', {
       'projectWorkingId': projectWorkingId,
     });
     ApiClient.throwIfError(createResponse);
+    // Creation now happens once per engagement rather than once per project,
+    // so this path is hit routinely — handle both the flat payload and the
+    // { data: { ... } } wrapper, as postMessage already does.
+    final createdBody = ApiClient.parseBody(createResponse);
     final created = ConversationResponse.fromJson(
-      ApiClient.parseBody(createResponse),
+      (createdBody['data'] as Map<String, dynamic>?) ?? createdBody,
     );
     return created.id;
   }
