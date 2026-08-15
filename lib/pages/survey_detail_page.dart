@@ -8,11 +8,12 @@ import '../widgets/confirm_dialog.dart';
 /// Site surveys filed against this project's engagements.
 ///
 /// A survey is the provider's record of the site's existing condition before
-/// work starts: a version, a free-text condition note, and optionally an
-/// uploaded report. The owner reads them here; they're authored on the web app.
+/// work starts: a free-text condition note and optionally an uploaded report.
+/// The owner reads them here; they're authored on the web app.
 ///
-/// Newest version first, since that's the one that matters and older rows are
-/// history rather than a checklist.
+/// Most recently filed first, since that's the one that describes the site now
+/// and older rows are history rather than a checklist. Ordered by date rather
+/// than by the version number, which is being retired backend-side.
 class SurveyDetailPage extends StatelessWidget {
   final List<SurveyResponse> surveys;
 
@@ -20,11 +21,7 @@ class SurveyDetailPage extends StatelessWidget {
 
   List<SurveyResponse> get _ordered {
     final sorted = [...surveys];
-    sorted.sort((a, b) {
-      final byVersion = b.version.compareTo(a.version);
-      if (byVersion != 0) return byVersion;
-      return b.createdAt.compareTo(a.createdAt);
-    });
+    sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return sorted;
   }
 
@@ -140,24 +137,7 @@ class SurveyDetailPage extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryFixed.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'v${survey.version.toStringAsFixed(1)}',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.espresso,
-                  ),
-                ),
-              ),
               if (isLatest) ...[
-                const SizedBox(width: 8),
                 Text(
                   'Latest',
                   style: GoogleFonts.inter(

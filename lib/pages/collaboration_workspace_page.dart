@@ -866,12 +866,10 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   /// Read-only summary of the site surveys filed against this project. Authored
   /// on the web app by the provider; the owner reviews them here.
   Widget _buildSurveySection() {
-    // Newest first — the latest version is the one that describes the site now.
+    // Most recently filed first — that's the one describing the site now.
+    // Ordered by date, not by the version number that is being retired.
     final ordered = [..._surveys]
-      ..sort((a, b) {
-        final byVersion = b.version.compareTo(a.version);
-        return byVersion != 0 ? byVersion : b.createdAt.compareTo(a.createdAt);
-      });
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final latest = ordered.isEmpty ? null : ordered.first;
 
     return Container(
@@ -936,28 +934,14 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                   fontSize: 12, color: AppColors.placeholder),
             )
           else ...[
-            Row(
-              children: [
-                Text('v${latest.version.toStringAsFixed(1)}',
-                    style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.espresso)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    (latest.conditionNote?.trim().isNotEmpty ?? false)
-                        ? latest.conditionNote!.trim()
-                        : 'No condition note recorded.',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                        fontSize: 12,
-                        height: 1.4,
-                        color: AppColors.textSecondary),
-                  ),
-                ),
-              ],
+            Text(
+              (latest.conditionNote?.trim().isNotEmpty ?? false)
+                  ? latest.conditionNote!.trim()
+                  : 'No condition note recorded.',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                  fontSize: 12, height: 1.4, color: AppColors.textSecondary),
             ),
           ],
         ],
