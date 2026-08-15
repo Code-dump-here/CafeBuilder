@@ -6,13 +6,11 @@ class SurveyService {
     required int projectWorkingId,
     required String conditionNote,
     required String reportUrl,
-    required int createdBy,
   }) async {
     final response = await ApiClient.authPost('/surveys', {
       'projectWorkingId': projectWorkingId,
       'conditionNote': conditionNote,
       'reportUrl': reportUrl,
-      'createdBy': createdBy,
     });
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
