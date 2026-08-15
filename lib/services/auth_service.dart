@@ -56,6 +56,33 @@ class AuthService {
     ApiClient.throwIfError(response);
   }
 
+  /// Emails a 6-digit code to [email] for the post-registration account check.
+  ///
+  /// `/otp/send` and `/otp/verify` are deliberately anonymous on the server —
+  /// they're the same pair the password-reset flow uses, and a freshly
+  /// registered account resolves fine by email.
+  static Future<void> sendAccountOtp(String email) async {
+    final response = await ApiClient.post('/otp/send', {'email': email});
+    ApiClient.throwIfError(response);
+  }
+
+  /// Checks the code from [sendAccountOtp]. Throws [ApiException] with the
+  /// server's message (400 "Mã OTP không đúng hoặc đã hết hạn") when wrong,
+  /// so callers can surface it directly.
+  ///
+  /// Note this proves the user controls the mailbox but does not record
+  /// anything server-side — the backend never writes `Account.EmailVerifiedAt`.
+  static Future<void> verifyAccountOtp({
+    required String email,
+    required String code,
+  }) async {
+    final response = await ApiClient.post(
+      '/otp/verify',
+      {'email': email, 'code': code},
+    );
+    ApiClient.throwIfError(response);
+  }
+
   /// Resets the password using the OTP emailed by [forgotPassword]. On
   /// success the backend revokes all existing refresh tokens, so the caller
   /// must send the user back to `/login` — there is no session to keep.

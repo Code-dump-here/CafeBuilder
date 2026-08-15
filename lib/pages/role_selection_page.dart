@@ -51,7 +51,13 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
       // so back-navigation must not return to a re-submittable register
       // form (see login_page.dart, which does the same after a successful
       // sign-in).
-      Navigator.pushReplacementNamed(context, '/verify-account');
+      Navigator.pushReplacementNamed(
+        context,
+        '/verify-account',
+        // The verify screen needs an address to send the code to; register
+        // does not sign the user in, so it can't look one up itself.
+        arguments: {'email': email},
+      );
     } on ApiException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
