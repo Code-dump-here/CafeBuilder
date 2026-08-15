@@ -753,10 +753,20 @@ class SurveyResponse {
   final int projectWorkingId;
   final double version;
   final String? conditionNote;
+
+  /// Raw object name on the bucket — NOT openable. Kept because the backend
+  /// still sends it and older rows may only have this.
   final String? reportUrl;
+
+  /// Absolute public URL the backend resolves for us. Always prefer this when
+  /// opening the report; `reportUrl` on its own 404s.
+  final String? reportViewUrl;
   final int createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// The link to hand to a browser, or null when no report was uploaded.
+  String? get openableReportUrl => reportViewUrl ?? reportUrl;
 
   SurveyResponse({
     required this.id,
@@ -764,6 +774,7 @@ class SurveyResponse {
     required this.version,
     this.conditionNote,
     this.reportUrl,
+    this.reportViewUrl,
     required this.createdBy,
     required this.createdAt,
     required this.updatedAt,
@@ -775,6 +786,7 @@ class SurveyResponse {
     version: (json['version'] as num?)?.toDouble() ?? 0.0,
     conditionNote: json['conditionNote'],
     reportUrl: json['reportUrl'],
+    reportViewUrl: json['reportViewUrl'],
     createdBy: json['createdBy'] ?? 0,
     createdAt: _parseDate(json['createdAt']),
     updatedAt: _parseDate(json['updatedAt']),

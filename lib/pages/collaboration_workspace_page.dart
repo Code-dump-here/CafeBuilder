@@ -7,9 +7,11 @@ import '../services/contract_service.dart';
 import '../services/design_service.dart';
 import '../services/construction_service.dart';
 import '../services/review_service.dart';
+import '../services/survey_service.dart';
 import 'contract_otp_page.dart';
 import 'design_deliverables_detail_page.dart';
 import 'construction_progress_detail_page.dart';
+import 'survey_detail_page.dart';
 import '../widgets/confirm_dialog.dart';
 
 class CollaborationWorkspacePage extends StatefulWidget {
@@ -31,6 +33,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   List<DesignResponse> _designs = [];
   List<ConstructionItemResponse> _constructionItems = [];
   List<ConstructionTaskResponse> _allTasks = [];
+  List<SurveyResponse> _surveys = [];
 
   // Guards against a fast double-tap firing the same request twice.
   final Set<int> _pendingDesignActionIds = {};
@@ -81,18 +84,28 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       List<DesignResponse> allDesigns = [];
       List<ConstructionItemResponse> allItems = [];
       List<ConstructionTaskResponse> allTasks = [];
+      List<SurveyResponse> allSurveys = [];
 
       for (int wId in allWorkingIds) {
         final results = await Future.wait([
           ContractService.getContracts(projectWorkingId: wId, pageSize: 50),
           DesignService.getDesigns(projectWorkingId: wId, pageSize: 50),
           ConstructionService.getConstructionItems(projectWorkingId: wId, pageSize: 50),
+          // Surveys are per-engagement like the rest; a failure here shouldn't
+          // cost the owner the whole workspace, so it degrades to an empty list.
+          SurveyService.getSurveys(projectWorkingId: wId, pageSize: 50)
+              .then<Object?>((r) => r)
+              .catchError((_) => null),
         ]);
-        
+
         allContracts.addAll((results[0] as PaginationResponse<ContractResponse>).items);
         allDesigns.addAll((results[1] as PaginationResponse<DesignResponse>).items);
         final itemsRes = (results[2] as PaginationResponse<ConstructionItemResponse>);
         allItems.addAll(itemsRes.items);
+        final surveyRes = results[3];
+        if (surveyRes is PaginationResponse<SurveyResponse>) {
+          allSurveys.addAll(surveyRes.items);
+        }
 
         for (final item in itemsRes.items) {
           try {
@@ -113,6 +126,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
           _designs = DesignService.ownerVisible(allDesigns);
           _constructionItems = allItems;
           _allTasks = allTasks;
+          _surveys = allSurveys;
           _loading = false;
         });
       }
@@ -730,7 +744,13 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                           const SizedBox(height: 8),
                         ],
 
-                        // 2. Designs Section (Designer Deliverables & Approvals)
+                        // 2. Site Survey (the provider's record of existing
+                        //    conditions — comes before design work in the real
+                        //    sequence, so it reads first here too).
+                        _buildSurveySection(),
+                        const SizedBox(height: 24),
+
+                        // 3. Designs Section (Designer Deliverables & Approvals)
                         _buildDesignSection(),
                         const SizedBox(height: 24),
 
@@ -837,6 +857,108 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
             ),
             child: const Text('View', style: TextStyle(decoration: TextDecoration.underline, fontSize: 12)),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Read-only summary of the site surveys filed against this project. Authored
+  /// on the web app by the provider; the owner reviews them here.
+  Widget _buildSurveySection() {
+    // Newest first — the latest version is the one that describes the site now.
+    final ordered = [..._surveys]
+      ..sort((a, b) {
+        final byVersion = b.version.compareTo(a.version);
+        return byVersion != 0 ? byVersion : b.createdAt.compareTo(a.createdAt);
+      });
+    final latest = ordered.isEmpty ? null : ordered.first;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Site Survey',
+                style: GoogleFonts.playfairDisplay(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.espresso),
+              ),
+              if (ordered.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            SurveyDetailPage(surveys: _surveys),
+                      ),
+                    ).then((_) => _loadWorkspaceData());
+                  },
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                            color: AppColors.primaryFixed.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(6)),
+                        child: Text(
+                            '${ordered.length} ${ordered.length == 1 ? 'Survey' : 'Surveys'}',
+                            style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: AppColors.espresso,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.chevron_right,
+                          size: 18, color: AppColors.placeholder),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (latest == null)
+            Text(
+              'No site survey filed yet.',
+              style: GoogleFonts.inter(
+                  fontSize: 12, color: AppColors.placeholder),
+            )
+          else ...[
+            Row(
+              children: [
+                Text('v${latest.version.toStringAsFixed(1)}',
+                    style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.espresso)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    (latest.conditionNote?.trim().isNotEmpty ?? false)
+                        ? latest.conditionNote!.trim()
+                        : 'No condition note recorded.',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: AppColors.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
