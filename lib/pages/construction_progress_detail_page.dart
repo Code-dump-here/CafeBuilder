@@ -47,9 +47,9 @@ class _ConstructionProgressDetailPageState
   /// [item] plus every descendant, so a milestone's progress accounts for work
   /// filed under its sub-items too. Walks breadth-first with a visited set, so
   /// a malformed parent chain can't loop forever.
-  Set<int> _subtreeIds(ConstructionItemResponse item) {
-    final ids = <int>{item.id};
-    var frontier = <int>{item.id};
+  Set<String> _subtreeIds(ConstructionItemResponse item) {
+    final ids = <String>{item.id};
+    var frontier = <String>{item.id};
     while (frontier.isNotEmpty) {
       final next = widget.items
           .where((i) =>

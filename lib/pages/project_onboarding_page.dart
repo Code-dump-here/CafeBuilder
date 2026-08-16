@@ -177,8 +177,8 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
 
   Future<void> _startDesignSynthesis() async {
     setState(() => _isSaving = true);
-    int briefId = 0;
-    int projectId = 0;
+    String briefId = '';
+    String projectId = '';
     String? errorMessage;
 
     // Resolve address – never send an empty string

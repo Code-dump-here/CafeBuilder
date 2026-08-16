@@ -1,5 +1,5 @@
 class CreateProjectRequest {
-  final int ownerId;
+  final String ownerId;
   final String name;
   final String address;
   final double areaM2;

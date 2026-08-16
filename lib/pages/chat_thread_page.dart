@@ -7,7 +7,7 @@ import '../services/chat_service.dart';
 import '../services/api_client.dart';
 
 class ChatThreadPage extends StatefulWidget {
-  final int conversationId;
+  final String conversationId;
   final String title;
 
   /// Optional line under the title — the other party's role, so the thread
@@ -33,7 +33,7 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
   bool _isLoading = true;
   bool _isSending = false;
   String? _error;
-  int? _currentAccountId;
+  String? _currentAccountId;
 
   final List<PlatformFile> _selectedFiles = [];
   Timer? _pollingTimer;

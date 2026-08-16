@@ -20,7 +20,7 @@ import 'designer_detail_page.dart';
 class FindBothProvidersPage extends StatefulWidget {
   /// When browsing for a specific project, the project is already known —
   /// carried through so the hire request skips project selection.
-  final int? contextProjectId;
+  final String? contextProjectId;
   final String? contextProjectName;
 
   const FindBothProvidersPage({

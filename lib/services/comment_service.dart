@@ -13,7 +13,7 @@ class CommentService {
 
   static Future<PaginationResponse<CommentResponse>> getComments({
     required String targetType,
-    required int targetId,
+    required String targetId,
     int pageNumber = 1,
     int pageSize = 50,
   }) async {
@@ -31,7 +31,7 @@ class CommentService {
   /// The author is taken from the auth token server-side, so no id is sent.
   static Future<CommentResponse> addComment({
     required String targetType,
-    required int targetId,
+    required String targetId,
     required String body,
   }) async {
     final response = await ApiClient.authPost('/comments', {
@@ -43,7 +43,7 @@ class CommentService {
     return CommentResponse.fromJson(ApiClient.parseBody(response));
   }
 
-  static Future<void> deleteComment(int id) async {
+  static Future<void> deleteComment(String id) async {
     final response = await ApiClient.authDelete('/comments/$id');
     ApiClient.throwIfError(response);
   }
