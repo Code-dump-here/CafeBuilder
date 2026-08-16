@@ -5,8 +5,8 @@ class ConstructionService {
   // --- Milestones (Construction Items) ---
 
   static Future<ConstructionItemResponse> createMilestone({
-    required String projectWorkingId,
-    String? parentId,
+    required int projectWorkingId,
+    int? parentId,
     required String name,
     String? description,
     String? category,
@@ -28,8 +28,8 @@ class ConstructionService {
   static Future<PaginationResponse<ConstructionItemResponse>> getMilestones({
     int pageNumber = 1,
     int pageSize = 10,
-    String? projectWorkingId,
-    String? parentId,
+    int? projectWorkingId,
+    int? parentId,
     String? status,
   }) async {
     final params = <String, dynamic>{
@@ -48,8 +48,8 @@ class ConstructionService {
   static Future<PaginationResponse<ConstructionItemResponse>> getConstructionItems({
     int pageNumber = 1,
     int pageSize = 10,
-    String? projectWorkingId,
-    String? parentId,
+    int? projectWorkingId,
+    int? parentId,
     String? status,
   }) => getMilestones(
         pageNumber: pageNumber,
@@ -60,7 +60,7 @@ class ConstructionService {
       );
 
   static Future<ConstructionItemResponse> updateMilestone(
-    String id, {
+    int id, {
     String? name,
     String? description,
     String? category,
@@ -78,7 +78,7 @@ class ConstructionService {
   }
 
   static Future<ConstructionItemResponse> updateMilestoneStatus(
-    String id,
+    int id,
     String status,
   ) async {
     final response = await ApiClient.authPut('/construction-items/$id/status', {
@@ -89,7 +89,7 @@ class ConstructionService {
     return ConstructionItemResponse.fromJson(body);
   }
 
-  static Future<void> deleteMilestone(String id) async {
+  static Future<void> deleteMilestone(int id) async {
     final response = await ApiClient.authDelete('/construction-items/$id');
     ApiClient.throwIfError(response);
   }
@@ -97,7 +97,7 @@ class ConstructionService {
   // --- Tasks (Inside a Milestone) ---
 
   static Future<ConstructionTaskResponse> createTask({
-    required String constructionItemId,
+    required int constructionItemId,
     required String name,
     String? description,
     String? imageUrl,
@@ -118,7 +118,7 @@ class ConstructionService {
   static Future<PaginationResponse<ConstructionTaskResponse>> getTasks({
     int pageNumber = 1,
     int pageSize = 10,
-    required String constructionItemId,
+    required int constructionItemId,
     String? status,
   }) async {
     final params = <String, dynamic>{
@@ -134,7 +134,7 @@ class ConstructionService {
   }
 
   static Future<ConstructionTaskResponse> updateTask(
-    String id, {
+    int id, {
     String? name,
     String? description,
     String? imageUrl,
@@ -154,7 +154,7 @@ class ConstructionService {
   }
 
   static Future<ConstructionTaskResponse> updateTaskStatus(
-    String id,
+    int id,
     String status,
   ) async {
     final response = await ApiClient.authPut('/construction-tasks/$id/status', {
@@ -165,7 +165,7 @@ class ConstructionService {
     return ConstructionTaskResponse.fromJson(body);
   }
 
-  static Future<void> deleteTask(String id) async {
+  static Future<void> deleteTask(int id) async {
     final response = await ApiClient.authDelete('/construction-tasks/$id');
     ApiClient.throwIfError(response);
   }

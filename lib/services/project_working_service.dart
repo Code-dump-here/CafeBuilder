@@ -75,8 +75,8 @@ class ProjectWorkingService {
   static Future<PaginationResponse<ProjectWorkingResponse>> getProjectWorkings({
     int pageNumber = 1,
     int pageSize = 10,
-    String? projectShopOwnerId,
-    String? serviceProviderProfileId,
+    int? projectShopOwnerId,
+    int? serviceProviderProfileId,
     String? status,
   }) async {
     final params = <String, dynamic>{
@@ -92,21 +92,21 @@ class ProjectWorkingService {
     return PaginationResponse.fromJson(body, ProjectWorkingResponse.fromJson);
   }
 
-  static Future<ProjectWorkingResponse> getProjectWorking(String id) async {
+  static Future<ProjectWorkingResponse> getProjectWorking(int id) async {
     final response = await ApiClient.authGet('/project-workings/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ProjectWorkingResponse.fromJson(body);
   }
 
-  static Future<DesignBriefResponse> getProjectWorkingBrief(String id) async {
+  static Future<DesignBriefResponse> getProjectWorkingBrief(int id) async {
     final response = await ApiClient.authGet('/project-workings/$id/brief');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return DesignBriefResponse.fromJson(body);
   }
 
-  static Future<EngagementOverviewResponse> getProjectWorkingOverview(String id) async {
+  static Future<EngagementOverviewResponse> getProjectWorkingOverview(int id) async {
     final response = await ApiClient.authGet('/project-workings/$id/overview');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -114,7 +114,7 @@ class ProjectWorkingService {
   }
 
   static Future<ProjectWorkingResponse> updateProjectWorkingStatus(
-    String id,
+    int id,
     String status,
   ) async {
     final response = await ApiClient.authPut('/project-workings/$id/status', {
@@ -128,8 +128,8 @@ class ProjectWorkingService {
   // --- Direct Hires Path B ---
 
   static Future<ProjectWorkingResponse> directRequest({
-    required String projectShopOwnerId,
-    required String serviceProviderProfileId,
+    required int projectShopOwnerId,
+    required int serviceProviderProfileId,
     required String contractType,
     required String requestMessage,
   }) async {
@@ -144,21 +144,21 @@ class ProjectWorkingService {
     return ProjectWorkingResponse.fromJson(body);
   }
 
-  static Future<ProjectWorkingResponse> acceptDirectRequest(String id) async {
+  static Future<ProjectWorkingResponse> acceptDirectRequest(int id) async {
     final response = await ApiClient.authPost('/project-workings/$id/accept', {});
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ProjectWorkingResponse.fromJson(body);
   }
 
-  static Future<ProjectWorkingResponse> rejectDirectRequest(String id) async {
+  static Future<ProjectWorkingResponse> rejectDirectRequest(int id) async {
     final response = await ApiClient.authPost('/project-workings/$id/reject', {});
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ProjectWorkingResponse.fromJson(body);
   }
 
-  static Future<void> completeEngagement(String id) async {
+  static Future<void> completeEngagement(int id) async {
     final response = await ApiClient.authPost('/project-workings/$id/complete', {});
     ApiClient.throwIfError(response);
   }
@@ -173,7 +173,7 @@ class ProjectWorkingService {
   /// Asks the provider to end the engagement. Returns the updated engagement,
   /// which stays 'accepted' with [isAwaitingTerminationApproval] set.
   static Future<ProjectWorkingResponse> requestTermination(
-    String id, {
+    int id, {
     String? reason,
   }) async {
     final response = await ApiClient.authPost(
@@ -187,7 +187,7 @@ class ProjectWorkingService {
   /// Answers the provider's request. [approve] true ends the engagement;
   /// false clears the request and the work continues.
   static Future<ProjectWorkingResponse> respondToTermination(
-    String id, {
+    int id, {
     required bool approve,
     String? note,
   }) async {
@@ -203,7 +203,7 @@ class ProjectWorkingService {
   }
 
   /// Withdraws our own pending request, while the provider hasn't answered.
-  static Future<ProjectWorkingResponse> cancelTerminationRequest(String id) async {
+  static Future<ProjectWorkingResponse> cancelTerminationRequest(int id) async {
     final response = await ApiClient.authDelete(
       '/project-workings/$id/termination-request',
     );
@@ -211,7 +211,7 @@ class ProjectWorkingService {
     return ProjectWorkingResponse.fromJson(ApiClient.parseBody(response));
   }
 
-  static Future<ProjectWorkingResponse> requestCompletion(String id, {String? note}) async {
+  static Future<ProjectWorkingResponse> requestCompletion(int id, {String? note}) async {
     final response = await ApiClient.authPost('/project-workings/$id/request-completion', {
       if (note != null && note.isNotEmpty) 'note': note,
     });

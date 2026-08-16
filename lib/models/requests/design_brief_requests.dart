@@ -1,5 +1,5 @@
 class CreateDesignBriefRequest {
-  final String projectId;
+  final int projectId;
   final String targetCustomer;
   final String style;
   final String mood;

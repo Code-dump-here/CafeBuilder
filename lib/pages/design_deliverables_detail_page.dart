@@ -31,7 +31,7 @@ class _DesignDeliverablesDetailPageState
   String _selectedFilter = 'All';
   // Design ids with an approve/revision request currently in flight — guards
   // against a fast double-tap firing the request twice.
-  final Set<String> _pendingActionIds = {};
+  final Set<int> _pendingActionIds = {};
 
   static const _filters = ['All', 'Pending', 'Approved', 'Revision'];
 
@@ -75,7 +75,7 @@ class _DesignDeliverablesDetailPageState
     return _designs.where((d) => _matchesFilter(d, _selectedFilter)).toList();
   }
 
-  Future<void> _approveDesign(String designId) async {
+  Future<void> _approveDesign(int designId) async {
     if (_pendingActionIds.contains(designId)) return;
     setState(() => _pendingActionIds.add(designId));
     try {
@@ -116,7 +116,7 @@ class _DesignDeliverablesDetailPageState
     }
   }
 
-  Future<void> _requestRevision(String designId) async {
+  Future<void> _requestRevision(int designId) async {
     if (_pendingActionIds.contains(designId)) return;
     final controller = TextEditingController();
     final reason = await showDialog<String>(

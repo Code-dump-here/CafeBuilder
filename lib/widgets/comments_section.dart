@@ -13,7 +13,7 @@ import '../theme/app_colors.dart';
 /// Deleting is restricted to your own comments, matching the API.
 class CommentsSection extends StatefulWidget {
   final String targetType;
-  final String targetId;
+  final int targetId;
   final String title;
 
   const CommentsSection({
@@ -32,7 +32,7 @@ class _CommentsSectionState extends State<CommentsSection> {
   List<CommentResponse> _comments = [];
   bool _loading = true;
   bool _sending = false;
-  String? _myAccountId;
+  int? _myAccountId;
 
   @override
   void initState() {

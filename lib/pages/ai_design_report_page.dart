@@ -18,8 +18,8 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
   final String mood;
   final String role;
   final double area;
-  final String briefId;
-  final String projectId;
+  final int briefId;
+  final int projectId;
   final List<String> mustHaveZones;
   final List<String> niceToHaveZones;
   final String notes;
@@ -35,8 +35,8 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
     required this.mood,
     required this.role,
     required this.area,
-    this.briefId = '',
-    this.projectId = '',
+    this.briefId = 0,
+    this.projectId = 0,
     this.mustHaveZones = const [],
     this.niceToHaveZones = const [],
     this.notes = '',
@@ -123,7 +123,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
 
   Future<void> _startAiRecommendation() async {
     try {
-      if (widget.briefId.isEmpty) {
+      if (widget.briefId <= 0) {
         setState(() => _apiDone = true);
         return;
       }
@@ -326,7 +326,7 @@ class AiDesignReportPage extends StatelessWidget {
   final String mood;
   final String role;
   final double area;
-  final String projectId;
+  final int projectId;
   final AiRecommendationResponse? report;
 
   const AiDesignReportPage({
@@ -339,7 +339,7 @@ class AiDesignReportPage extends StatelessWidget {
     required this.mood,
     required this.role,
     required this.area,
-    this.projectId = '',
+    this.projectId = 0,
     this.report,
   });
 

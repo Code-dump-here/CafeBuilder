@@ -553,7 +553,7 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
 // ─── OTP Bottom Sheet ────────────────────────────────────────────────────────
 
 class _OtpBottomSheet extends StatefulWidget {
-  final String contractId;
+  final int contractId;
   final TextEditingController otpController;
   final ValueChanged<ContractResponse> onConfirmed;
 

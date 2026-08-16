@@ -24,7 +24,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
   List<ProjectResponse> _projects = [];
   bool _loading = true;
   String? _error;
-  final Set<String> _postedProjectIds = {};
+  final Set<int> _postedProjectIds = {};
 
   static const _coverImages = [
     'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
@@ -119,7 +119,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
   }
 
   String _coverFor(ProjectResponse p) =>
-      _coverImages[p.id.hashCode.abs() % _coverImages.length];
+      _coverImages[p.id.abs() % _coverImages.length];
 
   String _formatUpdated(DateTime dt) {
     final diff = DateTime.now().difference(dt);

@@ -52,7 +52,7 @@ class NotificationsSheetState extends State<NotificationsSheet> {
     if (type == null || id == null || !mounted) return;
 
     try {
-      String? projectId;
+      int? projectId;
       switch (type) {
         case 'project':
           projectId = id;

@@ -2,7 +2,7 @@ import '../models/responses/api_responses.dart';
 import 'api_client.dart';
 
 class CreatePostRequest {
-  final String? projectShopOwnerId;
+  final int? projectShopOwnerId;
   final String? serviceKind;
   final String title;
   final String description;
@@ -69,7 +69,7 @@ class PostService {
   static Future<PaginationResponse<PostResponse>> getPosts({
     int pageNumber = 1,
     int pageSize = 10,
-    String? projectShopOwnerId,
+    int? projectShopOwnerId,
     String? serviceKind,
     String? status,
     String? search,
@@ -88,7 +88,7 @@ class PostService {
     return PaginationResponse.fromJson(body, PostResponse.fromJson);
   }
 
-  static Future<PostResponse> getPost(String id) async {
+  static Future<PostResponse> getPost(int id) async {
     final response = await ApiClient.authGet('/posts/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -102,14 +102,14 @@ class PostService {
     return PostResponse.fromJson(body);
   }
 
-  static Future<PostResponse> updatePost(String id, UpdatePostRequest request) async {
+  static Future<PostResponse> updatePost(int id, UpdatePostRequest request) async {
     final response = await ApiClient.authPut('/posts/$id', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return PostResponse.fromJson(body);
   }
 
-  static Future<void> deletePost(String id) async {
+  static Future<void> deletePost(int id) async {
     final response = await ApiClient.authDelete('/posts/$id');
     ApiClient.throwIfError(response);
   }
@@ -117,7 +117,7 @@ class PostService {
   // --- Applies related client actions ---
 
   static Future<ApplyResponse> applyToPost({
-    required String postId,
+    required int postId,
     required String proposal,
     required int estimatedDurationDays,
   }) async {
@@ -134,8 +134,8 @@ class PostService {
   static Future<PaginationResponse<ApplyResponse>> getApplies({
     int pageNumber = 1,
     int pageSize = 10,
-    String? postId,
-    String? serviceProviderProfileId,
+    int? postId,
+    int? serviceProviderProfileId,
     String? status,
   }) async {
     final params = <String, dynamic>{
@@ -152,7 +152,7 @@ class PostService {
   }
 
   static Future<ApplyResponse> updateApplyProposal(
-    String id, {
+    int id, {
     required String proposal,
     required int estimatedDurationDays,
   }) async {
@@ -165,21 +165,21 @@ class PostService {
     return ApplyResponse.fromJson(body);
   }
 
-  static Future<ProjectWorkingResponse> acceptApply(String id) async {
+  static Future<ProjectWorkingResponse> acceptApply(int id) async {
     final response = await ApiClient.authPost('/applies/$id/accept', {});
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ProjectWorkingResponse.fromJson(body);
   }
 
-  static Future<ApplyResponse> rejectApply(String id) async {
+  static Future<ApplyResponse> rejectApply(int id) async {
     final response = await ApiClient.authPost('/applies/$id/reject', {});
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ApplyResponse.fromJson(body);
   }
 
-  static Future<void> withdrawApply(String id) async {
+  static Future<void> withdrawApply(int id) async {
     final response = await ApiClient.authDelete('/applies/$id/withdraw');
     ApiClient.throwIfError(response);
   }

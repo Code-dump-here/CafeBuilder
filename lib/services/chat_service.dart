@@ -3,9 +3,9 @@ import '../models/responses/api_responses.dart';
 import 'api_client.dart';
 
 class ChatMessageResponse {
-  final String id;
-  final String conversationId;
-  final String senderId;
+  final int id;
+  final int conversationId;
+  final int senderId;
   final String body;
   final List<String> fileUrls;
   final DateTime createdAt;
@@ -22,9 +22,9 @@ class ChatMessageResponse {
   factory ChatMessageResponse.fromJson(Map<String, dynamic> json) {
     final attachments = (json['attachments'] as List<dynamic>?) ?? [];
     return ChatMessageResponse(
-      id: json['id'] as String? ?? '',
-      conversationId: json['conversationId'] as String? ?? '',
-      senderId: json['senderId'] as String? ?? '',
+      id: json['id'] as int? ?? 0,
+      conversationId: json['conversationId'] as int? ?? 0,
+      senderId: json['senderId'] as int? ?? 0,
       body: json['body'] as String? ?? '',
       // BE returns Attachments[].viewUrl (public URL) — fall back to the
       // raw objectName (url) if a view URL wasn't resolved.
@@ -41,14 +41,14 @@ class ChatMessageResponse {
 }
 
 class ConversationResponse {
-  final String id;
-  final String projectWorkingId;
+  final int id;
+  final int projectWorkingId;
   ConversationResponse({required this.id, required this.projectWorkingId});
 
   factory ConversationResponse.fromJson(Map<String, dynamic> json) =>
       ConversationResponse(
-        id: json['id'] as String,
-        projectWorkingId: json['projectWorkingId'] as String,
+        id: json['id'] as int,
+        projectWorkingId: json['projectWorkingId'] as int,
       );
 }
 
@@ -63,7 +63,7 @@ class ChatService {
   /// on that project, most recently active first. Taking the first row would
   /// therefore open whichever thread was last touched — quite possibly the
   /// other provider's. The engagement has to be matched here, on the way back.
-  static Future<String> getOrCreateConversation(String projectWorkingId) async {
+  static Future<int> getOrCreateConversation(int projectWorkingId) async {
     final listResponse = await ApiClient.authGet('/chat/conversations', {
       'projectWorkingId': projectWorkingId,
       // Page size is the server's maximum: this project's other engagements
@@ -99,8 +99,8 @@ class ChatService {
   /// Polls for messages in a thread. BE takes conversationId as a query
   /// param and returns a bare JSON array (not the usual paginated wrapper).
   static Future<PaginationResponse<ChatMessageResponse>> getMessages(
-    String conversationId, {
-    String? sinceId,
+    int conversationId, {
+    int? sinceId,
     int pageSize = 100,
   }) async {
     final response = await ApiClient.authGet('/chat/messages', {
@@ -125,7 +125,7 @@ class ChatService {
   }
 
   static Future<ChatMessageResponse> postMessage(
-    String conversationId,
+    int conversationId,
     String bodyText, {
     List<UploadFile>? files,
   }) async {

@@ -15,7 +15,7 @@ import 'survey_detail_page.dart';
 import '../widgets/confirm_dialog.dart';
 
 class CollaborationWorkspacePage extends StatefulWidget {
-  final String? projectWorkingId;
+  final int? projectWorkingId;
 
   const CollaborationWorkspacePage({super.key, this.projectWorkingId});
 
@@ -27,7 +27,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   bool _loading = true;
   String? _error;
 
-  String? _activeWorkingId;
+  int? _activeWorkingId;
   ProjectWorkingResponse? _working;
   List<ContractResponse> _contracts = [];
   List<DesignResponse> _designs = [];
@@ -36,7 +36,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   List<SurveyResponse> _surveys = [];
 
   // Guards against a fast double-tap firing the same request twice.
-  final Set<String> _pendingDesignActionIds = {};
+  final Set<int> _pendingDesignActionIds = {};
   bool _engagementActionInProgress = false;
 
   @override
@@ -52,20 +52,20 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     });
 
     try {
-      String? workingId = widget.projectWorkingId;
+      int? workingId = widget.projectWorkingId;
       if (workingId == null) {
         final workings = await ProjectWorkingService.getProjectWorkings(pageSize: 1);
         if (workings.items.isNotEmpty) {
           workingId = workings.items.first.id;
+        } else {
+          workingId = 0;
         }
       }
 
-      // No engagement to show. Ids used to be numeric and this was `0`;
-      // with uuids "no engagement" is simply the absence of one.
-      if (workingId == null || workingId.isEmpty) {
+      if (workingId == 0) {
         setState(() {
           _loading = false;
-          _activeWorkingId = null;
+          _activeWorkingId = 0;
           _error = null;
         });
         return;
@@ -86,7 +86,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       List<ConstructionTaskResponse> allTasks = [];
       List<SurveyResponse> allSurveys = [];
 
-      for (String wId in allWorkingIds) {
+      for (int wId in allWorkingIds) {
         final results = await Future.wait([
           ContractService.getContracts(projectWorkingId: wId, pageSize: 50),
           DesignService.getDesigns(projectWorkingId: wId, pageSize: 50),
@@ -141,7 +141,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     }
   }
 
-  Future<void> _approveDesign(String designId) async {
+  Future<void> _approveDesign(int designId) async {
     if (_pendingDesignActionIds.contains(designId)) return;
     setState(() => _pendingDesignActionIds.add(designId));
     try {
@@ -163,7 +163,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     }
   }
 
-  Future<void> _requestRevision(String designId) async {
+  Future<void> _requestRevision(int designId) async {
     final controller = TextEditingController();
     final reason = await showDialog<String>(
       context: context,

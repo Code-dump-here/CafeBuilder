@@ -15,7 +15,7 @@ class ReviewRequestScore {
 
 class ReviewService {
   static Future<ReviewResponse> createReview({
-    required String projectWorkingId,
+    required int projectWorkingId,
     required double overallRating,
     String? comment,
     List<ReviewRequestScore> scores = const [],
@@ -45,7 +45,7 @@ class ReviewService {
     return PaginationResponse.fromJson(body, ReviewResponse.fromJson);
   }
 
-  static Future<ReviewResponse> getReview(String id) async {
+  static Future<ReviewResponse> getReview(int id) async {
     final response = await ApiClient.authGet('/reviews/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -53,7 +53,7 @@ class ReviewService {
   }
 
   static Future<ReviewResponse> updateReview(
-    String id, {
+    int id, {
     double? overallRating,
     String? comment,
     List<ReviewRequestScore>? scores,
@@ -68,13 +68,13 @@ class ReviewService {
     return ReviewResponse.fromJson(body);
   }
 
-  static Future<void> deleteReview(String id) async {
+  static Future<void> deleteReview(int id) async {
     final response = await ApiClient.authDelete('/reviews/$id');
     ApiClient.throwIfError(response);
   }
 
   static Future<List<ReviewResponse>> getReviewsForProvider(
-    String serviceProviderProfileId, {
+    int serviceProviderProfileId, {
     int pageSize = 50,
   }) async {
     final result = await getReviews(pageNumber: 1, pageSize: pageSize);
@@ -83,7 +83,7 @@ class ReviewService {
         .toList();
   }
 
-  static Future<ProviderReviewSummary> getProviderReviewSummary(String serviceProviderProfileId) async {
+  static Future<ProviderReviewSummary> getProviderReviewSummary(int serviceProviderProfileId) async {
     final response = await ApiClient.authGet('/reviews/providers/$serviceProviderProfileId/summary');
     ApiClient.throwIfError(response);
     return ProviderReviewSummary.fromJson(ApiClient.parseBody(response));

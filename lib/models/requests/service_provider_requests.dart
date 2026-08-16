@@ -1,5 +1,5 @@
 class CreateServiceProviderRequest {
-  final String accountId;
+  final int accountId;
   final String displayName;
   final String providerType;
   final String capability;
@@ -65,7 +65,7 @@ class UpdateServiceProviderRequest {
 }
 
 class CreateShopOwnerRequest {
-  final String accountId;
+  final int accountId;
   final String fullName;
   final String shopName;
   final String phone;

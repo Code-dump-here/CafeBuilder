@@ -69,7 +69,7 @@ class PaginationResponse<T> {
 class AuthResponse {
   final String accessToken;
   final String refreshToken;
-  final String accountId;
+  final int accountId;
   final String email;
   final String role;
 
@@ -84,16 +84,17 @@ class AuthResponse {
   factory AuthResponse.fromJson(Map<String, dynamic> json) => AuthResponse(
     accessToken: json['accessToken'] ?? json['AccessToken'] ?? '',
     refreshToken: json['refreshToken'] ?? json['RefreshToken'] ?? '',
-    // Ids are uuids now, so this reads a String. Keeps the PascalCase
-    // fallback its neighbours have, in case a response isn't camelCased.
-    accountId: (json['accountId'] ?? json['AccountId']) as String,
+    // `as num` used to bind tighter than `??`, so a missing 'accountId'
+    // fell through to `null as num` and threw instead of trying
+    // 'AccountId'. Parenthesized so both keys are checked before casting.
+    accountId: ((json['accountId'] ?? json['AccountId']) as num?)?.toInt() ?? 0,
     email: json['email'] ?? json['Email'] ?? '',
     role: json['role'] ?? json['Role'] ?? '',
   );
 }
 
 class AccountResponse {
-  final String id;
+  final int id;
   final String email;
   final String? phone;
   final String role;
@@ -111,7 +112,7 @@ class AccountResponse {
 
   factory AccountResponse.fromJson(Map<String, dynamic> json) =>
       AccountResponse(
-        id: json['id'] as String,
+        id: json['id'],
         email: json['email'],
         phone: json['phone'],
         role: json['role'],
@@ -121,7 +122,7 @@ class AccountResponse {
 }
 
 class ProjectOwnerResponse {
-  final String id;
+  final int id;
   final String fullName;
   final String shopName;
   final String phone;
@@ -135,7 +136,7 @@ class ProjectOwnerResponse {
 
   factory ProjectOwnerResponse.fromJson(Map<String, dynamic> json) =>
       ProjectOwnerResponse(
-        id: json['id'] as String,
+        id: json['id'],
         fullName: json['fullName'] ?? '',
         shopName: json['shopName'] ?? '',
         phone: json['phone'] ?? '',
@@ -143,7 +144,7 @@ class ProjectOwnerResponse {
 }
 
 class OpenPostResponse {
-  final String id;
+  final int id;
   final String serviceKind;
   final String title;
   final String status;
@@ -159,7 +160,7 @@ class OpenPostResponse {
 
   factory OpenPostResponse.fromJson(Map<String, dynamic> json) =>
       OpenPostResponse(
-        id: json['id'] as String,
+        id: json['id'],
         serviceKind: json['serviceKind'] ?? '',
         title: json['title'] ?? '',
         status: json['status'] ?? '',
@@ -170,8 +171,8 @@ class OpenPostResponse {
 }
 
 class ProjectResponse {
-  final String id;
-  final String ownerId;
+  final int id;
+  final int ownerId;
   final String name;
   final String address;
   final double areaM2;
@@ -202,8 +203,8 @@ class ProjectResponse {
 
   factory ProjectResponse.fromJson(Map<String, dynamic> json) =>
       ProjectResponse(
-        id: json['id'] as String,
-        ownerId: json['ownerId'] as String,
+        id: json['id'] is num ? (json['id'] as num).toInt() : 0,
+        ownerId: json['ownerId'] is num ? (json['ownerId'] as num).toInt() : 0,
         name: json['name'] ?? '',
         address: json['address'] ?? '',
         areaM2: json['areaM2'] is num ? (json['areaM2'] as num).toDouble() : 0,
@@ -231,8 +232,8 @@ class ProjectResponse {
 }
 
 class DesignBriefResponse {
-  final String id;
-  final String projectId;
+  final int id;
+  final int projectId;
   final String targetCustomer;
   final String style;
   final String mood;
@@ -261,8 +262,8 @@ class DesignBriefResponse {
 
   factory DesignBriefResponse.fromJson(Map<String, dynamic> json) =>
       DesignBriefResponse(
-        id: json['id'] as String,
-        projectId: json['projectId'] as String,
+        id: json['id'],
+        projectId: (json['projectShopOwnerId'] ?? json['projectId']) as int,
         targetCustomer: json['targetCustomer'] ?? '',
         style: json['style'] ?? '',
         mood: json['mood'] ?? '',
@@ -300,7 +301,7 @@ class AiLayoutZone {
   });
 
   factory AiLayoutZone.fromJson(Map<String, dynamic> json) => AiLayoutZone(
-    id: json['id'] as String,
+    id: json['id'] ?? '',
     label: json['label'] ?? '',
     purpose: json['purpose'] ?? '',
     x: (json['x'] as num?)?.toDouble() ?? 0,
@@ -365,8 +366,8 @@ class AiCustomerFlowStage {
 }
 
 class AiRecommendationResponse {
-  final String id;
-  final String briefId;
+  final int id;
+  final int briefId;
   final String conceptSummary;
   final String payload;
   final double? estimatedDesignCost;
@@ -437,8 +438,8 @@ class AiRecommendationResponse {
 
   factory AiRecommendationResponse.fromJson(Map<String, dynamic> json) =>
       AiRecommendationResponse(
-        id: json['id'] as String,
-        briefId: json['briefId'] as String,
+        id: json['id'],
+        briefId: json['briefId'] ?? 0,
         conceptSummary: json['conceptSummary'] ?? '',
         payload: json['payload'] ?? '',
         estimatedDesignCost: json['estimatedDesignCost'] != null
@@ -490,8 +491,8 @@ class AiRecommendationResponse {
 }
 
 class ServiceProviderResponse {
-  final String id;
-  final String accountId;
+  final int id;
+  final int accountId;
   final String displayName;
   final String providerType;
   final String capability;
@@ -520,8 +521,8 @@ class ServiceProviderResponse {
 
   factory ServiceProviderResponse.fromJson(Map<String, dynamic> json) =>
       ServiceProviderResponse(
-        id: json['id'] as String,
-        accountId: json['accountId'] as String,
+        id: json['id'],
+        accountId: json['accountId'],
         displayName: json['displayName'],
         providerType: json['providerType'],
         capability: json['capability'],
@@ -536,8 +537,8 @@ class ServiceProviderResponse {
 }
 
 class ShopOwnerResponse {
-  final String id;
-  final String accountId;
+  final int id;
+  final int accountId;
   final String fullName;
   final String shopName;
   final String phone;
@@ -556,8 +557,8 @@ class ShopOwnerResponse {
 
   factory ShopOwnerResponse.fromJson(Map<String, dynamic> json) =>
       ShopOwnerResponse(
-        id: json['id'] as String,
-        accountId: json['accountId'] as String,
+        id: json['id'],
+        accountId: json['accountId'],
         fullName: json['fullName'] ?? '',
         shopName: json['shopName'] ?? '',
         phone: json['phone'] ?? '',
@@ -567,11 +568,11 @@ class ShopOwnerResponse {
 }
 
 class ApplyResponse {
-  final String id;
-  final String postId;
+  final int id;
+  final int postId;
   final String postTitle;
-  final String projectShopOwnerId;
-  final String serviceProviderProfileId;
+  final int projectShopOwnerId;
+  final int serviceProviderProfileId;
   final String providerDisplayName;
   final String proposal;
 
@@ -599,11 +600,11 @@ class ApplyResponse {
   });
 
   factory ApplyResponse.fromJson(Map<String, dynamic> json) => ApplyResponse(
-    id: json['id'] as String,
-    postId: json['postId'] as String,
+    id: json['id'],
+    postId: json['postId'],
     postTitle: json['postTitle'] ?? '',
-    projectShopOwnerId: json['projectShopOwnerId'] as String,
-    serviceProviderProfileId: json['serviceProviderProfileId'] as String,
+    projectShopOwnerId: json['projectShopOwnerId'],
+    serviceProviderProfileId: json['serviceProviderProfileId'],
     providerDisplayName: json['providerDisplayName'] ?? '',
     proposal: json['proposal'] ?? '',
     estimatedDurationDays: json['estimatedDurationDays'] as int?,
@@ -617,12 +618,12 @@ class ApplyResponse {
 }
 
 class ProjectWorkingResponse {
-  final String id;
-  final String projectShopOwnerId;
+  final int id;
+  final int projectShopOwnerId;
   final String projectName;
-  final String serviceProviderProfileId;
+  final int serviceProviderProfileId;
   final String providerDisplayName;
-  final String? applyId;
+  final int? applyId;
   final String contractType;
   final String status;
   final String? requestMessage;
@@ -671,12 +672,12 @@ class ProjectWorkingResponse {
 
   factory ProjectWorkingResponse.fromJson(Map<String, dynamic> json) =>
       ProjectWorkingResponse(
-        id: json['id'] as String,
-        projectShopOwnerId: json['projectShopOwnerId'] as String,
+        id: json['id'],
+        projectShopOwnerId: json['projectShopOwnerId'],
         projectName: json['projectName'] ?? '',
-        serviceProviderProfileId: json['serviceProviderProfileId'] as String,
+        serviceProviderProfileId: json['serviceProviderProfileId'],
         providerDisplayName: json['providerDisplayName'] ?? '',
-        applyId: json['applyId'] as String?,
+        applyId: json['applyId'],
         contractType: json['contractType'] ?? '',
         status: json['status'] ?? '',
         requestMessage: json['requestMessage'],
@@ -705,7 +706,7 @@ class ProjectWorkingResponse {
 }
 
 class EngagementOverviewResponse {
-  final String projectWorkingId;
+  final int projectWorkingId;
   final String contractType;
   final String status;
   final ProjectResponse? projectShopOwner;
@@ -725,7 +726,7 @@ class EngagementOverviewResponse {
 
   factory EngagementOverviewResponse.fromJson(Map<String, dynamic> json) =>
       EngagementOverviewResponse(
-        projectWorkingId: json['projectWorkingId'] as String,
+        projectWorkingId: json['projectWorkingId'] ?? 0,
         contractType: json['contractType'] ?? '',
         status: json['status'] ?? '',
         projectShopOwner: json['projectShopOwner'] != null
@@ -748,8 +749,8 @@ class EngagementOverviewResponse {
 }
 
 class SurveyResponse {
-  final String id;
-  final String projectWorkingId;
+  final int id;
+  final int projectWorkingId;
   final double version;
   final String? conditionNote;
 
@@ -780,8 +781,8 @@ class SurveyResponse {
   });
 
   factory SurveyResponse.fromJson(Map<String, dynamic> json) => SurveyResponse(
-    id: json['id'] as String,
-    projectWorkingId: json['projectWorkingId'] as String,
+    id: json['id'],
+    projectWorkingId: json['projectWorkingId'],
     version: (json['version'] as num?)?.toDouble() ?? 0.0,
     conditionNote: json['conditionNote'],
     reportUrl: json['reportUrl'],
@@ -793,8 +794,8 @@ class SurveyResponse {
 }
 
 class ContractResponse {
-  final String id;
-  final String projectWorkingId;
+  final int id;
+  final int projectWorkingId;
   final String title;
   final String? partyInfo;
   final String? terms;
@@ -827,8 +828,8 @@ class ContractResponse {
 
   factory ContractResponse.fromJson(Map<String, dynamic> json) =>
       ContractResponse(
-        id: json['id'] as String,
-        projectWorkingId: json['projectWorkingId'] as String,
+        id: json['id'],
+        projectWorkingId: json['projectWorkingId'],
         title: json['title'] ?? '',
         partyInfo: json['partyInfo'],
         terms: json['terms'],
@@ -849,8 +850,8 @@ class ContractResponse {
 }
 
 class DesignResponse {
-  final String id;
-  final String projectWorkingId;
+  final int id;
+  final int projectWorkingId;
   final String title;
   final double version;
   final String type;
@@ -876,8 +877,8 @@ class DesignResponse {
   });
 
   factory DesignResponse.fromJson(Map<String, dynamic> json) => DesignResponse(
-    id: json['id'] as String,
-    projectWorkingId: json['projectWorkingId'] as String,
+    id: json['id'],
+    projectWorkingId: json['projectWorkingId'],
     title: json['title'] ?? '',
     version: (json['version'] as num?)?.toDouble() ?? 0.0,
     type: json['type'] ?? '',
@@ -895,8 +896,8 @@ class DesignResponse {
 }
 
 class DesignImageResponse {
-  final String id;
-  final String designId;
+  final int id;
+  final int designId;
   final String imageUrl;
   final String viewUrl;
   final String? caption;
@@ -915,8 +916,8 @@ class DesignImageResponse {
 
   factory DesignImageResponse.fromJson(Map<String, dynamic> json) =>
       DesignImageResponse(
-        id: json['id'] as String,
-        designId: json['designId'] as String,
+        id: json['id'],
+        designId: json['designId'],
         imageUrl: json['imageUrl'] ?? '',
         viewUrl: json['viewUrl'] ?? '',
         caption: json['caption'],
@@ -926,9 +927,9 @@ class DesignImageResponse {
 }
 
 class ConstructionItemResponse {
-  final String id;
-  final String projectWorkingId;
-  final String? parentId;
+  final int id;
+  final int projectWorkingId;
+  final int? parentId;
   final String name;
   final String? description;
   final String? category;
@@ -956,9 +957,9 @@ class ConstructionItemResponse {
 
   factory ConstructionItemResponse.fromJson(Map<String, dynamic> json) =>
       ConstructionItemResponse(
-        id: json['id'] as String,
-        projectWorkingId: json['projectWorkingId'] as String,
-        parentId: json['parentId'] as String?,
+        id: json['id'],
+        projectWorkingId: json['projectWorkingId'],
+        parentId: json['parentId'],
         name: json['name'] ?? '',
         description: json['description'],
         category: json['category'],
@@ -976,8 +977,8 @@ class ConstructionItemResponse {
 }
 
 class ConstructionTaskResponse {
-  final String id;
-  final String constructionItemId;
+  final int id;
+  final int constructionItemId;
   final String name;
   final String? description;
   final String? imageUrl;
@@ -1006,8 +1007,8 @@ class ConstructionTaskResponse {
 
   factory ConstructionTaskResponse.fromJson(Map<String, dynamic> json) =>
       ConstructionTaskResponse(
-        id: json['id'] as String,
-        constructionItemId: json['constructionItemId'] as String,
+        id: json['id'],
+        constructionItemId: json['constructionItemId'],
         name: json['name'] ?? '',
         description: json['description'],
         imageUrl: json['imageUrl'],
@@ -1026,10 +1027,10 @@ class ConstructionTaskResponse {
 }
 
 class ReviewResponse {
-  final String id;
-  final String projectWorkingId;
-  final String projectShopOwnerId;
-  final String serviceProviderProfileId;
+  final int id;
+  final int projectWorkingId;
+  final int projectShopOwnerId;
+  final int serviceProviderProfileId;
   final double overallRating;
   final String? comment;
   final List<ReviewScore> scores;
@@ -1049,10 +1050,10 @@ class ReviewResponse {
   });
 
   factory ReviewResponse.fromJson(Map<String, dynamic> json) => ReviewResponse(
-    id: json['id'] as String,
-    projectWorkingId: json['projectWorkingId'] as String,
-    projectShopOwnerId: json['projectShopOwnerId'] as String,
-    serviceProviderProfileId: json['serviceProviderProfileId'] as String,
+    id: json['id'],
+    projectWorkingId: json['projectWorkingId'],
+    projectShopOwnerId: json['projectShopOwnerId'],
+    serviceProviderProfileId: json['serviceProviderProfileId'],
     overallRating: (json['overallRating'] as num?)?.toDouble() ?? 0.0,
     comment: json['comment'],
     scores:
@@ -1066,21 +1067,21 @@ class ReviewResponse {
 }
 
 class ReviewScore {
-  final String id;
+  final int id;
   final String dimension;
   final double score;
 
   ReviewScore({required this.id, required this.dimension, required this.score});
 
   factory ReviewScore.fromJson(Map<String, dynamic> json) => ReviewScore(
-    id: json['id'] as String,
+    id: json['id'],
     dimension: json['dimension'] ?? '',
     score: (json['score'] as num?)?.toDouble() ?? 0.0,
   );
 }
 
 class ProviderReviewSummary {
-  final String serviceProviderProfileId;
+  final int serviceProviderProfileId;
   final int reviewCount;
   final double averageRating;
   final Map<String, double> dimensionAverages;
@@ -1101,7 +1102,7 @@ class ProviderReviewSummary {
       });
     }
     return ProviderReviewSummary(
-      serviceProviderProfileId: json['serviceProviderProfileId'] as String,
+      serviceProviderProfileId: json['serviceProviderProfileId'],
       reviewCount: json['reviewCount'] ?? 0,
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
       dimensionAverages: dimensions,
@@ -1110,8 +1111,8 @@ class ProviderReviewSummary {
 }
 
 class PostResponse {
-  final String id;
-  final String projectShopOwnerId;
+  final int id;
+  final int projectShopOwnerId;
   final String? projectName;
   final String? projectAddress;
   final double? projectBudget;
@@ -1151,8 +1152,8 @@ class PostResponse {
   });
 
   factory PostResponse.fromJson(Map<String, dynamic> json) => PostResponse(
-    id: json['id'] as String,
-    projectShopOwnerId: json['projectShopOwnerId'] as String,
+    id: json['id'],
+    projectShopOwnerId: json['projectShopOwnerId'],
     projectName: json['projectName'],
     projectAddress: json['projectAddress'],
     projectBudget: (json['projectBudget'] as num?)?.toDouble(),
@@ -1170,13 +1171,13 @@ class PostResponse {
 }
 
 class NotificationResponse {
-  final String id;
-  final String accountId;
+  final int id;
+  final int accountId;
   final String type;
   final String title;
   final String content;
   final String? referenceType;
-  final String? referenceId;
+  final int? referenceId;
   bool isRead;
   final DateTime? emailSentAt;
   final DateTime createdAt;
@@ -1196,13 +1197,13 @@ class NotificationResponse {
 
   factory NotificationResponse.fromJson(Map<String, dynamic> json) =>
       NotificationResponse(
-        id: json['id'] as String,
-        accountId: json['accountId'] as String,
+        id: json['id'],
+        accountId: json['accountId'],
         type: json['type'] ?? '',
         title: json['title'] ?? '',
         content: json['content'] ?? '',
         referenceType: json['referenceType'],
-        referenceId: json['referenceId'] as String?,
+        referenceId: json['referenceId'],
         isRead: json['isRead'] ?? false,
         emailSentAt: json['emailSentAt'] != null
             ? DateTime.parse(json['emailSentAt'])
@@ -1216,9 +1217,9 @@ class NotificationResponse {
 /// A comment on a design deliverable or construction item. Both the project
 /// owner and the engaged provider can post to the same thread.
 class CommentResponse {
-  final String id;
+  final int id;
   final String targetType;
-  final String targetId;
+  final int targetId;
   final String body;
   final int? createdBy;
   final String? createdByName;
@@ -1238,9 +1239,11 @@ class CommentResponse {
 
   factory CommentResponse.fromJson(Map<String, dynamic> json) =>
       CommentResponse(
-        id: json['id'] as String,
+        id: json['id'] is num ? (json['id'] as num).toInt() : 0,
         targetType: json['targetType']?.toString() ?? '',
-        targetId: json['targetId'] as String,
+        targetId: json['targetId'] is num
+            ? (json['targetId'] as num).toInt()
+            : 0,
         body: json['body']?.toString() ?? '',
         createdBy: json['createdBy'] is num
             ? (json['createdBy'] as num).toInt()

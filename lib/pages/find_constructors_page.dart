@@ -10,7 +10,7 @@ import 'constructor_detail_page.dart';
 class FindConstructorsPage extends StatefulWidget {
   /// When browsing for a specific project, the project is already known —
   /// carried through so the hire request skips project selection.
-  final String? contextProjectId;
+  final int? contextProjectId;
   final String? contextProjectName;
   /// Forces the engagement's contract type when the project only has one
   /// role slot left. Null lets the provider's own capability decide.

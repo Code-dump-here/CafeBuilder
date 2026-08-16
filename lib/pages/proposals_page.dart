@@ -33,7 +33,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
 
   /// Id of the application currently being declined, so only that card shows a
   /// spinner and the rest stay interactive.
-  String? _rejectingId;
+  int? _rejectingId;
 
   // Local copies, updated on a successful accept, so a slot filled during this
   // visit still blocks a second accept if we haven't navigated away yet.

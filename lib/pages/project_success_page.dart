@@ -15,7 +15,7 @@ class ProjectSuccessPage extends StatefulWidget {
   final String mood;
   final String role;
   final double area;
-  final String projectId;
+  final int projectId;
   final int initialStep;
   final AiRecommendationResponse? aiReport;
 
@@ -29,7 +29,7 @@ class ProjectSuccessPage extends StatefulWidget {
     required this.mood,
     required this.role,
     required this.area,
-    this.projectId = '',
+    this.projectId = 0,
     this.initialStep = 0,
     this.aiReport,
   });
@@ -106,7 +106,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     // this broadcast to whatever unrelated project happens to share that
     // numeric id. Fail loudly instead of guessing; every current caller
     // already passes a real projectId, so this should never actually fire.
-    if (widget.projectId.isEmpty) {
+    if (widget.projectId <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Missing project reference. Please go back and try again.'),

@@ -17,7 +17,7 @@ import 'style_detail_page.dart';
 
 /// Unified document item shown in the "Project documents" section.
 class _DocItem {
-  final String projectId;
+  final int projectId;
   final String title;
   final String subtitle;   // formatted updated-at
   final String source;     // 'Design' | 'Construction'
@@ -146,7 +146,7 @@ class DashboardTabState extends State<DashboardTab> {
     }
   }
 
-  Future<List<_DocItem>> _loadRecentDocs(String projectShopOwnerId) async {
+  Future<List<_DocItem>> _loadRecentDocs(int projectShopOwnerId) async {
     final workings = await ProjectWorkingService.getProjectWorkings(
       projectShopOwnerId: projectShopOwnerId,
       pageSize: 50,

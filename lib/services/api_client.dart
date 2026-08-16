@@ -36,14 +36,14 @@ class ApiClient {
   static Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
-    required String accountId,
+    required int accountId,
     required String role,
     required String email,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_accessTokenKey, accessToken);
     await prefs.setString(_refreshTokenKey, refreshToken);
-    await prefs.setString(_accountIdKey, accountId);
+    await prefs.setInt(_accountIdKey, accountId);
     await prefs.setString(_roleKey, role);
     await prefs.setString(_emailKey, email);
   }
@@ -58,14 +58,14 @@ class ApiClient {
     await prefs.remove(_shopOwnerIdKey);
   }
 
-  static Future<void> saveShopOwnerId(String id) async {
+  static Future<void> saveShopOwnerId(int id) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_shopOwnerIdKey, id);
+    await prefs.setInt(_shopOwnerIdKey, id);
   }
 
-  static Future<String?> getShopOwnerId() async {
+  static Future<int?> getShopOwnerId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_shopOwnerIdKey);
+    return prefs.getInt(_shopOwnerIdKey);
   }
 
   static Future<String?> getEmail() async {
@@ -83,9 +83,9 @@ class ApiClient {
     return prefs.getString(_refreshTokenKey);
   }
 
-  static Future<String?> getAccountId() async {
+  static Future<int?> getAccountId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_accountIdKey);
+    return prefs.getInt(_accountIdKey);
   }
 
   static Future<String?> getRole() async {
@@ -157,7 +157,7 @@ class ApiClient {
         await saveTokens(
           accessToken: data['accessToken'] as String,
           refreshToken: data['refreshToken'] as String,
-          accountId: data['accountId'] as String,
+          accountId: data['accountId'] as int,
           role: data['role'] as String,
           email: data['email'] as String,
         );
