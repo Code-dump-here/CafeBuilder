@@ -128,7 +128,7 @@ class _ContractOtpPageState extends State<ContractOtpPage> {
                       children: [
                         Text('Agreed Value', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
                         Text(
-                          '${widget.contract.agreedValue.toStringAsFixed(0)} ₫',
+                          '${widget.contract.agreedValue.toStringAsFixed(0)} VND',
                           style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF56642B)),
                         ),
                       ],

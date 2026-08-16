@@ -13,6 +13,7 @@ import '../services/contract_service.dart';
 import '../services/project_working_service.dart';
 import '../services/construction_service.dart';
 import '../services/design_service.dart';
+import '../services/design_brief_service.dart';
 import '../widgets/notifications_sheet.dart';
 import 'home_page.dart';
 import 'messages_page.dart';
@@ -37,6 +38,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   List<ConstructionItemResponse> _constructionItems = [];
   List<DesignResponse> _designs = [];
   List<ContractResponse> _contracts = [];
+  DesignBriefResponse? _brief;
   bool _loading = true;
   String? _error;
 
@@ -162,7 +164,17 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       final results = await Future.wait([
         ProjectService.getProject(widget.projectId),
         ProjectWorkingService.getProjectWorkings(projectShopOwnerId: widget.projectId, pageSize: 50),
+        // The brief the owner filled in during onboarding. Older projects
+        // may not have one, and a failure here shouldn't cost them the page.
+        DesignBriefService.getDesignBriefs(projectId: widget.projectId, pageSize: 1)
+            .then<Object?>((r) => r)
+            .catchError((_) => null),
       ]);
+      final briefRes = results[2];
+      final brief = briefRes is PaginationResponse<DesignBriefResponse> &&
+              briefRes.items.isNotEmpty
+          ? briefRes.items.first
+          : null;
       final workings = (results[1] as PaginationResponse<ProjectWorkingResponse>).items;
 
       // Real milestone + activity data lives per-engagement, so gather it in
@@ -205,6 +217,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           _constructionItems = items;
           _designs = designs;
           _contracts = contracts;
+          _brief = brief;
           _loading = false;
         });
       }
@@ -254,10 +267,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   // Budgets are stored in VND, not USD. Without the billions tier a typical
   // 1.5 tỷ budget rendered as the unreadable "1500.0M".
   String _formatMoney(double value) {
-    if (value >= 1000000000) return '${(value / 1000000000).toStringAsFixed(1)}B ₫';
-    if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M ₫';
-    if (value >= 1000) return '${(value / 1000).toStringAsFixed(0)}k ₫';
-    return '${value.toStringAsFixed(0)} ₫';
+    if (value >= 1000000000) return '${(value / 1000000000).toStringAsFixed(1)}B VND';
+    if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M VND';
+    if (value >= 1000) return '${(value / 1000).toStringAsFixed(0)}k VND';
+    return '${value.toStringAsFixed(0)} VND';
   }
 
   String _formatMoneyFull(double value) {
@@ -268,7 +281,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       buf.write(s[i]);
       if (fromEnd > 1 && fromEnd % 3 == 1) buf.write(',');
     }
-    return '$buf ₫';
+    return '$buf VND';
   }
 
   @override
@@ -381,6 +394,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                         const SizedBox(height: 20),
                         _buildBudgetOverview(project),
                         const SizedBox(height: 24),
+                        if (_brief != null) ...[
+                          _buildDesignBrief(_brief!),
+                          const SizedBox(height: 24),
+                        ],
                         if (project.providers.isNotEmpty) ...[
                           _buildNextMilestone(),
                           const SizedBox(height: 20),
@@ -676,6 +693,115 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
               _buildActivityItem(a.title, _relativeDay(a.at), const Color(0xFFD9EAA3)),
         ],
       )
+    );
+  }
+
+  /// The brief the owner answered during onboarding, saved by the API at
+  /// project creation. It drove the AI recommendation, and until now there was
+  /// no way to read it back — the answers vanished the moment the report closed.
+  Widget _buildDesignBrief(DesignBriefResponse brief) {
+    final rows = <(String, String)>[
+      ('Style', brief.style),
+      ('Mood', brief.mood),
+      ('Target customer', brief.targetCustomer),
+      if ((brief.businessModel ?? '').isNotEmpty)
+        ('Business model', brief.businessModel!),
+      if (brief.seatCount != null) ('Seats', '${brief.seatCount}'),
+      if ((brief.timeline ?? '').isNotEmpty) ('Timeline', brief.timeline!),
+    ].where((r) => r.$2.trim().isNotEmpty).toList();
+
+    final notes = <(String, String)>[
+      if ((brief.brandNote ?? '').isNotEmpty) ('Brand note', brief.brandNote!),
+      if ((brief.businessGoals ?? '').isNotEmpty)
+        ('What sets it apart', brief.businessGoals!),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Design Brief',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.espresso,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'What you told us when you created this project.',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          for (final row in rows) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 120,
+                    child: Text(
+                      row.$1,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      row.$2,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.espresso,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          for (final note in notes) ...[
+            const SizedBox(height: 6),
+            Text(
+              note.$1.toUpperCase(),
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+                color: AppColors.outline,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              note.$2,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                height: 1.5,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

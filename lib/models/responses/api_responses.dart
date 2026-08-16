@@ -1129,7 +1129,7 @@ class PostResponse {
   String get location => projectAddress ?? 'Remote';
   String get style => serviceKind;
   String get budgetTier =>
-      projectBudget != null ? '${projectBudget!.toStringAsFixed(0)} ₫' : 'TBD';
+      projectBudget != null ? '${projectBudget!.toStringAsFixed(0)} VND' : 'TBD';
   String get expectedStart => submissionDeadline != null
       ? submissionDeadline!.toString().substring(0, 10)
       : '';

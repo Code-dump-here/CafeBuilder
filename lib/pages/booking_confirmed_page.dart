@@ -192,7 +192,7 @@ class BookingConfirmedPage extends StatelessWidget {
                 if (MarketplaceState.onRoleChanged != null) {
                   MarketplaceState.onRoleChanged!();
                 }
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.espresso,
@@ -210,7 +210,7 @@ class BookingConfirmedPage extends StatelessWidget {
             OutlinedButton(
               onPressed: () {
                 // Navigate to Discovery or back a few steps
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.espresso,

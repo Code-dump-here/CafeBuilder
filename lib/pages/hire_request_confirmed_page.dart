@@ -166,7 +166,7 @@ class HireRequestConfirmedPage extends StatelessWidget {
                 if (MarketplaceState.onRoleChanged != null) {
                   MarketplaceState.onRoleChanged!();
                 }
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.espresso,
@@ -183,7 +183,7 @@ class HireRequestConfirmedPage extends StatelessWidget {
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: () {
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.espresso,

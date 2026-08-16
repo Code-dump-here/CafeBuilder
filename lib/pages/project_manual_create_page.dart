@@ -83,8 +83,7 @@ class _ProjectManualCreatePageState extends State<ProjectManualCreatePage> {
         // deep this page was pushed from. `onNeedsRefresh` tells the
         // still-alive Home instance to re-fetch, since popping back to it
         // doesn't run any of its own refresh logic on its own.
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        MarketplaceState.onNeedsRefresh?.call();
+        Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
       }
     } on ApiException catch (e) {
       if (mounted) {

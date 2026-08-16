@@ -1169,7 +1169,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           children: [
             Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.espresso)),
             Text(
-              '${(val * 100).toStringAsFixed(0)}% (${_formatVND(amt)} ₫)',
+              '${(val * 100).toStringAsFixed(0)}% (${_formatVND(amt)} VND)',
               style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.placeholder),
             ),
           ],

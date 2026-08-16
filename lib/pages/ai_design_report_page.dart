@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'project_detail_page.dart';
 import 'project_success_page.dart';
 import '../services/ai_recommendation_service.dart';
 import '../models/responses/api_responses.dart';
@@ -354,15 +355,15 @@ class AiDesignReportPage extends StatelessWidget {
   String _costRange() {
     final min = report?.fitoutMinVnd;
     final max = report?.fitoutMaxVnd;
-    if (min != null && max != null) return '${_formatVnd(min)} – ${_formatVnd(max)} ₫';
+    if (min != null && max != null) return '${_formatVnd(min)} – ${_formatVnd(max)} VND';
     // Fallback: use totalBudget
-    return '${_formatVnd(totalBudget * 0.9)} – ${_formatVnd(totalBudget * 1.15)} ₫';
+    return '${_formatVnd(totalBudget * 0.9)} – ${_formatVnd(totalBudget * 1.15)} VND';
   }
 
   String _equipRange() {
     final min = report?.equipmentMinVnd;
     final max = report?.equipmentMaxVnd;
-    if (min != null && max != null) return '${_formatVnd(min)} – ${_formatVnd(max)} ₫';
+    if (min != null && max != null) return '${_formatVnd(min)} – ${_formatVnd(max)} VND';
     return '—';
   }
 
@@ -514,17 +515,25 @@ class AiDesignReportPage extends StatelessWidget {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Project saved to dashboard.')),
+                              // The project and its brief were already
+                              // created before this screen opened, so there
+                              // is nothing left to save — this only decides
+                              // where the user lands. Take them to the
+                              // project they just made; Home is the fallback
+                              // when the id didn't come through.
+                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                '/home',
+                                (_) => false,
                               );
-                              // Straight to Home instead of the
-                              // "Project Successfully Created!" splash.
-                              // `onNeedsRefresh` tells the still-alive Home
-                              // instance to re-fetch, since popping back to
-                              // it doesn't run any of its own refresh logic
-                              // on its own.
-                              Navigator.of(context).popUntil((route) => route.isFirst);
-                              MarketplaceState.onNeedsRefresh?.call();
+                              if (projectId > 0) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => ProjectDetailPage(
+                                      projectId: projectId,
+                                    ),
+                                  ),
+                                );
+                              }
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.espresso,

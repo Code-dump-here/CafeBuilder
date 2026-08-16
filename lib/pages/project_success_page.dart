@@ -56,7 +56,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     double lowEstimate = widget.totalBudget * 0.9;
     double highEstimate = widget.totalBudget * 1.15;
     _budgetTier =
-        '${(lowEstimate / 1000000).toStringAsFixed(0)}M – ${(highEstimate / 1000000).toStringAsFixed(0)}M ₫';
+        '${(lowEstimate / 1000000).toStringAsFixed(0)}M – ${(highEstimate / 1000000).toStringAsFixed(0)}M VND';
     
     final now = DateTime.now().add(const Duration(days: 30));
     _submissionDeadline = DateTime(now.year, now.month, now.day, 23, 59, 59);
@@ -221,8 +221,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
         // `onNeedsRefresh` tells the still-alive Home instance to
         // re-fetch, since popping back to it doesn't run any of its own
         // refresh logic on its own.
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        MarketplaceState.onNeedsRefresh?.call();
+        Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
       }
     } catch (e) {
       if (mounted) {
@@ -444,7 +443,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
+              Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
             },
             icon: const Icon(Icons.people_alt_outlined, size: 18),
             label: Text(
@@ -461,7 +460,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
           const SizedBox(height: 16),
           TextButton(
             onPressed: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
+              Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
             },
             child: Text(
               'Back to Home',
@@ -929,7 +928,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
               if (MarketplaceState.onRoleChanged != null) {
                 MarketplaceState.onRoleChanged!();
               }
-              Navigator.of(context).popUntil((route) => route.isFirst);
+              Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
             },
             icon: const Icon(Icons.store_mall_directory_rounded, size: 18),
             label: Text(
@@ -949,7 +948,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
           OutlinedButton(
             onPressed: () {
               MarketplaceState.initialIndex = 0;
-              Navigator.of(context).popUntil((route) => route.isFirst);
+              Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
             },
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.espresso,

@@ -105,7 +105,10 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(locale: 'en_US', symbol: '\$');
+    // Amounts are VND. This formatted them as US dollars, so a 50,000,000
+    // VND contract read as "$50,000,000.00".
+    final currencyFormatter =
+        NumberFormat.currency(locale: 'vi_VN', symbol: 'VND', decimalDigits: 0);
     final isPendingOtp = _contract.status.toLowerCase() == 'pending_otp';
     final isDrafted = _contract.status.toLowerCase() == 'drafted';
 

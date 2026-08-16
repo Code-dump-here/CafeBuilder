@@ -646,10 +646,10 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
   // 1.5 tỷ budget rendered as the unreadable "1500.0M". Tiers and casing match
   // _formatMoney in project_detail_page so a budget reads the same on both.
   String _formatBudget(double budget) {
-    if (budget >= 1000000000) return '${(budget / 1000000000).toStringAsFixed(1)}B ₫';
-    if (budget >= 1000000) return '${(budget / 1000000).toStringAsFixed(1)}M ₫';
-    if (budget >= 1000) return '${(budget / 1000).toStringAsFixed(0)}k ₫';
-    return '${budget.toStringAsFixed(0)} ₫';
+    if (budget >= 1000000000) return '${(budget / 1000000000).toStringAsFixed(1)}B VND';
+    if (budget >= 1000000) return '${(budget / 1000000).toStringAsFixed(1)}M VND';
+    if (budget >= 1000) return '${(budget / 1000).toStringAsFixed(0)}k VND';
+    return '${budget.toStringAsFixed(0)} VND';
   }
 
   Widget _buildHistoryCard(ProjectResponse project) {

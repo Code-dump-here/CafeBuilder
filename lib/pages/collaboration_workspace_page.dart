@@ -593,7 +593,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
             children: [
               Text('Status: ${contract.status.toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text('Agreed Value: ${contract.agreedValue.toStringAsFixed(0)} ₫', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text('Agreed Value: ${contract.agreedValue.toStringAsFixed(0)} VND', style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               if (contract.partyInfo != null) ...[
                 const Text('Parties Involved:', style: TextStyle(fontWeight: FontWeight.bold)),
