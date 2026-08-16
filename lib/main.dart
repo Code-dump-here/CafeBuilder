@@ -8,7 +8,6 @@ import 'pages/sms_otp_page.dart';
 import 'pages/sms_change_password_page.dart';
 import 'pages/success_page.dart';
 import 'pages/role_selection_page.dart';
-import 'pages/profile_setup_page.dart';
 import 'pages/verify_account_page.dart';
 import 'pages/home_page.dart';
 import 'pages/project_onboarding_page.dart';
@@ -16,7 +15,6 @@ import 'pages/package_details_page.dart';
 import 'pages/element_details_page.dart';
 import 'pages/chat_page.dart';
 import 'pages/collaboration_workspace_page.dart';
-import 'widgets/page_navigator.dart';
 import 'services/api_client.dart';
 import 'services/ai_chat_service.dart';
 
@@ -51,25 +49,24 @@ class CafeBuilderApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF9E896A)),
         useMaterial3: true,
       ),
-      home: const PageNavigatorWrapper(child: SplashScreen()),
+      home: const SplashScreen(),
       routes: {
-        '/splash': (context) => const PageNavigatorWrapper(child: SplashScreen()),
-        '/login': (context) => const PageNavigatorWrapper(child: LoginPage()),
-        '/register': (context) => const PageNavigatorWrapper(child: RegisterPage()),
-        '/forgot': (context) => const PageNavigatorWrapper(child: ForgotPasswordPage()),
-        '/sms-otp': (context) => const PageNavigatorWrapper(child: SmsOtpPage()),
+        '/splash': (context) => const SplashScreen(),
+        '/login': (context) => const LoginPage(),
+        '/register': (context) => const RegisterPage(),
+        '/forgot': (context) => const ForgotPasswordPage(),
+        '/sms-otp': (context) => const SmsOtpPage(),
         '/sms-change-password': (context) =>
-            const PageNavigatorWrapper(child: SmsChangePasswordPage()),
-        '/success': (context) => const PageNavigatorWrapper(child: SuccessPage()),
-        '/role-selection': (context) => const PageNavigatorWrapper(child: RoleSelectionPage()),
-        '/profile-setup': (context) => const PageNavigatorWrapper(child: ProfileSetupPage()),
-        '/verify-account': (context) => const PageNavigatorWrapper(child: VerifyAccountPage()),
-        '/home': (context) => const PageNavigatorWrapper(child: HomePage()),
-        '/project-onboarding': (context) => const PageNavigatorWrapper(child: ProjectOnboardingPage()),
-        '/package-details': (context) => const PageNavigatorWrapper(child: PackageDetailsPage()),
-        '/element-details': (context) => const PageNavigatorWrapper(child: ElementDetailsPage()),
-        '/chat': (context) => const PageNavigatorWrapper(child: ChatPage()),
-        '/collab-workspace': (context) => const PageNavigatorWrapper(child: CollaborationWorkspacePage()),
+            const SmsChangePasswordPage(),
+        '/success': (context) => const SuccessPage(),
+        '/role-selection': (context) => const RoleSelectionPage(),
+        '/verify-account': (context) => const VerifyAccountPage(),
+        '/home': (context) => const HomePage(),
+        '/project-onboarding': (context) => const ProjectOnboardingPage(),
+        '/package-details': (context) => const PackageDetailsPage(),
+        '/element-details': (context) => const ElementDetailsPage(),
+        '/chat': (context) => const ChatPage(),
+        '/collab-workspace': (context) => const CollaborationWorkspacePage(),
       },
     );
   }
