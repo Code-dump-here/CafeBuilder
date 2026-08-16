@@ -7,7 +7,6 @@ import 'pages/forgot_password_page.dart';
 import 'pages/sms_otp_page.dart';
 import 'pages/sms_change_password_page.dart';
 import 'pages/success_page.dart';
-import 'pages/role_selection_page.dart';
 import 'pages/verify_account_page.dart';
 import 'pages/home_page.dart';
 import 'pages/project_onboarding_page.dart';
@@ -59,7 +58,6 @@ class CafeBuilderApp extends StatelessWidget {
         '/sms-change-password': (context) =>
             const SmsChangePasswordPage(),
         '/success': (context) => const SuccessPage(),
-        '/role-selection': (context) => const RoleSelectionPage(),
         '/verify-account': (context) => const VerifyAccountPage(),
         '/home': (context) => const HomePage(),
         '/project-onboarding': (context) => const ProjectOnboardingPage(),

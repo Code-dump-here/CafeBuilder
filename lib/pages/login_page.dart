@@ -152,33 +152,6 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                       ),
                     ),
-                    const SizedBox(height: 48),
-                    // Social Auth
-                    Row(
-                      children: [
-                        const Expanded(child: Divider(color: AppColors.outlineVariant, thickness: 0.5)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'OR CONNECT VIA',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.outline.withOpacity(0.5),
-                              letterSpacing: 2.0,
-                            ),
-                          ),
-                        ),
-                        const Expanded(child: Divider(color: AppColors.outlineVariant, thickness: 0.5)),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildGoogleButton(),
-                      ],
-                    ),
                     const SizedBox(height: 64),
                     // Footer Link
                     Center(
@@ -295,35 +268,4 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildGoogleButton() {
-    return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google sign-in is coming soon')),
-        );
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.network(
-              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-            'https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png',
-            height: 20,
-            errorBuilder: (context, error, stackTrace) {
-              return const Icon(Icons.account_circle_outlined, size: 20, color: AppColors.espresso);
-            },
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Google',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

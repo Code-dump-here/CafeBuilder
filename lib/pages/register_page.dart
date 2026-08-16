@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/api_client.dart';
+import '../services/auth_service.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -27,21 +29,63 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  // The actual `AuthService.register` call (and its role value) is deferred
-  // to RoleSelectionPage, which is the first screen that actually knows
-  // which role the user wants — sending 'owner' here regardless of choice
-  // would silently register everyone as an owner.
-  void _continueToRoleSelection() {
-    if (_emailCtrl.text.isEmpty || _passwordCtrl.text.isEmpty) return;
-    Navigator.pushNamed(
-      context,
-      '/role-selection',
-      arguments: {
-        'email': _emailCtrl.text.trim(),
-        'password': _passwordCtrl.text,
-        'phone': _phoneCtrl.text.isNotEmpty ? _phoneCtrl.text.trim() : null,
-      },
-    );
+  bool _isSubmitting = false;
+
+  /// Creates the account and sends the user back to log in.
+  ///
+  /// This used to hand off to a role-selection screen, but that screen offered
+  /// a choice it never honoured — it registered `owner` whatever was picked.
+  /// This is the shop-owner app, so the role is `owner`; providers sign up on
+  /// the web app.
+  Future<void> _register() async {
+    if (_isSubmitting) return;
+    if (_emailCtrl.text.trim().isEmpty || _passwordCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter an email and a password first.')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      await AuthService.register(
+        email: _emailCtrl.text.trim(),
+        password: _passwordCtrl.text,
+        role: 'owner',
+        phone: _phoneCtrl.text.trim().isNotEmpty ? _phoneCtrl.text.trim() : null,
+      );
+
+      // register() stores the tokens it gets back, which would leave a live
+      // session behind a screen asking the user to log in. Clear them so the
+      // login they land on is a real one.
+      await ApiClient.clearTokens();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created. Please log in.'),
+          backgroundColor: Color(0xFF4CAF50),
+        ),
+      );
+      Navigator.pushReplacementNamed(context, '/login');
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not create the account: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -195,26 +239,29 @@ class _RegisterPageState extends State<RegisterPage> {
                           elevation: 2,
                           shadowColor: AppColors.espresso.withOpacity(0.2),
                         ),
-                        onPressed: _agreedToTerms
-                            ? _continueToRoleSelection
+                        onPressed: _agreedToTerms && !_isSubmitting
+                            ? _register
                             : null,
-                        child: Text(
-                          'Continue',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                            color: AppColors.white,
-                          ),
-                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.white,
+                                ),
+                              )
+                            : Text(
+                                'Create Account',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                  color: AppColors.white,
+                                ),
+                              ),
                       ),
                     ),
-                    const SizedBox(height: 32),
-                    // Divider
-                    _buildDivider(),
-                    const SizedBox(height: 32),
-                    // Social Auth
-                    _buildGoogleButton(),
                     const SizedBox(height: 32),
                     // Footer Link
                     Center(
@@ -350,66 +397,4 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildGoogleButton() {
-    return OutlinedButton(
-      onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google sign-in is coming soon')),
-        );
-      },
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        side: const BorderSide(color: AppColors.outlineVariant),
-        foregroundColor: AppColors.espresso,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.network(
-            webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-            'https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png',
-            height: 20,
-            errorBuilder: (context, error, stackTrace) {
-              return const Icon(
-                Icons.account_circle_outlined,
-                size: 20,
-                color: AppColors.espresso,
-              );
-            },
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Google',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.espresso,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Row(
-      children: [
-        const Expanded(child: Divider(color: AppColors.outlineVariant)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'OR SIGN UP WITH',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.outline,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const Expanded(child: Divider(color: AppColors.outlineVariant)),
-      ],
-    );
-  }
 }
