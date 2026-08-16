@@ -31,6 +31,23 @@ subprojects {
     }
 }
 
+// Plugin modules (file_picker, firebase_*) never pin their own Kotlin
+// jvmTarget, so it follows whatever JDK Gradle happens to run on, while AGP
+// compiles their Java at 17 either way. On the JDK 21 that Android Studio
+// bundles that means Kotlin 21 against Java 17, and the build stops with
+// "Inconsistent JVM-target compatibility detected". CI never sees it because
+// the workflow pins temurin 17 and both sides agree by luck.
+//
+// Pin every module to 17, matching the `:app` module's own kotlin block, so
+// the build no longer depends on which JDK the developer happens to have.
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
