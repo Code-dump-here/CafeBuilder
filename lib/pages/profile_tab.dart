@@ -72,8 +72,6 @@ class _ProfileTabState extends State<ProfileTab> {
                   const SizedBox(height: 16),
                 ],
                 _buildProfileCard(),
-                const SizedBox(height: 24),
-                _buildStatsGrid(),
                 const SizedBox(height: 32),
                 _buildMenuSection(),
                 const SizedBox(height: 32),
@@ -208,63 +206,6 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsGrid() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(child: _buildStatItem('1', 'ACTIVE PROJECT')),
-            const SizedBox(width: 12),
-            Expanded(child: _buildStatItem('156', 'SAVED IMAGES')),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(child: _buildStatItem('3', 'APPOINTMENTS')),
-            const SizedBox(width: 12),
-            Expanded(child: _buildStatItem(null, 'MY VOUCHERS', icon: Icons.confirmation_number_outlined)),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatItem(String? value, String label, {IconData? icon}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF6F3F2).withOpacity(0.5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          if (icon != null)
-            Icon(icon, color: AppColors.primary, size: 24)
-          else
-            Text(
-              value!,
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-              color: AppColors.outline,
             ),
           ),
         ],
