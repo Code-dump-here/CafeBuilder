@@ -345,9 +345,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   Widget _buildStepContent() {
     switch (_currentStep) {
       case 0:
-        return _buildStepConcept();
-      case 1:
         return _buildStepProjectBasics();
+      case 1:
+        return _buildStepConcept();
       case 2:
         return _buildStepAudience();
       case 3:
