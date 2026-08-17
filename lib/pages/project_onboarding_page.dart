@@ -45,10 +45,9 @@ class ProjectOnboardingPage extends StatefulWidget {
 
 class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   int _currentStep = 0;
-  final int _totalSteps = 9;
+  final int _totalSteps = 8;
 
   // Form State
-  String _selectedRole = 'cafe_owner';
   final _cafeNameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   String _projectType = 'New'; // New, Renovation
@@ -159,7 +158,6 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     final floorSummary = _floors.map((f) => '${f.nameCtrl.text}: ${f.area.toStringAsFixed(1)} m²').join(', ');
     return [
       if (_conceptNarrativeCtrl.text.isNotEmpty) _conceptNarrativeCtrl.text,
-      'Role: $_selectedRole',
       'Project type: $_projectType',
       'Style: $_selectedSoul',
       'Mood: $_selectedMood',
@@ -259,7 +257,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           budgetLevel: _selectedBudgetLevel,
           totalBudget: _totalBudget,
           mood: _selectedMood,
-          role: _selectedRole,
+          role: 'cafe_owner',
           area: _totalArea > 0 ? _totalArea : 1.0,
           briefId: briefId,
           projectId: projectId,
@@ -352,141 +350,27 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   Widget _buildStepContent() {
     switch (_currentStep) {
       case 0:
-        return _buildStepRole();
-      case 1:
         return _buildStepProjectBasics();
-      case 2:
+      case 1:
         return _buildStepConcept();
-      case 3:
+      case 2:
         return _buildStepAudience();
-      case 4:
+      case 3:
         return _buildStepBudget();
-      case 5:
+      case 4:
         return _buildStepMood();
-      case 6:
+      case 5:
         return _buildStepSoul();
-      case 7:
+      case 6:
         return _buildStepFunctionalAreas();
-      case 8:
+      case 7:
         return _buildStepSpaceInfo();
       default:
         return Container();
     }
   }
 
-  // --- Step 1: Role ---
-  Widget _buildStepRole() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Tell us about your role',
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: AppColors.espresso,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'To provide the most relevant design insights and management tools, please identify your primary position in this cafe project.',
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            height: 1.5,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 32),
-        _buildRoleOption(
-          id: 'cafe_owner',
-          title: 'I am the cafe owner',
-          subtitle: 'Overseeing the entire vision and final decision making for your upcoming space.',
-          icon: Icons.storefront_outlined,
-        ),
-        const SizedBox(height: 16),
-        _buildRoleOption(
-          id: 'planning_cafe',
-          title: 'I am planning to open a cafe',
-          subtitle: 'In the early stages of research, inspiration gathering, and feasibility studies.',
-          icon: Icons.lightbulb_outline,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoleOption({
-    required String id,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-  }) {
-    bool isSel = _selectedRole == id;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedRole = id),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSel ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.5),
-            width: isSel ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.espresso.withOpacity(isSel ? 0.08 : 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isSel ? AppColors.espresso : const Color(0xFFF6F3F1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: isSel ? Colors.white : AppColors.espresso,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.espresso,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      height: 1.4,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- Step 2: Project Basics ---
+  // --- Step 1: Project Basics ---
   Widget _buildStepProjectBasics() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
