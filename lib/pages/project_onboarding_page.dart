@@ -55,7 +55,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   final _conceptNarrativeCtrl = TextEditingController();
   final List<String> _selectedKeywords = ['Premium'];
   final _differentiatorsCtrl = TextEditingController();
-  String _selectedStyleRef = 'Modern Organic';
+
   final List<String> _selectedAudiences = ['Freelancers'];
   String _selectedBudgetLevel = 'Premium'; // Economy, Standard, Premium, Luxury
   double _totalBudget = 1500000000;
@@ -74,10 +74,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     'Restrooms',
     'Back of House',
   ];
-  static const _styleReferenceImages = {
-    'Modern Organic': 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=300',
-    'Classic Editorial': 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=300',
-  };
+
   static const _soulStyleImages = {
     'Modern Minimal': 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=400',
     'Japandi': 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=400',
@@ -147,10 +144,8 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
 
   List<String> get _referenceImageUrls {
     final urls = <String>[];
-    final styleRef = _styleReferenceImages[_selectedStyleRef];
-    if (styleRef != null) urls.add(styleRef);
     final soulRef = _soulStyleImages[_selectedSoul];
-    if (soulRef != null && !urls.contains(soulRef)) urls.add(soulRef);
+    if (soulRef != null) urls.add(soulRef);
     return urls;
   }
 
@@ -350,9 +345,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   Widget _buildStepContent() {
     switch (_currentStep) {
       case 0:
-        return _buildStepProjectBasics();
-      case 1:
         return _buildStepConcept();
+      case 1:
+        return _buildStepProjectBasics();
       case 2:
         return _buildStepAudience();
       case 3:
@@ -623,95 +618,12 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           decoration: _buildInputDec('What makes your cafe unique? e.g., On-site roasting, integrated library, custom ergonomic furniture...'),
           style: GoogleFonts.inter(color: AppColors.textPrimary),
         ),
-        const SizedBox(height: 24),
-        _buildTextFieldLabel('Style Reference'),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStyleReferenceCard(
-                'Modern Organic',
-                'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=300',
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStyleReferenceCard(
-                'Classic Editorial',
-                'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=300',
-              ),
-            ),
-          ],
-        ),
+
       ],
     );
   }
 
-  Widget _buildStyleReferenceCard(String title, String imgUrl) {
-    bool isSel = _selectedStyleRef == title;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedStyleRef = title),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSel ? AppColors.espresso : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Stack(
-            children: [
-              Image.network(
-              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-                imgUrl,
-                height: 120,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withOpacity(0.4),
-                ),
-              ),
-              Positioned(
-                bottom: 12,
-                left: 12,
-                right: 12,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'STYLE REFERENCE',
-                      style: GoogleFonts.inter(
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                    ),
-                    Text(
-                      title,
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isSel)
-                const Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Icon(Icons.check_circle, color: Colors.white, size: 20),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+
 
   // --- Step 4: Ideal Audience ---
   Widget _buildStepAudience() {
