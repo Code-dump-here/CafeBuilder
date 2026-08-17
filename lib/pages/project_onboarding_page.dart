@@ -115,7 +115,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   }
 
   void _nextStep() {
-    if (_currentStep == 1 &&
+    if (_currentStep == 0 &&
         (_cafeNameCtrl.text.trim().isEmpty || _locationCtrl.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a cafe name and location to continue.')),
@@ -162,8 +162,8 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
       'Cafe type: ${_selectedCafeTypes.join(', ')}',
       if (_differentiatorsCtrl.text.isNotEmpty) 'Differentiators: ${_differentiatorsCtrl.text}',
       'Total area: ${_totalArea.toStringAsFixed(1)} m²',
-      'Ceiling height: $_ceilingHeight m',
-      'Storefront width: $_storefrontWidth m',
+      'Ceiling height: ${_ceilingHeightCtrl.text} m',
+      'Storefront width: ${_storefrontWidthCtrl.text} m',
       'Floors: $floorSummary',
     ].join('\n');
   }
@@ -1489,6 +1489,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                             TextField(
                               keyboardType: TextInputType.number,
                               decoration: _buildInputDec('15.0'),
+                              style: GoogleFonts.inter(color: AppColors.textPrimary),
                               onChanged: (val) {
                                 setState(() {}); // Refresh area calculation
                               },
@@ -1506,6 +1507,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                             TextField(
                               keyboardType: TextInputType.number,
                               decoration: _buildInputDec('15.0'),
+                              style: GoogleFonts.inter(color: AppColors.textPrimary),
                               onChanged: (val) {
                                 setState(() {}); // Refresh area calculation
                               },
@@ -1569,6 +1571,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                   TextField(
                     keyboardType: TextInputType.number,
                     decoration: _buildInputDec('3.2'),
+                    style: GoogleFonts.inter(color: AppColors.textPrimary),
                     onChanged: (val) {
                       final parsed = double.tryParse(val);
                       if (parsed != null) setState(() => _ceilingHeight = parsed);
@@ -1587,6 +1590,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                   TextField(
                     keyboardType: TextInputType.number,
                     decoration: _buildInputDec('8.0'),
+                    style: GoogleFonts.inter(color: AppColors.textPrimary),
                     onChanged: (val) {
                       final parsed = double.tryParse(val);
                       if (parsed != null) setState(() => _storefrontWidth = parsed);
