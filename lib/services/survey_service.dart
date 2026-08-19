@@ -3,7 +3,7 @@ import 'api_client.dart';
 
 class SurveyService {
   static Future<SurveyResponse> createSurvey({
-    required int projectWorkingId,
+    required String projectWorkingId,
     required String conditionNote,
     required String reportUrl,
   }) async {
@@ -20,7 +20,7 @@ class SurveyService {
   static Future<PaginationResponse<SurveyResponse>> getSurveys({
     int pageNumber = 1,
     int pageSize = 10,
-    int? projectWorkingId,
+    String? projectWorkingId,
   }) async {
     final params = <String, dynamic>{
       'pageNumber': pageNumber,
@@ -33,7 +33,7 @@ class SurveyService {
     return PaginationResponse.fromJson(body, SurveyResponse.fromJson);
   }
 
-  static Future<SurveyResponse> getSurvey(int id) async {
+  static Future<SurveyResponse> getSurvey(String id) async {
     final response = await ApiClient.authGet('/surveys/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -41,7 +41,7 @@ class SurveyService {
   }
 
   static Future<SurveyResponse> updateSurvey(
-    int id, {
+    String id, {
     String? conditionNote,
     String? reportUrl,
   }) async {

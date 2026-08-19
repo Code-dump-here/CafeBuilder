@@ -9,10 +9,10 @@ import '../services/service_provider_service.dart';
 import 'select_project_page.dart';
 
 class DesignerDetailPage extends StatefulWidget {
-  final int serviceProviderProfileId;
+  final String serviceProviderProfileId;
   /// When reached from a specific project's detail page, the project is
   /// already known — skip asking the owner to pick a project again.
-  final int? contextProjectId;
+  final String? contextProjectId;
   final String? contextProjectName;
   /// Forces the engagement's contract type when the project only has one
   /// role slot left — a provider who can do both then fills just that slot.
@@ -34,7 +34,7 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
   ServiceProviderResponse? _provider;
   ProviderReviewSummary? _summary;
   List<ReviewResponse> _reviews = [];
-  final Map<int, ProjectOwnerResponse> _reviewOwners = {};
+  final Map<String, ProjectOwnerResponse> _reviewOwners = {};
   bool _loading = true;
   String? _error;
 
@@ -59,7 +59,7 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
       final summary = results[1] as ProviderReviewSummary;
       final reviews = results[2] as List<ReviewResponse>;
 
-      final owners = <int, ProjectOwnerResponse>{};
+      final owners = <String, ProjectOwnerResponse>{};
       for (final review in reviews) {
         if (owners.containsKey(review.projectShopOwnerId)) continue;
         try {

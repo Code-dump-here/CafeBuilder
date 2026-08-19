@@ -24,7 +24,7 @@ import 'find_designers_page.dart';
 import 'find_constructors_page.dart';
 
 class ProjectDetailPage extends StatefulWidget {
-  final int projectId;
+  final String projectId;
 
   const ProjectDetailPage({super.key, required this.projectId});
 

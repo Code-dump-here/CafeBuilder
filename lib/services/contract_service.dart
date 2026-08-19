@@ -3,7 +3,7 @@ import 'api_client.dart';
 
 class ContractService {
   static Future<ContractResponse> createContract({
-    required int projectWorkingId,
+    required String projectWorkingId,
     required String title,
     String? partyInfo,
     String? terms,
@@ -24,7 +24,7 @@ class ContractService {
   }
 
   static Future<ContractResponse> updateContract(
-    int id, {
+    String id, {
     String? title,
     String? partyInfo,
     String? terms,
@@ -43,7 +43,7 @@ class ContractService {
     return ContractResponse.fromJson(body);
   }
 
-  static Future<ContractResponse> sendOtp(int id) async {
+  static Future<ContractResponse> sendOtp(String id) async {
     final response = await ApiClient.authPost('/contracts/$id/send-otp', {});
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -51,7 +51,7 @@ class ContractService {
   }
 
   static Future<ContractResponse> confirmOtp(
-    int id, {
+    String id, {
     required String otpCode,
   }) async {
     final response = await ApiClient.authPost('/contracts/$id/confirm-otp', {
@@ -62,7 +62,7 @@ class ContractService {
     return ContractResponse.fromJson(body);
   }
 
-  static Future<ContractResponse> cancelContract(int id) async {
+  static Future<ContractResponse> cancelContract(String id) async {
     final response = await ApiClient.authPost('/contracts/$id/cancel', {});
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -72,7 +72,7 @@ class ContractService {
   static Future<PaginationResponse<ContractResponse>> getContracts({
     int pageNumber = 1,
     int pageSize = 10,
-    int? projectWorkingId,
+    String? projectWorkingId,
   }) async {
     final params = <String, dynamic>{
       'pageNumber': pageNumber,
@@ -85,7 +85,7 @@ class ContractService {
     return PaginationResponse.fromJson(body, ContractResponse.fromJson);
   }
 
-  static Future<ContractResponse> getContract(int id) async {
+  static Future<ContractResponse> getContract(String id) async {
     final response = await ApiClient.authGet('/contracts/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);

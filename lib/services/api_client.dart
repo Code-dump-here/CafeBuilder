@@ -5,8 +5,20 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  static const String _baseUrl =
-      'https://smartcoffeebuilder-be-295284732683.asia-southeast1.run.app/api';
+  /// Backend origin + `/api`.
+  ///
+  /// Overridable at build time so the app can be pointed at a locally running
+  /// backend without editing source:
+  ///
+  ///   flutter run --dart-define=API_BASE_URL=http://localhost:5199/api
+  ///
+  /// Defaults to the deployed Cloud Run service, so a normal build is
+  /// unchanged.
+  static const String _baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue:
+        'https://smartcoffeebuilder-be-295284732683.asia-southeast1.run.app/api',
+  );
 
   /// Public access to the base URL for multipart requests in services.
   static String get baseUrl => _baseUrl;
@@ -36,14 +48,14 @@ class ApiClient {
   static Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
-    required int accountId,
+    required String accountId,
     required String role,
     required String email,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_accessTokenKey, accessToken);
     await prefs.setString(_refreshTokenKey, refreshToken);
-    await prefs.setInt(_accountIdKey, accountId);
+    await prefs.setString(_accountIdKey, accountId);
     await prefs.setString(_roleKey, role);
     await prefs.setString(_emailKey, email);
   }
@@ -58,14 +70,14 @@ class ApiClient {
     await prefs.remove(_shopOwnerIdKey);
   }
 
-  static Future<void> saveShopOwnerId(int id) async {
+  static Future<void> saveShopOwnerId(String id) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_shopOwnerIdKey, id);
+    await prefs.setString(_shopOwnerIdKey, id);
   }
 
-  static Future<int?> getShopOwnerId() async {
+  static Future<String?> getShopOwnerId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_shopOwnerIdKey);
+    return prefs.getString(_shopOwnerIdKey);
   }
 
   static Future<String?> getEmail() async {
@@ -83,9 +95,9 @@ class ApiClient {
     return prefs.getString(_refreshTokenKey);
   }
 
-  static Future<int?> getAccountId() async {
+  static Future<String?> getAccountId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_accountIdKey);
+    return prefs.getString(_accountIdKey);
   }
 
   static Future<String?> getRole() async {
@@ -157,7 +169,7 @@ class ApiClient {
         await saveTokens(
           accessToken: data['accessToken'] as String,
           refreshToken: data['refreshToken'] as String,
-          accountId: data['accountId'] as int,
+          accountId: data['accountId']?.toString() ?? '',
           role: data['role'] as String,
           email: data['email'] as String,
         );

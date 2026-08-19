@@ -69,7 +69,7 @@ class PaginationResponse<T> {
 class AuthResponse {
   final String accessToken;
   final String refreshToken;
-  final int accountId;
+  final String accountId;
   final String email;
   final String role;
 
@@ -87,14 +87,14 @@ class AuthResponse {
     // `as num` used to bind tighter than `??`, so a missing 'accountId'
     // fell through to `null as num` and threw instead of trying
     // 'AccountId'. Parenthesized so both keys are checked before casting.
-    accountId: ((json['accountId'] ?? json['AccountId']) as num?)?.toInt() ?? 0,
+    accountId: (json['accountId'] ?? json['AccountId'])?.toString() ?? '',
     email: json['email'] ?? json['Email'] ?? '',
     role: json['role'] ?? json['Role'] ?? '',
   );
 }
 
 class AccountResponse {
-  final int id;
+  final String id;
   final String email;
   final String? phone;
   final String role;
@@ -112,7 +112,7 @@ class AccountResponse {
 
   factory AccountResponse.fromJson(Map<String, dynamic> json) =>
       AccountResponse(
-        id: json['id'],
+        id: json['id']?.toString() ?? '',
         email: json['email'],
         phone: json['phone'],
         role: json['role'],
@@ -122,7 +122,7 @@ class AccountResponse {
 }
 
 class ProjectOwnerResponse {
-  final int id;
+  final String id;
   final String fullName;
   final String shopName;
   final String phone;
@@ -136,7 +136,7 @@ class ProjectOwnerResponse {
 
   factory ProjectOwnerResponse.fromJson(Map<String, dynamic> json) =>
       ProjectOwnerResponse(
-        id: json['id'],
+        id: json['id']?.toString() ?? '',
         fullName: json['fullName'] ?? '',
         shopName: json['shopName'] ?? '',
         phone: json['phone'] ?? '',
@@ -144,7 +144,7 @@ class ProjectOwnerResponse {
 }
 
 class OpenPostResponse {
-  final int id;
+  final String id;
   final String serviceKind;
   final String title;
   final String status;
@@ -160,7 +160,7 @@ class OpenPostResponse {
 
   factory OpenPostResponse.fromJson(Map<String, dynamic> json) =>
       OpenPostResponse(
-        id: json['id'],
+        id: json['id']?.toString() ?? '',
         serviceKind: json['serviceKind'] ?? '',
         title: json['title'] ?? '',
         status: json['status'] ?? '',
@@ -171,8 +171,8 @@ class OpenPostResponse {
 }
 
 class ProjectResponse {
-  final int id;
-  final int ownerId;
+  final String id;
+  final String ownerId;
   final String name;
   final String address;
   final double areaM2;
@@ -203,8 +203,8 @@ class ProjectResponse {
 
   factory ProjectResponse.fromJson(Map<String, dynamic> json) =>
       ProjectResponse(
-        id: json['id'] is num ? (json['id'] as num).toInt() : 0,
-        ownerId: json['ownerId'] is num ? (json['ownerId'] as num).toInt() : 0,
+        id: json['id']?.toString() ?? '',
+        ownerId: json['ownerId']?.toString() ?? '',
         name: json['name'] ?? '',
         address: json['address'] ?? '',
         areaM2: json['areaM2'] is num ? (json['areaM2'] as num).toDouble() : 0,
@@ -232,8 +232,8 @@ class ProjectResponse {
 }
 
 class DesignBriefResponse {
-  final int id;
-  final int projectId;
+  final String id;
+  final String projectId;
   final String targetCustomer;
   final String style;
   final String mood;
@@ -262,8 +262,8 @@ class DesignBriefResponse {
 
   factory DesignBriefResponse.fromJson(Map<String, dynamic> json) =>
       DesignBriefResponse(
-        id: json['id'],
-        projectId: (json['projectShopOwnerId'] ?? json['projectId']) as int,
+        id: json['id']?.toString() ?? '',
+        projectId: (json['projectShopOwnerId'] ?? json['projectId'])?.toString() ?? '',
         targetCustomer: json['targetCustomer'] ?? '',
         style: json['style'] ?? '',
         mood: json['mood'] ?? '',
@@ -366,8 +366,8 @@ class AiCustomerFlowStage {
 }
 
 class AiRecommendationResponse {
-  final int id;
-  final int briefId;
+  final String id;
+  final String briefId;
   final String conceptSummary;
   final String payload;
   final double? estimatedDesignCost;
@@ -438,8 +438,8 @@ class AiRecommendationResponse {
 
   factory AiRecommendationResponse.fromJson(Map<String, dynamic> json) =>
       AiRecommendationResponse(
-        id: json['id'],
-        briefId: json['briefId'] ?? 0,
+        id: json['id']?.toString() ?? '',
+        briefId: json['briefId']?.toString() ?? '',
         conceptSummary: json['conceptSummary'] ?? '',
         payload: json['payload'] ?? '',
         estimatedDesignCost: json['estimatedDesignCost'] != null
@@ -449,7 +449,7 @@ class AiRecommendationResponse {
             ? (json['estimatedConstructionCost'] as num).toDouble()
             : null,
         createdAt: _parseDate(json['createdAt']),
-        jobId: json['jobId'],
+        jobId: json['jobId']?.toString() ?? '',
         state: json['state'],
         lastError: json['lastError'],
         planConceptName: json['planConceptName'],
@@ -491,8 +491,8 @@ class AiRecommendationResponse {
 }
 
 class ServiceProviderResponse {
-  final int id;
-  final int accountId;
+  final String id;
+  final String accountId;
   final String displayName;
   final String providerType;
   final String capability;
@@ -521,8 +521,8 @@ class ServiceProviderResponse {
 
   factory ServiceProviderResponse.fromJson(Map<String, dynamic> json) =>
       ServiceProviderResponse(
-        id: json['id'],
-        accountId: json['accountId'],
+        id: json['id']?.toString() ?? '',
+        accountId: json['accountId']?.toString() ?? '',
         displayName: json['displayName'],
         providerType: json['providerType'],
         capability: json['capability'],
@@ -537,8 +537,8 @@ class ServiceProviderResponse {
 }
 
 class ShopOwnerResponse {
-  final int id;
-  final int accountId;
+  final String id;
+  final String accountId;
   final String fullName;
   final String shopName;
   final String phone;
@@ -557,8 +557,8 @@ class ShopOwnerResponse {
 
   factory ShopOwnerResponse.fromJson(Map<String, dynamic> json) =>
       ShopOwnerResponse(
-        id: json['id'],
-        accountId: json['accountId'],
+        id: json['id']?.toString() ?? '',
+        accountId: json['accountId']?.toString() ?? '',
         fullName: json['fullName'] ?? '',
         shopName: json['shopName'] ?? '',
         phone: json['phone'] ?? '',
@@ -568,11 +568,11 @@ class ShopOwnerResponse {
 }
 
 class ApplyResponse {
-  final int id;
-  final int postId;
+  final String id;
+  final String postId;
   final String postTitle;
-  final int projectShopOwnerId;
-  final int serviceProviderProfileId;
+  final String projectShopOwnerId;
+  final String serviceProviderProfileId;
   final String providerDisplayName;
   final String proposal;
 
@@ -583,6 +583,21 @@ class ApplyResponse {
   final DateTime? submittedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// How many site surveys the applicant has attached to this application.
+  final int surveyCount;
+
+  /// Appointment on the most recent survey — set once the visit is booked.
+  final DateTime? latestSurveyScheduledAt;
+
+  /// When the applicant actually walked the site. Null means the visit is
+  /// still only booked.
+  final DateTime? latestSurveyedAt;
+
+  /// Whether any attached survey has been carried out. On a post with a design
+  /// phase the server refuses to accept the application until this is true, so
+  /// the owner's Accept button keys off it.
+  final bool hasCompletedSurvey;
 
   ApplyResponse({
     required this.id,
@@ -597,14 +612,18 @@ class ApplyResponse {
     this.submittedAt,
     required this.createdAt,
     required this.updatedAt,
+    this.surveyCount = 0,
+    this.latestSurveyScheduledAt,
+    this.latestSurveyedAt,
+    this.hasCompletedSurvey = false,
   });
 
   factory ApplyResponse.fromJson(Map<String, dynamic> json) => ApplyResponse(
-    id: json['id'],
-    postId: json['postId'],
+    id: json['id']?.toString() ?? '',
+    postId: json['postId']?.toString() ?? '',
     postTitle: json['postTitle'] ?? '',
-    projectShopOwnerId: json['projectShopOwnerId'],
-    serviceProviderProfileId: json['serviceProviderProfileId'],
+    projectShopOwnerId: json['projectShopOwnerId']?.toString() ?? '',
+    serviceProviderProfileId: json['serviceProviderProfileId']?.toString() ?? '',
     providerDisplayName: json['providerDisplayName'] ?? '',
     proposal: json['proposal'] ?? '',
     estimatedDurationDays: json['estimatedDurationDays'] as int?,
@@ -614,16 +633,24 @@ class ApplyResponse {
         : null,
     createdAt: _parseDate(json['createdAt']),
     updatedAt: _parseDate(json['updatedAt']),
+    surveyCount: (json['surveyCount'] as num?)?.toInt() ?? 0,
+    latestSurveyScheduledAt: DateTime.tryParse(
+      json['latestSurveyScheduledAt']?.toString() ?? '',
+    ),
+    latestSurveyedAt: DateTime.tryParse(
+      json['latestSurveyedAt']?.toString() ?? '',
+    ),
+    hasCompletedSurvey: json['hasCompletedSurvey'] == true,
   );
 }
 
 class ProjectWorkingResponse {
-  final int id;
-  final int projectShopOwnerId;
+  final String id;
+  final String projectShopOwnerId;
   final String projectName;
-  final int serviceProviderProfileId;
+  final String serviceProviderProfileId;
   final String providerDisplayName;
-  final int? applyId;
+  final String? applyId;
   final String contractType;
   final String status;
   final String? requestMessage;
@@ -672,12 +699,12 @@ class ProjectWorkingResponse {
 
   factory ProjectWorkingResponse.fromJson(Map<String, dynamic> json) =>
       ProjectWorkingResponse(
-        id: json['id'],
-        projectShopOwnerId: json['projectShopOwnerId'],
+        id: json['id']?.toString() ?? '',
+        projectShopOwnerId: json['projectShopOwnerId']?.toString() ?? '',
         projectName: json['projectName'] ?? '',
-        serviceProviderProfileId: json['serviceProviderProfileId'],
+        serviceProviderProfileId: json['serviceProviderProfileId']?.toString() ?? '',
         providerDisplayName: json['providerDisplayName'] ?? '',
-        applyId: json['applyId'],
+        applyId: json['applyId']?.toString() ?? '',
         contractType: json['contractType'] ?? '',
         status: json['status'] ?? '',
         requestMessage: json['requestMessage'],
@@ -706,7 +733,7 @@ class ProjectWorkingResponse {
 }
 
 class EngagementOverviewResponse {
-  final int projectWorkingId;
+  final String projectWorkingId;
   final String contractType;
   final String status;
   final ProjectResponse? projectShopOwner;
@@ -726,7 +753,7 @@ class EngagementOverviewResponse {
 
   factory EngagementOverviewResponse.fromJson(Map<String, dynamic> json) =>
       EngagementOverviewResponse(
-        projectWorkingId: json['projectWorkingId'] ?? 0,
+        projectWorkingId: json['projectWorkingId']?.toString() ?? '',
         contractType: json['contractType'] ?? '',
         status: json['status'] ?? '',
         projectShopOwner: json['projectShopOwner'] != null
@@ -749,8 +776,8 @@ class EngagementOverviewResponse {
 }
 
 class SurveyResponse {
-  final int id;
-  final int projectWorkingId;
+  final String id;
+  final String projectWorkingId;
   final double version;
   final String? conditionNote;
 
@@ -761,7 +788,7 @@ class SurveyResponse {
   /// Absolute public URL the backend resolves for us. Always prefer this when
   /// opening the report; `reportUrl` on its own 404s.
   final String? reportViewUrl;
-  final int createdBy;
+  final String createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -781,21 +808,21 @@ class SurveyResponse {
   });
 
   factory SurveyResponse.fromJson(Map<String, dynamic> json) => SurveyResponse(
-    id: json['id'],
-    projectWorkingId: json['projectWorkingId'],
+    id: json['id']?.toString() ?? '',
+    projectWorkingId: json['projectWorkingId']?.toString() ?? '',
     version: (json['version'] as num?)?.toDouble() ?? 0.0,
     conditionNote: json['conditionNote'],
     reportUrl: json['reportUrl'],
     reportViewUrl: json['reportViewUrl'],
-    createdBy: json['createdBy'] ?? 0,
+    createdBy: json['createdBy']?.toString() ?? '',
     createdAt: _parseDate(json['createdAt']),
     updatedAt: _parseDate(json['updatedAt']),
   );
 }
 
 class ContractResponse {
-  final int id;
-  final int projectWorkingId;
+  final String id;
+  final String projectWorkingId;
   final String title;
   final String? partyInfo;
   final String? terms;
@@ -804,7 +831,7 @@ class ContractResponse {
   final String? documentViewUrl;
   final DateTime? otpExpiresAt;
   final DateTime? confirmedAt;
-  final int? confirmedBy;
+  final String? confirmedBy;
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -828,8 +855,8 @@ class ContractResponse {
 
   factory ContractResponse.fromJson(Map<String, dynamic> json) =>
       ContractResponse(
-        id: json['id'],
-        projectWorkingId: json['projectWorkingId'],
+        id: json['id']?.toString() ?? '',
+        projectWorkingId: json['projectWorkingId']?.toString() ?? '',
         title: json['title'] ?? '',
         partyInfo: json['partyInfo'],
         terms: json['terms'],
@@ -842,7 +869,7 @@ class ContractResponse {
         confirmedAt: json['confirmedAt'] != null
             ? DateTime.parse(json['confirmedAt'])
             : null,
-        confirmedBy: json['confirmedBy'],
+        confirmedBy: json['confirmedBy']?.toString(),
         status: json['status'] ?? '',
         createdAt: _parseDate(json['createdAt']),
         updatedAt: _parseDate(json['updatedAt']),
@@ -850,14 +877,14 @@ class ContractResponse {
 }
 
 class DesignResponse {
-  final int id;
-  final int projectWorkingId;
+  final String id;
+  final String projectWorkingId;
   final String title;
   final double version;
   final String type;
   final String? reason;
   final String status;
-  final int createdBy;
+  final String createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<DesignImageResponse> images;
@@ -877,14 +904,14 @@ class DesignResponse {
   });
 
   factory DesignResponse.fromJson(Map<String, dynamic> json) => DesignResponse(
-    id: json['id'],
-    projectWorkingId: json['projectWorkingId'],
+    id: json['id']?.toString() ?? '',
+    projectWorkingId: json['projectWorkingId']?.toString() ?? '',
     title: json['title'] ?? '',
     version: (json['version'] as num?)?.toDouble() ?? 0.0,
     type: json['type'] ?? '',
     reason: json['reason'],
     status: json['status'] ?? '',
-    createdBy: json['createdBy'] ?? 0,
+    createdBy: json['createdBy']?.toString() ?? '',
     createdAt: _parseDate(json['createdAt']),
     updatedAt: _parseDate(json['updatedAt']),
     images:
@@ -896,12 +923,12 @@ class DesignResponse {
 }
 
 class DesignImageResponse {
-  final int id;
-  final int designId;
+  final String id;
+  final String designId;
   final String imageUrl;
   final String viewUrl;
   final String? caption;
-  final int uploadedBy;
+  final String uploadedBy;
   final DateTime createdAt;
 
   DesignImageResponse({
@@ -916,27 +943,35 @@ class DesignImageResponse {
 
   factory DesignImageResponse.fromJson(Map<String, dynamic> json) =>
       DesignImageResponse(
-        id: json['id'],
-        designId: json['designId'],
+        id: json['id']?.toString() ?? '',
+        designId: json['designId']?.toString() ?? '',
         imageUrl: json['imageUrl'] ?? '',
         viewUrl: json['viewUrl'] ?? '',
         caption: json['caption'],
-        uploadedBy: json['uploadedBy'] ?? 0,
+        uploadedBy: json['uploadedBy']?.toString() ?? '',
         createdAt: _parseDate(json['createdAt']),
       );
 }
 
 class ConstructionItemResponse {
-  final int id;
-  final int projectWorkingId;
-  final int? parentId;
+  final String id;
+  final String projectWorkingId;
+  final String? parentId;
   final String name;
   final String? description;
   final String? category;
   final DateTime? estimateAt;
   final DateTime? actualAt;
   final String status;
-  final int createdBy;
+
+  /// Whether a payment batch covering this milestone has been confirmed by the
+  /// provider. Maintained server-side from `payment_batches`; read-only here.
+  ///
+  /// Defaults to false rather than being nullable: an older response that omits
+  /// the field means "no confirmed payment", which is exactly false.
+  final bool isPaid;
+
+  final String createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -950,6 +985,7 @@ class ConstructionItemResponse {
     this.estimateAt,
     this.actualAt,
     required this.status,
+    this.isPaid = false,
     required this.createdBy,
     required this.createdAt,
     required this.updatedAt,
@@ -957,9 +993,9 @@ class ConstructionItemResponse {
 
   factory ConstructionItemResponse.fromJson(Map<String, dynamic> json) =>
       ConstructionItemResponse(
-        id: json['id'],
-        projectWorkingId: json['projectWorkingId'],
-        parentId: json['parentId'],
+        id: json['id']?.toString() ?? '',
+        projectWorkingId: json['projectWorkingId']?.toString() ?? '',
+        parentId: json['parentId']?.toString() ?? '',
         name: json['name'] ?? '',
         description: json['description'],
         category: json['category'],
@@ -970,15 +1006,16 @@ class ConstructionItemResponse {
             ? DateTime.parse(json['actualAt'])
             : null,
         status: json['status'] ?? '',
-        createdBy: json['createdBy'] ?? 0,
+        isPaid: json['isPaid'] == true,
+        createdBy: json['createdBy']?.toString() ?? '',
         createdAt: _parseDate(json['createdAt']),
         updatedAt: _parseDate(json['updatedAt']),
       );
 }
 
 class ConstructionTaskResponse {
-  final int id;
-  final int constructionItemId;
+  final String id;
+  final String constructionItemId;
   final String name;
   final String? description;
   final String? imageUrl;
@@ -986,7 +1023,7 @@ class ConstructionTaskResponse {
   final DateTime? actualAt;
   final String? reason;
   final String status;
-  final int createdBy;
+  final String createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -1007,8 +1044,8 @@ class ConstructionTaskResponse {
 
   factory ConstructionTaskResponse.fromJson(Map<String, dynamic> json) =>
       ConstructionTaskResponse(
-        id: json['id'],
-        constructionItemId: json['constructionItemId'],
+        id: json['id']?.toString() ?? '',
+        constructionItemId: json['constructionItemId']?.toString() ?? '',
         name: json['name'] ?? '',
         description: json['description'],
         imageUrl: json['imageUrl'],
@@ -1020,17 +1057,17 @@ class ConstructionTaskResponse {
             : null,
         reason: json['reason'],
         status: json['status'] ?? '',
-        createdBy: json['createdBy'] ?? 0,
+        createdBy: json['createdBy']?.toString() ?? '',
         createdAt: _parseDate(json['createdAt']),
         updatedAt: _parseDate(json['updatedAt']),
       );
 }
 
 class ReviewResponse {
-  final int id;
-  final int projectWorkingId;
-  final int projectShopOwnerId;
-  final int serviceProviderProfileId;
+  final String id;
+  final String projectWorkingId;
+  final String projectShopOwnerId;
+  final String serviceProviderProfileId;
   final double overallRating;
   final String? comment;
   final List<ReviewScore> scores;
@@ -1050,10 +1087,10 @@ class ReviewResponse {
   });
 
   factory ReviewResponse.fromJson(Map<String, dynamic> json) => ReviewResponse(
-    id: json['id'],
-    projectWorkingId: json['projectWorkingId'],
-    projectShopOwnerId: json['projectShopOwnerId'],
-    serviceProviderProfileId: json['serviceProviderProfileId'],
+    id: json['id']?.toString() ?? '',
+    projectWorkingId: json['projectWorkingId']?.toString() ?? '',
+    projectShopOwnerId: json['projectShopOwnerId']?.toString() ?? '',
+    serviceProviderProfileId: json['serviceProviderProfileId']?.toString() ?? '',
     overallRating: (json['overallRating'] as num?)?.toDouble() ?? 0.0,
     comment: json['comment'],
     scores:
@@ -1067,21 +1104,21 @@ class ReviewResponse {
 }
 
 class ReviewScore {
-  final int id;
+  final String id;
   final String dimension;
   final double score;
 
   ReviewScore({required this.id, required this.dimension, required this.score});
 
   factory ReviewScore.fromJson(Map<String, dynamic> json) => ReviewScore(
-    id: json['id'],
+    id: json['id']?.toString() ?? '',
     dimension: json['dimension'] ?? '',
     score: (json['score'] as num?)?.toDouble() ?? 0.0,
   );
 }
 
 class ProviderReviewSummary {
-  final int serviceProviderProfileId;
+  final String serviceProviderProfileId;
   final int reviewCount;
   final double averageRating;
   final Map<String, double> dimensionAverages;
@@ -1102,7 +1139,7 @@ class ProviderReviewSummary {
       });
     }
     return ProviderReviewSummary(
-      serviceProviderProfileId: json['serviceProviderProfileId'],
+      serviceProviderProfileId: json['serviceProviderProfileId']?.toString() ?? '',
       reviewCount: json['reviewCount'] ?? 0,
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
       dimensionAverages: dimensions,
@@ -1111,8 +1148,8 @@ class ProviderReviewSummary {
 }
 
 class PostResponse {
-  final int id;
-  final int projectShopOwnerId;
+  final String id;
+  final String projectShopOwnerId;
   final String? projectName;
   final String? projectAddress;
   final double? projectBudget;
@@ -1152,8 +1189,8 @@ class PostResponse {
   });
 
   factory PostResponse.fromJson(Map<String, dynamic> json) => PostResponse(
-    id: json['id'],
-    projectShopOwnerId: json['projectShopOwnerId'],
+    id: json['id']?.toString() ?? '',
+    projectShopOwnerId: json['projectShopOwnerId']?.toString() ?? '',
     projectName: json['projectName'],
     projectAddress: json['projectAddress'],
     projectBudget: (json['projectBudget'] as num?)?.toDouble(),
@@ -1171,13 +1208,13 @@ class PostResponse {
 }
 
 class NotificationResponse {
-  final int id;
-  final int accountId;
+  final String id;
+  final String accountId;
   final String type;
   final String title;
   final String content;
   final String? referenceType;
-  final int? referenceId;
+  final String? referenceId;
   bool isRead;
   final DateTime? emailSentAt;
   final DateTime createdAt;
@@ -1197,13 +1234,13 @@ class NotificationResponse {
 
   factory NotificationResponse.fromJson(Map<String, dynamic> json) =>
       NotificationResponse(
-        id: json['id'],
-        accountId: json['accountId'],
+        id: json['id']?.toString() ?? '',
+        accountId: json['accountId']?.toString() ?? '',
         type: json['type'] ?? '',
         title: json['title'] ?? '',
         content: json['content'] ?? '',
         referenceType: json['referenceType'],
-        referenceId: json['referenceId'],
+        referenceId: json['referenceId']?.toString() ?? '',
         isRead: json['isRead'] ?? false,
         emailSentAt: json['emailSentAt'] != null
             ? DateTime.parse(json['emailSentAt'])
@@ -1217,11 +1254,11 @@ class NotificationResponse {
 /// A comment on a design deliverable or construction item. Both the project
 /// owner and the engaged provider can post to the same thread.
 class CommentResponse {
-  final int id;
+  final String id;
   final String targetType;
-  final int targetId;
+  final String targetId;
   final String body;
-  final int? createdBy;
+  final String? createdBy;
   final String? createdByName;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -1239,15 +1276,11 @@ class CommentResponse {
 
   factory CommentResponse.fromJson(Map<String, dynamic> json) =>
       CommentResponse(
-        id: json['id'] is num ? (json['id'] as num).toInt() : 0,
+        id: json['id']?.toString() ?? '',
         targetType: json['targetType']?.toString() ?? '',
-        targetId: json['targetId'] is num
-            ? (json['targetId'] as num).toInt()
-            : 0,
+        targetId: json['targetId']?.toString() ?? '',
         body: json['body']?.toString() ?? '',
-        createdBy: json['createdBy'] is num
-            ? (json['createdBy'] as num).toInt()
-            : null,
+        createdBy: json['createdBy']?.toString(),
         createdByName: json['createdByName']?.toString(),
         createdAt:
             DateTime.tryParse(json['createdAt']?.toString() ?? '') ??

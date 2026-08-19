@@ -33,7 +33,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
 
   /// Id of the application currently being declined, so only that card shows a
   /// spinner and the rest stay interactive.
-  int? _rejectingId;
+  String? _rejectingId;
 
   // Local copies, updated on a successful accept, so a slot filled during this
   // visit still blocks a second accept if we haven't navigated away yet.
@@ -74,6 +74,49 @@ class _ProposalsPageState extends State<ProposalsPage> {
         return null;
     }
   }
+
+  /// Why the survey rule blocks this application, or null when it doesn't.
+  ///
+  /// Mirrors `ApplyService.EnsureSurveySubmittedAsync`: a post with a design
+  /// phase can only be awarded to someone who has walked the site. A booked
+  /// but unattended visit doesn't count — there's nothing for the owner to
+  /// read yet. Construction-only posts have no survey step and are exempt.
+  ///
+  /// Duplicated here so the button greys out with an explanation instead of
+  /// firing a request that comes back 409.
+  String? _surveyBlock(ApplyResponse apply) {
+    if (_kindFor(apply) == 'construction') return null;
+    if (apply.hasCompletedSurvey) return null;
+    if (apply.surveyCount == 0) {
+      return 'This provider has not surveyed the site yet. '
+          'A design-scope project can only be awarded after a site visit.';
+    }
+    return 'The site visit is booked but has not happened yet.';
+  }
+
+  /// One-line survey status for the card. No `intl` dependency in this file,
+  /// so the date is spelled out by hand — day/month is enough context here.
+  String _surveyLabel(ApplyResponse apply) {
+    String d(DateTime t) =>
+        '${t.day.toString().padLeft(2, '0')}/${t.month.toString().padLeft(2, '0')}';
+
+    if (apply.hasCompletedSurvey) {
+      final on = apply.latestSurveyedAt;
+      return on != null ? 'Site surveyed ${d(on.toLocal())}' : 'Site surveyed';
+    }
+    if (apply.surveyCount > 0) {
+      final at = apply.latestSurveyScheduledAt;
+      return at != null
+          ? 'Survey booked for ${d(at.toLocal())} — not done yet'
+          : 'Survey booked — not done yet';
+    }
+    return 'No site survey yet';
+  }
+
+  /// Slot conflicts first: "someone else already has this job" is a harder
+  /// stop than "they still need to visit", which the provider can still fix.
+  String? _blockedReason(ApplyResponse apply) =>
+      _slotConflict(apply) ?? _surveyBlock(apply);
 
   Future<void> _fetchApplies() async {
     setState(() {
@@ -232,7 +275,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
 
   Widget _buildProposalCard(ApplyResponse apply) {
     final bool isPending = apply.status.toLowerCase() == 'pending';
-    final String? blockedReason = isPending ? _slotConflict(apply) : null;
+    final String? blockedReason = isPending ? _blockedReason(apply) : null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -319,6 +362,37 @@ class _ProposalsPageState extends State<ProposalsPage> {
               ),
             ],
           ),
+          if (_kindFor(apply) != 'construction') ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(
+                  apply.hasCompletedSurvey
+                      ? Icons.fact_check_outlined
+                      : apply.surveyCount > 0
+                          ? Icons.event_outlined
+                          : Icons.error_outline,
+                  size: 14,
+                  color: apply.hasCompletedSurvey
+                      ? const Color(0xFF56642B)
+                      : AppColors.placeholder,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _surveyLabel(apply),
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: apply.hasCompletedSurvey
+                          ? const Color(0xFF56642B)
+                          : AppColors.placeholder,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (isPending) ...[
             const SizedBox(height: 24),
             Row(

@@ -19,8 +19,8 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
   final String mood;
   final String role;
   final double area;
-  final int briefId;
-  final int projectId;
+  final String briefId;
+  final String projectId;
   final List<String> mustHaveZones;
   final List<String> niceToHaveZones;
   final String notes;
@@ -36,8 +36,8 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
     required this.mood,
     required this.role,
     required this.area,
-    this.briefId = 0,
-    this.projectId = 0,
+    this.briefId = '',
+    this.projectId = '',
     this.mustHaveZones = const [],
     this.niceToHaveZones = const [],
     this.notes = '',
@@ -124,7 +124,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
 
   Future<void> _startAiRecommendation() async {
     try {
-      if (widget.briefId <= 0) {
+      if (widget.briefId.isEmpty) {
         setState(() => _apiDone = true);
         return;
       }
@@ -327,7 +327,7 @@ class AiDesignReportPage extends StatelessWidget {
   final String mood;
   final String role;
   final double area;
-  final int projectId;
+  final String projectId;
   final AiRecommendationResponse? report;
 
   const AiDesignReportPage({
@@ -340,7 +340,7 @@ class AiDesignReportPage extends StatelessWidget {
     required this.mood,
     required this.role,
     required this.area,
-    this.projectId = 0,
+    this.projectId = '',
     this.report,
   });
 
@@ -525,7 +525,7 @@ class AiDesignReportPage extends StatelessWidget {
                                 '/home',
                                 (_) => false,
                               );
-                              if (projectId > 0) {
+                              if (projectId.isNotEmpty) {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) => ProjectDetailPage(

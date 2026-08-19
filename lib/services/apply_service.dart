@@ -5,7 +5,7 @@ class ApplyService {
   static Future<PaginationResponse<ApplyResponse>> getApplies({
     int pageNumber = 1,
     int pageSize = 10,
-    int? postId,
+    String? postId,
     String? status,
   }) async {
     final Map<String, dynamic> queryParams = {
@@ -34,14 +34,14 @@ class ApplyService {
     );
   }
 
-  static Future<ApplyResponse> getApply(int id) async {
+  static Future<ApplyResponse> getApply(String id) async {
     final response = await ApiClient.authGet('/applies/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ApplyResponse.fromJson(body['data'] ?? body);
   }
 
-  static Future<ProjectWorkingResponse> acceptApply(int applyId) async {
+  static Future<ProjectWorkingResponse> acceptApply(String applyId) async {
     final response = await ApiClient.authPost('/applies/$applyId/accept', {});
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -53,7 +53,7 @@ class ApplyService {
   ///
   /// Unlike accept, this creates no engagement: the row just moves to
   /// `rejected` and the provider is notified.
-  static Future<ApplyResponse> rejectApply(int applyId) async {
+  static Future<ApplyResponse> rejectApply(String applyId) async {
     final response = await ApiClient.authPost('/applies/$applyId/reject', {});
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
