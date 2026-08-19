@@ -145,7 +145,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
         if (latest.isPending) {
           // A job for this brief is already queued/processing — resume
           // polling it instead of firing a second concurrent (billed) job.
-          if (mounted) setState(() => _currentPollStatus = 'Resuming AI job (id=${latest.id})…');
+          if (mounted) setState(() => _currentPollStatus = 'Resuming your AI design job…');
           final resumed = await AiRecommendationService.pollUntilComplete(
             latest.id,
             intervalSeconds: 5,
@@ -172,7 +172,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
         referenceImageUrls: widget.referenceImageUrls,
       );
 
-      if (mounted) setState(() => _currentPollStatus = 'AI job queued (id=${queued.id})…');
+      if (mounted) setState(() => _currentPollStatus = 'AI design job queued…');
 
       // 3. Poll until completed
       final result = await AiRecommendationService.pollUntilComplete(

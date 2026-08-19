@@ -179,7 +179,7 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
                             ),
                             _buildText(
                               widget.providerName.isEmpty
-                                  ? '#${_contract.projectWorkingId}'
+                                  ? 'Provider not named'
                                   : widget.providerName,
                               isBold: true,
                               maxLines: 2,

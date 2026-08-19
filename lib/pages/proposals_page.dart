@@ -3,11 +3,22 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/apply_service.dart';
+import '../services/project_service.dart';
+import '../services/survey_service.dart';
 import '../widgets/confirm_dialog.dart';
 import 'collaboration_workspace_page.dart';
+import 'survey_detail_page.dart';
 
 class ProposalsPage extends StatefulWidget {
+  /// Posts as the caller knew them. Used only as the initial value — the page
+  /// refetches the project on open, because this list is a snapshot from the
+  /// previous screen and an empty or stale one silently produced an empty
+  /// proposals list with no error to explain it.
   final List<OpenPostResponse> openPosts;
+
+  /// Project to reload posts from. Optional so existing callers keep working;
+  /// without it the page falls back to [openPosts] alone.
+  final String? projectId;
 
   /// A project holds one designer slot and one constructor slot. The caller
   /// already knows which are filled, so it passes them down rather than making
@@ -18,6 +29,7 @@ class ProposalsPage extends StatefulWidget {
   const ProposalsPage({
     super.key,
     required this.openPosts,
+    this.projectId,
     this.designTaken = false,
     this.constructionTaken = false,
   });
@@ -30,6 +42,15 @@ class _ProposalsPageState extends State<ProposalsPage> {
   bool _loading = true;
   String? _error;
   List<ApplyResponse> _applies = [];
+
+  /// Posts the applications are read from. Seeded from the caller, then
+  /// replaced by a fresh fetch so the page stands on its own.
+  late List<OpenPostResponse> _posts = widget.openPosts;
+
+  /// Surveys already fetched, keyed by application id, so reopening a card
+  /// doesn't refetch.
+  final Map<String, List<SurveyResponse>> _surveysByApply = {};
+  String? _loadingSurveyFor;
 
   /// Id of the application currently being declined, so only that card shows a
   /// spinner and the rest stay interactive.
@@ -49,7 +70,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
   /// The role an application is for lives on its post, not on the application.
   /// Every apply here was fetched from [widget.openPosts], so the lookup hits.
   String _kindFor(ApplyResponse apply) {
-    for (final post in widget.openPosts) {
+    for (final post in _posts) {
       if (post.id == apply.postId) return post.serviceKind.toLowerCase();
     }
     return '';
@@ -125,15 +146,33 @@ class _ProposalsPageState extends State<ProposalsPage> {
     });
 
     try {
+      // Reload the project's posts rather than trusting the snapshot handed
+      // over by the previous screen. Applications are read per post, so an
+      // empty list here means an empty page with nothing explaining why.
+      var posts = _posts;
+      if (widget.projectId != null) {
+        final project = await ProjectService.getProject(widget.projectId!);
+        // Every post, not only the open ones: a post closes as soon as someone
+        // is accepted, and the owner still needs to see who else applied.
+        if (project.openPosts.isNotEmpty) posts = project.openPosts;
+      }
+
+
       final List<ApplyResponse> allApplies = [];
-      for (final post in widget.openPosts) {
+      for (final post in posts) {
         final result = await ApplyService.getApplies(postId: post.id, pageSize: 50);
         allApplies.addAll(result.items);
       }
-      
+
+
+      // Newest first, so the freshest bid is the one in view.
+      allApplies.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
       if (mounted) {
         setState(() {
+          _posts = posts;
           _applies = allApplies;
+          _surveysByApply.clear();
           _loading = false;
         });
       }
@@ -145,6 +184,44 @@ class _ProposalsPageState extends State<ProposalsPage> {
         });
       }
     }
+  }
+
+  /// Fetch and show the site survey attached to this application.
+  ///
+  /// Surveys filed while bidding hang off the application, not an engagement
+  /// — there is no engagement yet — so they are read with `?applyId=`.
+  Future<void> _openSurvey(ApplyResponse apply) async {
+    var surveys = _surveysByApply[apply.id];
+
+    if (surveys == null) {
+      setState(() => _loadingSurveyFor = apply.id);
+      try {
+        final result = await SurveyService.getSurveys(applyId: apply.id, pageSize: 50);
+        surveys = result.items;
+        _surveysByApply[apply.id] = surveys;
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not load the survey: $e')),
+        );
+        return;
+      } finally {
+        if (mounted) setState(() => _loadingSurveyFor = null);
+      }
+    }
+
+    if (!mounted) return;
+    if (surveys.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This provider has not filed a survey yet.')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SurveyDetailPage(surveys: surveys!)),
+    );
   }
 
   Future<void> _acceptApply(ApplyResponse apply) async {
@@ -390,6 +467,30 @@ class _ProposalsPageState extends State<ProposalsPage> {
                     ),
                   ),
                 ),
+                // Only offer to open it once something has actually been filed.
+                if (apply.surveyCount > 0)
+                  _loadingSurveyFor == apply.id
+                      ? const SizedBox(
+                          height: 14,
+                          width: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.espresso),
+                        )
+                      : TextButton(
+                          onPressed: () => _openSurvey(apply),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: const Size(0, 28),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'View',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.espresso,
+                            ),
+                          ),
+                        ),
               ],
             ),
           ],

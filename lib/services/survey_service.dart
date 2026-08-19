@@ -17,15 +17,20 @@ class SurveyService {
     return SurveyResponse.fromJson(body);
   }
 
+  /// Surveys for one anchor. Pass [applyId] for a provider who is still
+  /// bidding, [projectWorkingId] once they are engaged — the two are mutually
+  /// exclusive server-side.
   static Future<PaginationResponse<SurveyResponse>> getSurveys({
     int pageNumber = 1,
     int pageSize = 10,
     String? projectWorkingId,
+    String? applyId,
   }) async {
     final params = <String, dynamic>{
       'pageNumber': pageNumber,
       'pageSize': pageSize,
       if (projectWorkingId != null) 'projectWorkingId': projectWorkingId,
+      if (applyId != null) 'applyId': applyId,
     };
     final response = await ApiClient.authGet('/surveys', params);
     ApiClient.throwIfError(response);

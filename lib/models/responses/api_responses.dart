@@ -777,8 +777,23 @@ class EngagementOverviewResponse {
 
 class SurveyResponse {
   final String id;
-  final String projectWorkingId;
-  final double version;
+
+  /// Null when the survey hangs off an application rather than an engagement
+  /// — a provider surveys the site while still bidding, so the owner can
+  /// compare site visits before choosing anyone. See `ck_surveys_target`.
+  final String? projectWorkingId;
+
+  /// Null when the survey hangs off an engagement. Exactly one of the two is set.
+  final String? applyId;
+
+  /// The booked visit. Set on its own when the provider has only made an
+  /// appointment and not yet been.
+  final DateTime? scheduledAt;
+
+  /// When the provider actually walked the site. Null means booked-only, and
+  /// on a design-scope post the owner cannot accept them yet.
+  final DateTime? surveyedAt;
+
   final String? conditionNote;
 
   /// Raw object name on the bucket — NOT openable. Kept because the backend
@@ -797,8 +812,10 @@ class SurveyResponse {
 
   SurveyResponse({
     required this.id,
-    required this.projectWorkingId,
-    required this.version,
+    this.projectWorkingId,
+    this.applyId,
+    this.scheduledAt,
+    this.surveyedAt,
     this.conditionNote,
     this.reportUrl,
     this.reportViewUrl,
@@ -809,8 +826,10 @@ class SurveyResponse {
 
   factory SurveyResponse.fromJson(Map<String, dynamic> json) => SurveyResponse(
     id: json['id']?.toString() ?? '',
-    projectWorkingId: json['projectWorkingId']?.toString() ?? '',
-    version: (json['version'] as num?)?.toDouble() ?? 0.0,
+    projectWorkingId: json['projectWorkingId']?.toString(),
+    applyId: json['applyId']?.toString(),
+    scheduledAt: DateTime.tryParse(json['scheduledAt']?.toString() ?? ''),
+    surveyedAt: DateTime.tryParse(json['surveyedAt']?.toString() ?? ''),
     conditionNote: json['conditionNote'],
     reportUrl: json['reportUrl'],
     reportViewUrl: json['reportViewUrl'],

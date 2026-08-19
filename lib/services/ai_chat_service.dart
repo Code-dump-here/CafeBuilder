@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as dev;
 
 import 'package:firebase_ai/firebase_ai.dart';
@@ -17,6 +18,10 @@ class AiChatService {
 
   /// Gemini model used for the assistant.
   static const String modelName = 'gemini-3.6-flash';
+
+  /// Ceiling on each network step of start-up. Generous enough for a slow
+  /// connection, short enough that a dead one doesn't hold the feature open.
+  static const Duration _initTimeout = Duration(seconds: 15);
 
   static const String _basePrompt =
       'You are the design assistant inside Design Cafe, an app where cafe owners '
@@ -70,11 +75,22 @@ class AiChatService {
     }
 
     try {
+      // Bounded, because these reach the network: `initializeApp` fetches the
+      // Firebase SDK config and App Check calls reCAPTCHA. Left unbounded, a
+      // stalled handshake never settles and any caller awaiting this waits
+      // forever — which is exactly how it once held up the first frame.
       await Firebase.initializeApp(
         options: kIsWeb ? FirebaseConfig.options : null,
-      );
+      ).timeout(_initTimeout);
       await _activateAppCheck();
       _ready = true;
+    } on TimeoutException {
+      _ready = false;
+      _initError = 'Firebase did not respond within ${_initTimeout.inSeconds}s.';
+      dev.log(
+        'Firebase init timed out — AI assistant disabled.',
+        name: 'AiChatService',
+      );
     } catch (e) {
       _ready = false;
       _initError = e.toString();
@@ -92,12 +108,14 @@ class AiChatService {
           dev.log('No reCAPTCHA site key — App Check skipped on web.', name: 'AiChatService');
           return;
         }
-        await FirebaseAppCheck.instance.activate(
-          providerWeb: ReCaptchaV3Provider(FirebaseConfig.recaptchaV3SiteKey),
-        );
+        await FirebaseAppCheck.instance
+            .activate(
+              providerWeb: ReCaptchaV3Provider(FirebaseConfig.recaptchaV3SiteKey),
+            )
+            .timeout(_initTimeout);
       } else {
         // Defaults: Play Integrity on Android, DeviceCheck on Apple.
-        await FirebaseAppCheck.instance.activate();
+        await FirebaseAppCheck.instance.activate().timeout(_initTimeout);
       }
     } catch (e) {
       dev.log('App Check activation failed: $e', name: 'AiChatService');

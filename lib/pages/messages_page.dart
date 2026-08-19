@@ -248,7 +248,7 @@ class _MessagesPageState extends State<MessagesPage> {
     final isOpening = _openingId == working.id;
     final name = working.providerDisplayName.isNotEmpty
         ? working.providerDisplayName
-        : 'Provider #${working.serviceProviderProfileId}';
+        : 'Unnamed provider';
 
     return Material(
       color: Colors.white,

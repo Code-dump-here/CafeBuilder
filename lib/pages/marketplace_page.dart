@@ -620,9 +620,11 @@ class _MarketplacePageState extends State<MarketplacePage>
                                   color: const Color(0xFF56642B)),
                             ),
                           ),
-                          Text('ID: ${project.id}',
+                          Text(project.status.toUpperCase(),
                               style: GoogleFonts.inter(
-                                  fontSize: 11, color: AppColors.placeholder)),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.placeholder)),
                         ],
                       ),
                       const SizedBox(height: 8),
