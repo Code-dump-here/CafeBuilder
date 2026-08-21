@@ -9,7 +9,7 @@ class AiRecommendationService {
   static Future<PaginationResponse<AiRecommendationResponse>> getRecommendations({
     int pageNumber = 1,
     int pageSize = 10,
-    int? briefId,
+    String? briefId,
   }) async {
     final response = await ApiClient.authGet('/ai-recommendations', {
       'pageNumber': pageNumber,
@@ -23,7 +23,7 @@ class AiRecommendationService {
   }
 
   // ── Get single recommendation by id ────────────────────────────────────────
-  static Future<AiRecommendationResponse> getRecommendation(int id) async {
+  static Future<AiRecommendationResponse> getRecommendation(String id) async {
     final response = await ApiClient.authGet('/ai-recommendations/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -34,7 +34,7 @@ class AiRecommendationService {
   /// Returns the queued job as an [AiRecommendationResponse] with state='queued'.
   /// The caller should then poll [pollUntilComplete] to wait for the result.
   static Future<AiRecommendationResponse> createRecommendation({
-    required int briefId,
+    required String briefId,
     List<String> mustHaveZones = const [],
     List<String> niceToHaveZones = const [],
     String notes = '',
@@ -71,7 +71,7 @@ class AiRecommendationService {
   /// Polls GET /ai-recommendations/{id} every [intervalSeconds] until the
   /// job state is 'completed' or 'failed', or [maxAttempts] is exceeded.
   static Future<AiRecommendationResponse> pollUntilComplete(
-    int id, {
+    String id, {
     int intervalSeconds = 4,
     int maxAttempts = 30, // 30 × 4s = 2 minutes max
     void Function(AiRecommendationResponse)? onPoll,

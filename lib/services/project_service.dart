@@ -6,7 +6,7 @@ class ProjectService {
   static Future<PaginationResponse<ProjectResponse>> getProjects({
     int pageNumber = 1,
     int pageSize = 10,
-    int? ownerId,
+    String? ownerId,
   }) async {
     final params = <String, dynamic>{
       'pageNumber': pageNumber,
@@ -19,7 +19,7 @@ class ProjectService {
     return PaginationResponse.fromJson(body, ProjectResponse.fromJson);
   }
 
-  static Future<ProjectResponse> getProject(int id) async {
+  static Future<ProjectResponse> getProject(String id) async {
     final response = await ApiClient.authGet('/project-shop-owners/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -33,24 +33,24 @@ class ProjectService {
     return ProjectResponse.fromJson(body);
   }
 
-  static Future<ProjectResponse> updateProject(int id, UpdateProjectRequest request) async {
+  static Future<ProjectResponse> updateProject(String id, UpdateProjectRequest request) async {
     final response = await ApiClient.authPut('/project-shop-owners/$id', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ProjectResponse.fromJson(body);
   }
 
-  static Future<void> deleteProject(int id) async {
+  static Future<void> deleteProject(String id) async {
     final response = await ApiClient.authDelete('/project-shop-owners/$id');
     ApiClient.throwIfError(response);
   }
 
-  static Future<void> completeProject(int id) async {
+  static Future<void> completeProject(String id) async {
     final response = await ApiClient.authPost('/project-shop-owners/$id/complete', {});
     ApiClient.throwIfError(response);
   }
 
-  static Future<void> cancelProject(int id) async {
+  static Future<void> cancelProject(String id) async {
     final response = await ApiClient.authPost('/project-shop-owners/$id/cancel', {});
     ApiClient.throwIfError(response);
   }

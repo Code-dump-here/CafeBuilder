@@ -15,7 +15,7 @@ import 'chat_thread_page.dart';
 /// already been rejected. Every conversation now starts from an explicit
 /// choice on this screen.
 class MessagesPage extends StatefulWidget {
-  final int projectId;
+  final String projectId;
   final String? projectName;
 
   const MessagesPage({super.key, required this.projectId, this.projectName});
@@ -31,7 +31,7 @@ class _MessagesPageState extends State<MessagesPage> {
 
   /// Engagement whose conversation is being resolved, so the tapped row can
   /// show a spinner and a second tap can't open two threads.
-  int? _openingId;
+  String? _openingId;
 
   @override
   void initState() {
@@ -248,7 +248,7 @@ class _MessagesPageState extends State<MessagesPage> {
     final isOpening = _openingId == working.id;
     final name = working.providerDisplayName.isNotEmpty
         ? working.providerDisplayName
-        : 'Provider #${working.serviceProviderProfileId}';
+        : 'Unnamed provider';
 
     return Material(
       color: Colors.white,

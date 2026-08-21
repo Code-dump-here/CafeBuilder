@@ -179,7 +179,7 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
                             ),
                             _buildText(
                               widget.providerName.isEmpty
-                                  ? '#${_contract.projectWorkingId}'
+                                  ? 'Provider not named'
                                   : widget.providerName,
                               isBold: true,
                               maxLines: 2,
@@ -556,7 +556,7 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
 // ─── OTP Bottom Sheet ────────────────────────────────────────────────────────
 
 class _OtpBottomSheet extends StatefulWidget {
-  final int contractId;
+  final String contractId;
   final TextEditingController otpController;
   final ValueChanged<ContractResponse> onConfirmed;
 

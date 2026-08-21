@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../services/apply_service.dart';
 import '../services/project_service.dart';
 import '../services/api_client.dart';
 import '../models/responses/api_responses.dart';
@@ -22,9 +23,11 @@ import 'edit_project_page.dart';
 import 'ai_advice_page.dart';
 import 'find_designers_page.dart';
 import 'find_constructors_page.dart';
+import 'site_profile_page.dart';
+import 'change_orders_page.dart';
 
 class ProjectDetailPage extends StatefulWidget {
-  final int projectId;
+  final String projectId;
 
   const ProjectDetailPage({super.key, required this.projectId});
 
@@ -34,6 +37,11 @@ class ProjectDetailPage extends StatefulWidget {
 
 class _ProjectDetailPageState extends State<ProjectDetailPage> {
   ProjectResponse? _project;
+
+  /// Applications received per open post, so the owner can see which role is
+  /// attracting interest without opening the proposals list. Keyed by post id;
+  /// a missing entry means the count hasn't loaded yet.
+  Map<String, ({int total, int pending})> _applyStatsByPost = const {};
   List<ProjectWorkingResponse> _projectWorkings = [];
   List<ConstructionItemResponse> _constructionItems = [];
   List<DesignResponse> _designs = [];
@@ -61,7 +69,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       if (w.id != c.projectWorkingId) continue;
       final name = w.providerDisplayName.isNotEmpty
           ? w.providerDisplayName
-          : 'Provider #${w.serviceProviderProfileId}';
+          : 'Unnamed provider';
       final role = switch (w.contractType.toLowerCase()) {
         'design' => 'Designer',
         'construction' => 'Constructor',
@@ -156,6 +164,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   }
 
   Future<void> _loadProject() async {
+    // Reached from a route popping back into this screen, so the widget may
+    // already be gone by the time the future resolves. Every other setState
+    // in here is guarded; this one was not.
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -210,9 +222,36 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         }
       }
 
+      // Application counts per open post. Best-effort: a failure here costs a
+      // count on a chip, not the page.
+      final project = results[0] as ProjectResponse;
+      final openPosts =
+          project.openPosts.where((p) => p.status.toLowerCase() == 'open').toList();
+      final stats = <String, ({int total, int pending})>{};
+      if (openPosts.isNotEmpty) {
+        final counted = await Future.wait([
+          for (final post in openPosts)
+            ApplyService.getApplies(postId: post.id, pageSize: 50)
+                .then<Object?>((r) => r)
+                .catchError((_) => null),
+        ]);
+        for (var i = 0; i < openPosts.length; i++) {
+          final r = counted[i];
+          if (r is PaginationResponse<ApplyResponse>) {
+            stats[openPosts[i].id] = (
+              total: r.totalItems,
+              pending: r.items
+                  .where((a) => a.status.toLowerCase() == 'pending')
+                  .length,
+            );
+          }
+        }
+      }
+
       if (mounted) {
         setState(() {
-          _project = results[0] as ProjectResponse;
+          _project = project;
+          _applyStatsByPost = stats;
           _projectWorkings = workings;
           _constructionItems = items;
           _designs = designs;
@@ -975,6 +1014,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     MaterialPageRoute(
                       builder: (context) => ProposalsPage(
                         openPosts: _openPosts,
+                        projectId: widget.projectId,
                         designTaken: _designTaken,
                         constructionTaken: _constructionTaken,
                       ),
@@ -1642,6 +1682,43 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           child: Column(
             children: [
               _buildActionCard(
+                Icons.straighten,
+                'Site profile',
+                onTap: () {
+                  // The measured premises. Owner-authored, unlike most of
+                  // this screen, which reads what a provider filed.
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SiteProfilePage(
+                        projectShopOwnerId: widget.projectId,
+                        projectName: _project?.name ?? 'Dự án',
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildActionCard(
+                Icons.receipt_long_outlined,
+                'Change orders',
+                onTap: () {
+                  // Money agreed after the contract. Reloads on the way
+                  // back because approving one moves the committed total
+                  // the budget card above shows.
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChangeOrdersPage(
+                        projectWorkings: _projectWorkings,
+                        projectName: _project?.name ?? 'Dự án',
+                      ),
+                    ),
+                  ).then((_) => _loadProject());
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildActionCard(
                 Icons.forum_outlined,
                 'Message',
                 onTap: () {
@@ -1722,7 +1799,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                   final from = _providerForContract(c);
                   return ListTile(
                     leading: const Icon(Icons.description_outlined, color: AppColors.espresso),
-                    title: Text(c.title.isNotEmpty ? c.title : 'Contract #${c.id}'),
+                    title: Text(c.title.isNotEmpty ? c.title : 'Untitled contract'),
                     // Which provider drew this one up, and whether it still
                     // needs signing — the two things the picker is for.
                     subtitle: Text(
@@ -1978,6 +2055,45 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     }
   }
 
+  /// How many providers have applied to one listing, and how many of those
+  /// still need an answer. Renders nothing until the count has loaded, so an
+  /// unanswered request never reads as "0 applications".
+  Widget _buildApplyCountChip(OpenPostResponse post) {
+    final stats = _applyStatsByPost[post.id];
+    if (stats == null) return const SizedBox.shrink();
+
+    final none = stats.total == 0;
+    final label = none
+        ? 'No applications'
+        : stats.pending > 0
+            ? '${stats.total} applied · ${stats.pending} to review'
+            : '${stats.total} applied';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: none
+            ? const Color(0xFFF0EBE6)
+            : stats.pending > 0
+                ? const Color(0xFFD9EAA3)
+                : const Color(0xFFF0EBE6),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: none
+              ? AppColors.placeholder
+              : stats.pending > 0
+                  ? const Color(0xFF56642B)
+                  : AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+
   Widget _buildRecruitingStatus(List<OpenPostResponse> posts) {
     final openPosts = posts.where((p) => p.status.toLowerCase() == 'open').toList();
 
@@ -2015,7 +2131,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(post.title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(post.title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                        ),
+                        _buildApplyCountChip(post),
+                      ],
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -2070,6 +2193,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                   MaterialPageRoute(
                     builder: (context) => ProposalsPage(
                       openPosts: openPosts,
+                      projectId: widget.projectId,
                       designTaken: _designTaken,
                       constructionTaken: _constructionTaken,
                     ),

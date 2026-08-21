@@ -1,3 +1,4 @@
+import '../utils/id_hash.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
@@ -24,7 +25,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
   List<ProjectResponse> _projects = [];
   bool _loading = true;
   String? _error;
-  final Set<int> _postedProjectIds = {};
+  final Set<String> _postedProjectIds = {};
 
   static const _coverImages = [
     'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
@@ -119,7 +120,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
   }
 
   String _coverFor(ProjectResponse p) =>
-      _coverImages[p.id.abs() % _coverImages.length];
+      _coverImages[indexForId(p.id, _coverImages.length)];
 
   String _formatUpdated(DateTime dt) {
     final diff = DateTime.now().difference(dt);

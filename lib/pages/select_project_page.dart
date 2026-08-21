@@ -1,3 +1,4 @@
+import '../utils/id_hash.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
@@ -13,12 +14,12 @@ import 'project_onboarding_page.dart';
 class SelectProjectPage extends StatefulWidget {
   final String designerName;
   final bool isConstructor;
-  final int serviceProviderProfileId;
+  final String serviceProviderProfileId;
   final String contractType;
   /// When set (e.g. reached from a specific project's detail page), the
   /// project is already known — skip the picker and send the request
   /// straight to this project instead of asking the owner to choose again.
-  final int? preselectedProjectId;
+  final String? preselectedProjectId;
   final String? preselectedProjectName;
 
   const SelectProjectPage({
@@ -58,7 +59,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
 
   /// Slot conflict per project id, filled in lazily as projects are selected.
   /// null value = checked and free; absent = not checked yet.
-  final Map<int, String?> _slotConflict = {};
+  final Map<String, String?> _slotConflict = {};
   bool _checkingSlot = false;
 
   /// The scope this hire would take up, in backend terms.
@@ -82,7 +83,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
   /// A project holds one designer and one constructor slot, and the backend
   /// rejects a direct request that collides with a filled one. Without this the
   /// owner only found out after writing a message and pressing send.
-  Future<void> _checkSlot(int projectId) async {
+  Future<void> _checkSlot(String projectId) async {
     if (_slotConflict.containsKey(projectId)) return;
     setState(() => _checkingSlot = true);
     try {
@@ -153,7 +154,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
   }
 
   String _coverFor(ProjectResponse project) =>
-      _coverImages[project.id.abs() % _coverImages.length];
+      _coverImages[indexForId(project.id, _coverImages.length)];
 
   String _formatDate(DateTime date) =>
       '${_months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';

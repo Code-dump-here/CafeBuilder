@@ -7,7 +7,7 @@ import '../services/chat_service.dart';
 import '../services/api_client.dart';
 
 class ChatThreadPage extends StatefulWidget {
-  final int conversationId;
+  final String conversationId;
   final String title;
 
   /// Optional line under the title — the other party's role, so the thread
@@ -33,7 +33,7 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
   bool _isLoading = true;
   bool _isSending = false;
   String? _error;
-  int? _currentAccountId;
+  String? _currentAccountId;
 
   final List<PlatformFile> _selectedFiles = [];
   Timer? _pollingTimer;
@@ -235,9 +235,9 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
       body: Column(
         children: [
           Expanded(child: _buildMessagesArea()),
-          if (widget.conversationId != 0 && _selectedFiles.isNotEmpty)
+          if (widget.conversationId.isNotEmpty && _selectedFiles.isNotEmpty)
             _buildAttachmentPreview(),
-          if (widget.conversationId != 0) _buildInputArea(),
+          if (widget.conversationId.isNotEmpty) _buildInputArea(),
         ],
       ),
     );
@@ -250,7 +250,7 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
       );
     }
     if (_error != null || _messages.isEmpty) {
-      final isNoCollab = widget.conversationId == 0;
+      final isNoCollab = widget.conversationId.isEmpty;
       return Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
