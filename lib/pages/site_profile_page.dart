@@ -94,6 +94,46 @@ class _SiteProfilePageState extends State<SiteProfilePage> {
     return text.startsWith('Exception: ') ? text.substring(11) : text;
   }
 
+  /// Puts the surveyed total into force as the project's area.
+  ///
+  /// Confirmed first because it overwrites the number every other screen reads
+  /// — and the one the AI design ran on — rather than adding to it.
+  Future<void> _approveMeasurements() async {
+    final profile = _profile;
+    if (profile == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Duyệt số đo vào dự án?'),
+        content: Text(
+          'Diện tích dự án sẽ đổi từ '
+          '${_MeasurementsCard._m2(profile.projectAreaM2)} thành '
+          '${_MeasurementsCard._m2(profile.totalFloorAreaM2)}.\n\n'
+          'Con số này hiển thị trên mọi màn hình dự án. Bản thiết kế AI đã sinh '
+          'trước đó KHÔNG tự chạy lại theo số mới.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Huỷ'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Duyệt'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _run(
+      () => SiteProfileService.approveMeasurements(profile.id),
+      'Đã đồng bộ diện tích sang dự án.',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -146,6 +186,8 @@ class _SiteProfilePageState extends State<SiteProfilePage> {
         ),
         const SizedBox(height: 16),
         _MeasurementsCard(profile: profile, onEdit: _openMeasurements),
+        const SizedBox(height: 16),
+        _AreaSyncCard(profile: profile, onApprove: _approveMeasurements),
         const SizedBox(height: 16),
         _FloorsCard(
           profile: profile,
@@ -542,6 +584,95 @@ class _MeasurementsCard extends StatelessWidget {
             _NoteBlock(
               label: 'Hiện trạng bàn giao',
               text: profile.existingConditionNote!,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Shows whether the surveyed total is the number the project actually uses,
+/// and lets the owner put it into force.
+///
+/// The premises record and `projects.areaM2` drift apart on purpose: the
+/// provider measures, the owner decides. Without this card that drift is
+/// invisible — two different areas on two screens and nothing saying which one
+/// the rest of the system believes.
+class _AreaSyncCard extends StatelessWidget {
+  final SiteProfileResponse profile;
+  final Future<void> Function() onApprove;
+
+  const _AreaSyncCard({required this.profile, required this.onApprove});
+
+  @override
+  Widget build(BuildContext context) {
+    final synced = profile.isAreaSyncedToProject;
+
+    // Nothing measured yet — no claim to make either way, so stay quiet rather
+    // than showing an "unsynced" warning the owner cannot act on.
+    if (synced == null) return const SizedBox.shrink();
+
+    final surveyed = _MeasurementsCard._m2(profile.totalFloorAreaM2);
+    final inForce = _MeasurementsCard._m2(profile.projectAreaM2);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: synced ? const Color(0xFFF1F6EC) : const Color(0xFFFDF3E7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: synced ? const Color(0xFFC4D9A8) : const Color(0xFFE8C89A),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                synced ? Icons.check_circle_outline : Icons.sync_problem,
+                size: 18,
+                color: synced
+                    ? const Color(0xFF5A7A3A)
+                    : const Color(0xFFA9722A),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  synced
+                      ? 'Dự án đang dùng số đo khảo sát'
+                      : 'Số đo khảo sát chưa được duyệt',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.espresso,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            synced
+                ? 'Tổng sàn $surveyed đã là diện tích chính thức của dự án.'
+                : 'Tổng sàn đo được là $surveyed, nhưng dự án vẫn đang dùng '
+                      '$inForce. Duyệt để cập nhật.',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              height: 1.45,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          if (!synced) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onApprove,
+                icon: const Icon(Icons.done_all, size: 18),
+                label: const Text('Duyệt số đo vào dự án'),
+              ),
             ),
           ],
         ],

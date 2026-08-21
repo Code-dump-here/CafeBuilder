@@ -20,17 +20,26 @@ class SurveyService {
   /// Surveys for one anchor. Pass [applyId] for a provider who is still
   /// bidding, [projectWorkingId] once they are engaged — the two are mutually
   /// exclusive server-side.
+  ///
+  /// [postId] is the owner's view instead: every survey done by every provider
+  /// bidding on one listing, so site visits can be compared side by side before
+  /// anyone is chosen. Pair it with the same filter on `/quotations`.
+  ///
+  /// The server scopes results to the caller either way — an owner sees their
+  /// own projects, a provider sees only their own surveys.
   static Future<PaginationResponse<SurveyResponse>> getSurveys({
     int pageNumber = 1,
     int pageSize = 10,
     String? projectWorkingId,
     String? applyId,
+    String? postId,
   }) async {
     final params = <String, dynamic>{
       'pageNumber': pageNumber,
       'pageSize': pageSize,
       if (projectWorkingId != null) 'projectWorkingId': projectWorkingId,
       if (applyId != null) 'applyId': applyId,
+      if (postId != null) 'postId': postId,
     };
     final response = await ApiClient.authGet('/surveys', params);
     ApiClient.throwIfError(response);

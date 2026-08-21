@@ -154,6 +154,18 @@ class SiteProfileResponse {
   /// Sum of the per-floor areas. Null when no floor declares one.
   final double? totalFloorAreaM2;
 
+  /// `projects.areaM2` as it currently stands — the number every project screen
+  /// and the AI payload actually read. Sent alongside so this screen can show
+  /// the surveyed total against the one in force without a second request.
+  final double? projectAreaM2;
+
+  /// Whether the surveyed total has been approved into the project.
+  ///
+  /// Derived server-side rather than stored: true once the project carries the
+  /// surveyed total, false while measurements sit unapproved, null when no
+  /// floor declares an area and so there is nothing to approve.
+  final bool? isAreaSyncedToProject;
+
   final String? createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -176,6 +188,8 @@ class SiteProfileResponse {
     this.existingConditionNote,
     this.derivedFootprintM2,
     this.totalFloorAreaM2,
+    this.projectAreaM2,
+    this.isAreaSyncedToProject,
     this.createdBy,
     required this.createdAt,
     required this.updatedAt,
@@ -199,6 +213,8 @@ class SiteProfileResponse {
         existingConditionNote: json['existingConditionNote'],
         derivedFootprintM2: _parseDouble(json['derivedFootprintM2']),
         totalFloorAreaM2: _parseDouble(json['totalFloorAreaM2']),
+        projectAreaM2: _parseDouble(json['projectAreaM2']),
+        isAreaSyncedToProject: json['isAreaSyncedToProject'] as bool?,
         createdBy: json['createdBy']?.toString(),
         createdAt: _parseDate(json['createdAt']),
         updatedAt: _parseDate(json['updatedAt']),
