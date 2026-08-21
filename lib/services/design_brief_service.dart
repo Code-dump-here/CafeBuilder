@@ -6,7 +6,7 @@ class DesignBriefService {
   static Future<PaginationResponse<DesignBriefResponse>> getDesignBriefs({
     int pageNumber = 1,
     int pageSize = 10,
-    int? projectId,
+    String? projectId,
   }) async {
     final params = <String, dynamic>{
       'pageNumber': pageNumber,
@@ -20,7 +20,7 @@ class DesignBriefService {
     return PaginationResponse.fromJson(body, DesignBriefResponse.fromJson);
   }
 
-  static Future<DesignBriefResponse> getDesignBrief(int id) async {
+  static Future<DesignBriefResponse> getDesignBrief(String id) async {
     final response = await ApiClient.authGet('/design-briefs/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -35,14 +35,14 @@ class DesignBriefService {
   }
 
   static Future<DesignBriefResponse> updateDesignBrief(
-      int id, UpdateDesignBriefRequest request) async {
+      String id, UpdateDesignBriefRequest request) async {
     final response = await ApiClient.authPut('/design-briefs/$id', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return DesignBriefResponse.fromJson(body);
   }
 
-  static Future<void> deleteDesignBrief(int id) async {
+  static Future<void> deleteDesignBrief(String id) async {
     final response = await ApiClient.authDelete('/design-briefs/$id');
     ApiClient.throwIfError(response);
   }

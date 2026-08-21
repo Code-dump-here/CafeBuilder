@@ -19,8 +19,8 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
   final String mood;
   final String role;
   final double area;
-  final int briefId;
-  final int projectId;
+  final String briefId;
+  final String projectId;
   final List<String> mustHaveZones;
   final List<String> niceToHaveZones;
   final String notes;
@@ -36,8 +36,8 @@ class DesignSynthesisLoadingPage extends StatefulWidget {
     required this.mood,
     required this.role,
     required this.area,
-    this.briefId = 0,
-    this.projectId = 0,
+    this.briefId = '',
+    this.projectId = '',
     this.mustHaveZones = const [],
     this.niceToHaveZones = const [],
     this.notes = '',
@@ -124,7 +124,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
 
   Future<void> _startAiRecommendation() async {
     try {
-      if (widget.briefId <= 0) {
+      if (widget.briefId.isEmpty) {
         setState(() => _apiDone = true);
         return;
       }
@@ -145,7 +145,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
         if (latest.isPending) {
           // A job for this brief is already queued/processing — resume
           // polling it instead of firing a second concurrent (billed) job.
-          if (mounted) setState(() => _currentPollStatus = 'Resuming AI job (id=${latest.id})…');
+          if (mounted) setState(() => _currentPollStatus = 'Resuming your AI design job…');
           final resumed = await AiRecommendationService.pollUntilComplete(
             latest.id,
             intervalSeconds: 5,
@@ -172,7 +172,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
         referenceImageUrls: widget.referenceImageUrls,
       );
 
-      if (mounted) setState(() => _currentPollStatus = 'AI job queued (id=${queued.id})…');
+      if (mounted) setState(() => _currentPollStatus = 'AI design job queued…');
 
       // 3. Poll until completed
       final result = await AiRecommendationService.pollUntilComplete(
@@ -327,7 +327,7 @@ class AiDesignReportPage extends StatelessWidget {
   final String mood;
   final String role;
   final double area;
-  final int projectId;
+  final String projectId;
   final AiRecommendationResponse? report;
 
   const AiDesignReportPage({
@@ -340,7 +340,7 @@ class AiDesignReportPage extends StatelessWidget {
     required this.mood,
     required this.role,
     required this.area,
-    this.projectId = 0,
+    this.projectId = '',
     this.report,
   });
 
@@ -525,7 +525,7 @@ class AiDesignReportPage extends StatelessWidget {
                                 '/home',
                                 (_) => false,
                               );
-                              if (projectId > 0) {
+                              if (projectId.isNotEmpty) {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) => ProjectDetailPage(

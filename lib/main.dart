@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'pages/splash_screen.dart';
@@ -30,9 +31,19 @@ class _DevHttpOverrides extends HttpOverrides {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _DevHttpOverrides();
-  // Never fatal: leaves the AI assistant disabled if Firebase isn't configured.
-  await AiChatService.init();
+
+  // Paint the first frame before touching Firebase.
+  //
+  // This used to `await AiChatService.init()` here. That call reaches out to
+  // Firebase and, on web, to the reCAPTCHA endpoint for App Check — so any
+  // stall in that handshake left `runApp` unreached and the app on a blank
+  // white page indefinitely, with nothing logged to explain it. A try/catch
+  // doesn't help: a hang isn't a failure.
+  //
+  // The assistant is optional and already reports its own readiness through
+  // `AiChatService.isAvailable`, so it can finish arriving after the UI is up.
   runApp(const CafeBuilderApp());
+  unawaited(AiChatService.init());
 }
 
 class CafeBuilderApp extends StatelessWidget {

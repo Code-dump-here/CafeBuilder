@@ -1,3 +1,4 @@
+import '../utils/id_hash.dart';
 import 'dart:developer' as dev;
 import '../models/requests/service_provider_requests.dart';
 import '../models/responses/api_responses.dart';
@@ -12,8 +13,8 @@ class ServiceProviderService {
     'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=600',
   ];
 
-  static String imageFor(int providerId, int index) =>
-      _placeholderImages[(providerId + index) % _placeholderImages.length];
+  static String imageFor(String providerId, int index) =>
+      _placeholderImages[(hashId(providerId) + index) % _placeholderImages.length];
 
   static String typeLabel(ServiceProviderResponse provider) {
     if (provider.capability == 'both') return 'DESIGN & BUILD';
@@ -55,7 +56,7 @@ class ServiceProviderService {
     ).data!;
   }
 
-  static Future<ServiceProviderResponse> getProvider(int id) async {
+  static Future<ServiceProviderResponse> getProvider(String id) async {
     final response = await ApiClient.authGet('/service-provider-profiles/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -74,14 +75,14 @@ class ServiceProviderService {
   }
 
   static Future<ServiceProviderResponse> updateProvider(
-      int id, UpdateServiceProviderRequest request) async {
+      String id, UpdateServiceProviderRequest request) async {
     final response = await ApiClient.authPut('/service-provider-profiles/$id', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return ResponseData.fromJson(body, (d) => ServiceProviderResponse.fromJson(d)).data!;
   }
 
-  static Future<void> deleteProvider(int id) async {
+  static Future<void> deleteProvider(String id) async {
     final response = await ApiClient.authDelete('/service-provider-profiles/$id');
     ApiClient.throwIfError(response);
   }
@@ -91,7 +92,7 @@ class ShopOwnerService {
   /// Projects require the shop_owner PROFILE id (not accountId).
   /// Finds the profile for the logged-in account, creating a minimal one on
   /// first use, and caches the id in SharedPreferences.
-  static Future<int> ensureShopOwnerId() async {
+  static Future<String> ensureShopOwnerId() async {
     // 1. Return from cache if available
     final cached = await ApiClient.getShopOwnerId();
     if (cached != null) {
@@ -171,7 +172,7 @@ class ShopOwnerService {
     return firstNameFrom(owner.fullName);
   }
 
-  static Future<ShopOwnerResponse> getShopOwner(int id) async {
+  static Future<ShopOwnerResponse> getShopOwner(String id) async {
     final response = await ApiClient.authGet('/shop-owners/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -186,7 +187,7 @@ class ShopOwnerService {
   }
 
   static Future<ShopOwnerResponse> updateShopOwner(
-      int id, UpdateShopOwnerRequest request) async {
+      String id, UpdateShopOwnerRequest request) async {
     final response = await ApiClient.authPut('/shop-owners/$id', request.toJson());
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);

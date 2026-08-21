@@ -3,11 +3,22 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/apply_service.dart';
+import '../services/project_service.dart';
+import '../services/survey_service.dart';
 import '../widgets/confirm_dialog.dart';
 import 'collaboration_workspace_page.dart';
+import 'survey_detail_page.dart';
 
 class ProposalsPage extends StatefulWidget {
+  /// Posts as the caller knew them. Used only as the initial value — the page
+  /// refetches the project on open, because this list is a snapshot from the
+  /// previous screen and an empty or stale one silently produced an empty
+  /// proposals list with no error to explain it.
   final List<OpenPostResponse> openPosts;
+
+  /// Project to reload posts from. Optional so existing callers keep working;
+  /// without it the page falls back to [openPosts] alone.
+  final String? projectId;
 
   /// A project holds one designer slot and one constructor slot. The caller
   /// already knows which are filled, so it passes them down rather than making
@@ -18,6 +29,7 @@ class ProposalsPage extends StatefulWidget {
   const ProposalsPage({
     super.key,
     required this.openPosts,
+    this.projectId,
     this.designTaken = false,
     this.constructionTaken = false,
   });
@@ -31,9 +43,18 @@ class _ProposalsPageState extends State<ProposalsPage> {
   String? _error;
   List<ApplyResponse> _applies = [];
 
+  /// Posts the applications are read from. Seeded from the caller, then
+  /// replaced by a fresh fetch so the page stands on its own.
+  late List<OpenPostResponse> _posts = widget.openPosts;
+
+  /// Surveys already fetched, keyed by application id, so reopening a card
+  /// doesn't refetch.
+  final Map<String, List<SurveyResponse>> _surveysByApply = {};
+  String? _loadingSurveyFor;
+
   /// Id of the application currently being declined, so only that card shows a
   /// spinner and the rest stay interactive.
-  int? _rejectingId;
+  String? _rejectingId;
 
   // Local copies, updated on a successful accept, so a slot filled during this
   // visit still blocks a second accept if we haven't navigated away yet.
@@ -49,7 +70,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
   /// The role an application is for lives on its post, not on the application.
   /// Every apply here was fetched from [widget.openPosts], so the lookup hits.
   String _kindFor(ApplyResponse apply) {
-    for (final post in widget.openPosts) {
+    for (final post in _posts) {
       if (post.id == apply.postId) return post.serviceKind.toLowerCase();
     }
     return '';
@@ -75,6 +96,49 @@ class _ProposalsPageState extends State<ProposalsPage> {
     }
   }
 
+  /// Why the survey rule blocks this application, or null when it doesn't.
+  ///
+  /// Mirrors `ApplyService.EnsureSurveySubmittedAsync`: a post with a design
+  /// phase can only be awarded to someone who has walked the site. A booked
+  /// but unattended visit doesn't count — there's nothing for the owner to
+  /// read yet. Construction-only posts have no survey step and are exempt.
+  ///
+  /// Duplicated here so the button greys out with an explanation instead of
+  /// firing a request that comes back 409.
+  String? _surveyBlock(ApplyResponse apply) {
+    if (_kindFor(apply) == 'construction') return null;
+    if (apply.hasCompletedSurvey) return null;
+    if (apply.surveyCount == 0) {
+      return 'This provider has not surveyed the site yet. '
+          'A design-scope project can only be awarded after a site visit.';
+    }
+    return 'The site visit is booked but has not happened yet.';
+  }
+
+  /// One-line survey status for the card. No `intl` dependency in this file,
+  /// so the date is spelled out by hand — day/month is enough context here.
+  String _surveyLabel(ApplyResponse apply) {
+    String d(DateTime t) =>
+        '${t.day.toString().padLeft(2, '0')}/${t.month.toString().padLeft(2, '0')}';
+
+    if (apply.hasCompletedSurvey) {
+      final on = apply.latestSurveyedAt;
+      return on != null ? 'Site surveyed ${d(on.toLocal())}' : 'Site surveyed';
+    }
+    if (apply.surveyCount > 0) {
+      final at = apply.latestSurveyScheduledAt;
+      return at != null
+          ? 'Survey booked for ${d(at.toLocal())} — not done yet'
+          : 'Survey booked — not done yet';
+    }
+    return 'No site survey yet';
+  }
+
+  /// Slot conflicts first: "someone else already has this job" is a harder
+  /// stop than "they still need to visit", which the provider can still fix.
+  String? _blockedReason(ApplyResponse apply) =>
+      _slotConflict(apply) ?? _surveyBlock(apply);
+
   Future<void> _fetchApplies() async {
     setState(() {
       _loading = true;
@@ -82,15 +146,33 @@ class _ProposalsPageState extends State<ProposalsPage> {
     });
 
     try {
+      // Reload the project's posts rather than trusting the snapshot handed
+      // over by the previous screen. Applications are read per post, so an
+      // empty list here means an empty page with nothing explaining why.
+      var posts = _posts;
+      if (widget.projectId != null) {
+        final project = await ProjectService.getProject(widget.projectId!);
+        // Every post, not only the open ones: a post closes as soon as someone
+        // is accepted, and the owner still needs to see who else applied.
+        if (project.openPosts.isNotEmpty) posts = project.openPosts;
+      }
+
+
       final List<ApplyResponse> allApplies = [];
-      for (final post in widget.openPosts) {
+      for (final post in posts) {
         final result = await ApplyService.getApplies(postId: post.id, pageSize: 50);
         allApplies.addAll(result.items);
       }
-      
+
+
+      // Newest first, so the freshest bid is the one in view.
+      allApplies.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
       if (mounted) {
         setState(() {
+          _posts = posts;
           _applies = allApplies;
+          _surveysByApply.clear();
           _loading = false;
         });
       }
@@ -102,6 +184,44 @@ class _ProposalsPageState extends State<ProposalsPage> {
         });
       }
     }
+  }
+
+  /// Fetch and show the site survey attached to this application.
+  ///
+  /// Surveys filed while bidding hang off the application, not an engagement
+  /// — there is no engagement yet — so they are read with `?applyId=`.
+  Future<void> _openSurvey(ApplyResponse apply) async {
+    var surveys = _surveysByApply[apply.id];
+
+    if (surveys == null) {
+      setState(() => _loadingSurveyFor = apply.id);
+      try {
+        final result = await SurveyService.getSurveys(applyId: apply.id, pageSize: 50);
+        surveys = result.items;
+        _surveysByApply[apply.id] = surveys;
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not load the survey: $e')),
+        );
+        return;
+      } finally {
+        if (mounted) setState(() => _loadingSurveyFor = null);
+      }
+    }
+
+    if (!mounted) return;
+    if (surveys.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This provider has not filed a survey yet.')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SurveyDetailPage(surveys: surveys!)),
+    );
   }
 
   Future<void> _acceptApply(ApplyResponse apply) async {
@@ -232,7 +352,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
 
   Widget _buildProposalCard(ApplyResponse apply) {
     final bool isPending = apply.status.toLowerCase() == 'pending';
-    final String? blockedReason = isPending ? _slotConflict(apply) : null;
+    final String? blockedReason = isPending ? _blockedReason(apply) : null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -319,6 +439,61 @@ class _ProposalsPageState extends State<ProposalsPage> {
               ),
             ],
           ),
+          if (_kindFor(apply) != 'construction') ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(
+                  apply.hasCompletedSurvey
+                      ? Icons.fact_check_outlined
+                      : apply.surveyCount > 0
+                          ? Icons.event_outlined
+                          : Icons.error_outline,
+                  size: 14,
+                  color: apply.hasCompletedSurvey
+                      ? const Color(0xFF56642B)
+                      : AppColors.placeholder,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _surveyLabel(apply),
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: apply.hasCompletedSurvey
+                          ? const Color(0xFF56642B)
+                          : AppColors.placeholder,
+                    ),
+                  ),
+                ),
+                // Only offer to open it once something has actually been filed.
+                if (apply.surveyCount > 0)
+                  _loadingSurveyFor == apply.id
+                      ? const SizedBox(
+                          height: 14,
+                          width: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.espresso),
+                        )
+                      : TextButton(
+                          onPressed: () => _openSurvey(apply),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: const Size(0, 28),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'View',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.espresso,
+                            ),
+                          ),
+                        ),
+              ],
+            ),
+          ],
           if (isPending) ...[
             const SizedBox(height: 24),
             Row(

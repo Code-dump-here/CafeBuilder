@@ -6,7 +6,7 @@ import 'api_client.dart';
 
 class DesignService {
   static Future<DesignResponse> createDesign({
-    required int projectWorkingId,
+    required String projectWorkingId,
     required String title,
     required String type,
   }) async {
@@ -21,7 +21,7 @@ class DesignService {
   }
 
   static Future<DesignResponse> updateDesign(
-    int id, {
+    String id, {
     String? title,
     String? type,
   }) async {
@@ -34,21 +34,21 @@ class DesignService {
     return DesignResponse.fromJson(body);
   }
 
-  static Future<DesignResponse> submitDesign(int id) async {
+  static Future<DesignResponse> submitDesign(String id) async {
     final response = await ApiClient.authPost('/designs/$id/submit', {});
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return DesignResponse.fromJson(body);
   }
 
-  static Future<DesignResponse> approveDesign(int id) async {
+  static Future<DesignResponse> approveDesign(String id) async {
     final response = await ApiClient.authPost('/designs/$id/approve', {});
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return DesignResponse.fromJson(body);
   }
 
-  static Future<DesignResponse> requestRevision(int id, {required String reason}) async {
+  static Future<DesignResponse> requestRevision(String id, {required String reason}) async {
     final response = await ApiClient.authPost('/designs/$id/request-revision', {
       'reason': reason,
     });
@@ -57,7 +57,7 @@ class DesignService {
     return DesignResponse.fromJson(body);
   }
 
-  static Future<DesignResponse> startRevision(int id) async {
+  static Future<DesignResponse> startRevision(String id) async {
     final response = await ApiClient.authPost('/designs/$id/start-revision', {});
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -66,7 +66,7 @@ class DesignService {
 
   /// Upload design deliverable file (multipart)
   static Future<DesignImageResponse> uploadDesignFile(
-    int designId, {
+    String designId, {
     required File file,
     String? caption,
   }) async {
@@ -98,7 +98,7 @@ class DesignService {
     return DesignImageResponse.fromJson(body);
   }
 
-  static Future<void> deleteDesignFile(int designId, int fileId) async {
+  static Future<void> deleteDesignFile(String designId, String fileId) async {
     final response = await ApiClient.authDelete('/designs/$designId/files/$fileId');
     ApiClient.throwIfError(response);
   }
@@ -106,7 +106,7 @@ class DesignService {
   static Future<PaginationResponse<DesignResponse>> getDesigns({
     int pageNumber = 1,
     int pageSize = 10,
-    int? projectWorkingId,
+    String? projectWorkingId,
     String? status,
     String? type,
   }) async {
@@ -141,7 +141,7 @@ class DesignService {
   static List<DesignResponse> ownerVisible(Iterable<DesignResponse> designs) =>
       designs.where(isVisibleToOwner).toList();
 
-  static Future<DesignResponse> getDesign(int id) async {
+  static Future<DesignResponse> getDesign(String id) async {
     final response = await ApiClient.authGet('/designs/$id');
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);

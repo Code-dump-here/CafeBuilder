@@ -44,7 +44,15 @@ class _MarketplacePageState extends State<MarketplacePage>
       final response = await PostService.getPosts(pageNumber: 1, pageSize: 100);
       if (!mounted) return;
       setState(() {
-        final serverBroadcasts = response.items.map((post) {
+        // Newest first. This used to sort the mapped list by descending
+        // numeric id; ids are uuids now, so `int.tryParse` returned null for
+        // every row and the comparison was constant — the list silently kept
+        // whatever order the server sent. `createdAt` is what "newest"
+        // actually meant, so sort on that, before mapping.
+        final sortedPosts = [...response.items]
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+        final serverBroadcasts = sortedPosts.map((post) {
               // Try to extract AI-generated image URL from description
               String imageUrl = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600';
               final aiImageMatch = RegExp(r'🖼️ AI_IMAGE: (.+)').firstMatch(post.description);
@@ -73,12 +81,6 @@ class _MarketplacePageState extends State<MarketplacePage>
               imageUrl: imageUrl,
             );
             }).toList();
-
-        serverBroadcasts.sort((a, b) {
-          final idA = int.tryParse(a.id) ?? 0;
-          final idB = int.tryParse(b.id) ?? 0;
-          return idB.compareTo(idA);
-        });
 
         if (serverBroadcasts.isNotEmpty) {
           MarketplaceState.broadcasts.clear();
@@ -618,9 +620,11 @@ class _MarketplacePageState extends State<MarketplacePage>
                                   color: const Color(0xFF56642B)),
                             ),
                           ),
-                          Text('ID: ${project.id}',
+                          Text(project.status.toUpperCase(),
                               style: GoogleFonts.inter(
-                                  fontSize: 11, color: AppColors.placeholder)),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.placeholder)),
                         ],
                       ),
                       const SizedBox(height: 8),

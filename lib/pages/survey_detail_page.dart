@@ -157,6 +157,42 @@ class SurveyDetailPage extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+
+          // The visit itself. `createdAt` above only says when the record was
+          // filed; what the owner is comparing is whether the provider has
+          // actually been to the site, and when.
+          Row(
+            children: [
+              Icon(
+                survey.surveyedAt != null
+                    ? Icons.fact_check_outlined
+                    : Icons.event_outlined,
+                size: 15,
+                color: survey.surveyedAt != null
+                    ? const Color(0xFF56642B)
+                    : AppColors.placeholder,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  survey.surveyedAt != null
+                      ? 'Visited ${_formatDate(survey.surveyedAt!)}'
+                      : survey.scheduledAt != null
+                          ? 'Booked for ${_formatDate(survey.scheduledAt!)} — not visited yet'
+                          : 'No visit recorded',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: survey.surveyedAt != null
+                        ? const Color(0xFF56642B)
+                        : AppColors.placeholder,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
           const SizedBox(height: 16),
           Text(
             'Site condition',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'provider_brand_page.dart';
 import '../models/responses/api_responses.dart';
 import '../services/api_client.dart';
 import '../services/project_service.dart';
@@ -9,10 +10,10 @@ import '../services/service_provider_service.dart';
 import 'select_project_page.dart';
 
 class ConstructorDetailPage extends StatefulWidget {
-  final int serviceProviderProfileId;
+  final String serviceProviderProfileId;
   /// When reached from a specific project's detail page, the project is
   /// already known — skip asking the owner to pick a project again.
-  final int? contextProjectId;
+  final String? contextProjectId;
   final String? contextProjectName;
   /// Forces the engagement's contract type when the project only has one
   /// role slot left — a provider who can do both then fills just that slot.
@@ -34,7 +35,7 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
   ServiceProviderResponse? _provider;
   ProviderReviewSummary? _summary;
   List<ReviewResponse> _reviews = [];
-  final Map<int, ProjectOwnerResponse> _reviewOwners = {};
+  final Map<String, ProjectOwnerResponse> _reviewOwners = {};
   bool _loading = true;
   String? _error;
 
@@ -59,7 +60,7 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
       final summary = results[1] as ProviderReviewSummary;
       final reviews = results[2] as List<ReviewResponse>;
 
-      final owners = <int, ProjectOwnerResponse>{};
+      final owners = <String, ProjectOwnerResponse>{};
       for (final review in reviews) {
         if (owners.containsKey(review.projectShopOwnerId)) continue;
         try {
@@ -136,6 +137,24 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
           icon: const Icon(Icons.arrow_back, color: AppColors.espresso),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          // Brand, licences and past work — the part of a provider's pitch
+          // that is theirs to publish rather than ours to summarise.
+          IconButton(
+            tooltip: 'Hồ sơ năng lực',
+            icon: const Icon(Icons.workspace_premium_outlined,
+                color: AppColors.espresso),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProviderBrandPage(
+                  serviceProviderProfileId: widget.serviceProviderProfileId,
+                  providerName: _displayName,
+                ),
+              ),
+            ),
+          ),
+        ],
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

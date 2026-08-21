@@ -5,6 +5,8 @@ import '../models/responses/api_responses.dart';
 import '../services/comment_service.dart';
 import '../widgets/comments_section.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/material_cost_sheet.dart';
+import 'acceptance_checklist_page.dart';
 
 class ConstructionProgressDetailPage extends StatefulWidget {
   final List<ConstructionItemResponse> items;
@@ -47,9 +49,9 @@ class _ConstructionProgressDetailPageState
   /// [item] plus every descendant, so a milestone's progress accounts for work
   /// filed under its sub-items too. Walks breadth-first with a visited set, so
   /// a malformed parent chain can't loop forever.
-  Set<int> _subtreeIds(ConstructionItemResponse item) {
-    final ids = <int>{item.id};
-    var frontier = <int>{item.id};
+  Set<String> _subtreeIds(ConstructionItemResponse item) {
+    final ids = <String>{item.id};
+    var frontier = <String>{item.id};
     while (frontier.isNotEmpty) {
       final next = widget.items
           .where((i) =>
@@ -319,6 +321,38 @@ class _ConstructionProgressDetailPageState
     );
   }
 
+  /// Open the sign-off screen for a milestone.
+  ///
+  /// Refreshes nothing on return by design: this page is handed its items by
+  /// the caller, and grading a checklist doesn't change milestone status — the
+  /// provider still has to close it once the gate opens.
+  void _openChecklist(ConstructionItemResponse item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AcceptanceChecklistPage(
+          constructionItemId: item.id.toString(),
+          milestoneName: item.name,
+        ),
+      ),
+    );
+  }
+
+  void _openMaterialCost(ConstructionItemResponse item) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => MaterialCostSheet(
+        constructionItemId: item.id.toString(),
+        milestoneName: item.name,
+      ),
+    );
+  }
+
   Widget _buildMilestoneCard(ConstructionItemResponse item, int index) {
     // Same subtree the summary counts, so a card's bar can't disagree with the
     // overall figure it feeds into.
@@ -453,6 +487,68 @@ class _ConstructionProgressDetailPageState
                                 color: statusColor),
                           ),
                         ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Payment state moves independently of work status — a
+                // milestone can be finished and unpaid, or paid while still
+                // running — so it gets its own badge instead of being folded
+                // into the status pill. Only shown when true: an "unpaid"
+                // chip on every card would be noise.
+                if (item.isPaid) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.account_balance_wallet,
+                            size: 12, color: Color(0xFF2E7D32)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Đã thanh toán',
+                          style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF2E7D32)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Acceptance and cost, side by side. Both read from the same
+                // milestone and both are things the owner acts on, so they sit
+                // together rather than behind a menu.
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _openChecklist(item),
+                        icon: const Icon(Icons.fact_check_outlined, size: 16),
+                        label: Text(
+                          'Nghiệm thu',
+                          style: GoogleFonts.inter(fontSize: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _openMaterialCost(item),
+                        icon: const Icon(Icons.inventory_2_outlined, size: 16),
+                        label: Text(
+                          'Vật tư',
+                          style: GoogleFonts.inter(fontSize: 12),
+                        ),
                       ),
                     ),
                   ],
