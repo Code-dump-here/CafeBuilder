@@ -86,6 +86,20 @@ class SiteProfileService {
     return SiteProfileResponse.fromJson(ApiClient.parseBody(response));
   }
 
+  /// Approve the surveyed measurements into the project.
+  ///
+  /// Writes the sum of the per-floor areas to `projects.areaM2`, which is the
+  /// number every project screen and the AI payload read. Owner only — the
+  /// provider records the measurements but does not put them into force.
+  ///
+  /// 409 when no floor declares an area yet, or the project is already closed.
+  static Future<SiteProfileResponse> approveMeasurements(String id) async {
+    final response =
+        await ApiClient.authPost('/site-profiles/$id/approve-measurements', {});
+    ApiClient.throwIfError(response);
+    return SiteProfileResponse.fromJson(ApiClient.parseBody(response));
+  }
+
   // ── Floors ────────────────────────────────────────────────────────────────
 
   /// Add a storey. `floorNo` is unique per profile — a duplicate is a 409.
