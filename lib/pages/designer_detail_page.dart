@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'provider_brand_page.dart';
 import '../models/responses/api_responses.dart';
 import '../services/api_client.dart';
 import '../services/project_service.dart';
@@ -136,6 +137,24 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
           icon: const Icon(Icons.arrow_back, color: AppColors.espresso),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          // Brand, licences and past work — the part of a provider's pitch
+          // that is theirs to publish rather than ours to summarise.
+          IconButton(
+            tooltip: 'Hồ sơ năng lực',
+            icon: const Icon(Icons.workspace_premium_outlined,
+                color: AppColors.espresso),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProviderBrandPage(
+                  serviceProviderProfileId: widget.serviceProviderProfileId,
+                  providerName: _pageTitle,
+                ),
+              ),
+            ),
+          ),
+        ],
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

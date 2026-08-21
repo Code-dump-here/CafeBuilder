@@ -23,6 +23,8 @@ import 'edit_project_page.dart';
 import 'ai_advice_page.dart';
 import 'find_designers_page.dart';
 import 'find_constructors_page.dart';
+import 'site_profile_page.dart';
+import 'change_orders_page.dart';
 
 class ProjectDetailPage extends StatefulWidget {
   final String projectId;
@@ -162,6 +164,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   }
 
   Future<void> _loadProject() async {
+    // Reached from a route popping back into this screen, so the widget may
+    // already be gone by the time the future resolves. Every other setState
+    // in here is guarded; this one was not.
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -1675,6 +1681,43 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         Expanded(
           child: Column(
             children: [
+              _buildActionCard(
+                Icons.straighten,
+                'Site profile',
+                onTap: () {
+                  // The measured premises. Owner-authored, unlike most of
+                  // this screen, which reads what a provider filed.
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SiteProfilePage(
+                        projectShopOwnerId: widget.projectId,
+                        projectName: _project?.name ?? 'Dự án',
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildActionCard(
+                Icons.receipt_long_outlined,
+                'Change orders',
+                onTap: () {
+                  // Money agreed after the contract. Reloads on the way
+                  // back because approving one moves the committed total
+                  // the budget card above shows.
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChangeOrdersPage(
+                        projectWorkings: _projectWorkings,
+                        projectName: _project?.name ?? 'Dự án',
+                      ),
+                    ),
+                  ).then((_) => _loadProject());
+                },
+              ),
+              const SizedBox(height: 12),
               _buildActionCard(
                 Icons.forum_outlined,
                 'Message',
