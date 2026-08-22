@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
+import '../services/project_working_service.dart';
 
 class QuoteReviewPage extends StatefulWidget {
   final ContractResponse contract;
@@ -31,10 +32,8 @@ class _QuoteReviewPageState extends State<QuoteReviewPage> {
   Future<void> _handleApprove() async {
     setState(() => _isLoading = true);
     try {
-      // In a real scenario, this would call an API to approve the quote,
-      // moving it to 'pending_otp' or 'confirmed' state.
-      // For now, we mock success.
-      await Future.delayed(const Duration(seconds: 1)); 
+      await ProjectWorkingService.acceptDirectRequest(_contract.projectWorkingId);
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Quote approved successfully!')),
@@ -76,8 +75,8 @@ class _QuoteReviewPageState extends State<QuoteReviewPage> {
     setState(() => _isLoading = true);
     
     try {
-      // Mock reject API call
-      await Future.delayed(const Duration(seconds: 1));
+      await ProjectWorkingService.rejectDirectRequest(_contract.projectWorkingId);
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Quote rejected.')),
@@ -135,11 +134,11 @@ class _QuoteReviewPageState extends State<QuoteReviewPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Mock request modification API call
-      await Future.delayed(const Duration(seconds: 1));
+      await ProjectWorkingService.requestTermination(_contract.projectWorkingId, reason: feedback);
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Modification request sent to the provider.')),
+          const SnackBar(content: Text('Modification/Termination request sent to the provider.')),
         );
         Navigator.pop(context, true);
       }
