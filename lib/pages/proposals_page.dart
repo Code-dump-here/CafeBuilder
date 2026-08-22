@@ -159,9 +159,37 @@ class _ProposalsPageState extends State<ProposalsPage> {
 
 
       final List<ApplyResponse> allApplies = [];
+      final Map<String, List<SurveyResponse>> surveys = {};
+
       for (final post in posts) {
         final result = await ApplyService.getApplies(postId: post.id, pageSize: 50);
         allApplies.addAll(result.items);
+
+        // One request per post for every bidder's survey, instead of one per
+        // application when a card is opened. `?postId=` exists for exactly this
+        // reading: the owner is comparing site visits across providers before
+        // awarding, so all of them are wanted at once anyway.
+        //
+        // Not fatal if it fails — the cards carry their own survey counts, and
+        // _openSurvey still falls back to the per-application fetch on a miss.
+        try {
+          final filed = await SurveyService.getSurveys(postId: post.id, pageSize: 50);
+
+          // Seed an entry for every bidder, empty ones included: "asked, and
+          // there are none" is a real answer worth caching, otherwise every
+          // surveyless card refetches on each tap to learn the same thing.
+          for (final apply in result.items) {
+            surveys.putIfAbsent(apply.id, () => []);
+          }
+          for (final survey in filed.items) {
+            final applyId = survey.applyId;
+            if (applyId == null) continue;
+            surveys.putIfAbsent(applyId, () => []).add(survey);
+          }
+        } catch (_) {
+          // Deliberately left uncached: a miss costs one request later, a
+          // wrongly-cached empty list costs the owner the survey entirely.
+        }
       }
 
 
@@ -172,7 +200,9 @@ class _ProposalsPageState extends State<ProposalsPage> {
         setState(() {
           _posts = posts;
           _applies = allApplies;
-          _surveysByApply.clear();
+          _surveysByApply
+            ..clear()
+            ..addAll(surveys);
           _loading = false;
         });
       }
@@ -186,10 +216,12 @@ class _ProposalsPageState extends State<ProposalsPage> {
     }
   }
 
-  /// Fetch and show the site survey attached to this application.
+  /// Show the site survey attached to this application.
   ///
-  /// Surveys filed while bidding hang off the application, not an engagement
-  /// — there is no engagement yet — so they are read with `?applyId=`.
+  /// Normally a cache hit: _fetchApplies preloads every bidder's survey per
+  /// post. The fetch below is the fallback for when that preload failed, and
+  /// reads with `?applyId=` — a survey filed while bidding hangs off the
+  /// application, not an engagement, because there is no engagement yet.
   Future<void> _openSurvey(ApplyResponse apply) async {
     var surveys = _surveysByApply[apply.id];
 
