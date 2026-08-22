@@ -12,6 +12,7 @@ import 'contract_otp_page.dart';
 import 'design_deliverables_detail_page.dart';
 import 'construction_progress_detail_page.dart';
 import 'survey_detail_page.dart';
+import 'quote_review_page.dart';
 import '../widgets/confirm_dialog.dart';
 
 class CollaborationWorkspacePage extends StatefulWidget {
@@ -739,7 +740,10 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                               _buildContractConfirmedBanner(contract)
                             else if (contract.status == 'pending_otp' &&
                                 !_contracts.any((c) => c.status == 'confirmed'))
-                              _buildContractOtpBanner(contract),
+                              _buildContractOtpBanner(contract)
+                            else if ((contract.status == 'drafted' || contract.status == 'pending_review') &&
+                                !_contracts.any((c) => c.status == 'confirmed'))
+                              _buildQuoteReviewBanner(contract),
                             const SizedBox(height: 12),
                           ],
                           const SizedBox(height: 8),
@@ -766,6 +770,56 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                     ),
                   ),
                 ),
+    );
+  }
+
+  Widget _buildQuoteReviewBanner(ContractResponse contract) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE3F2FD),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBBDEFB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.rate_review_outlined, color: Color(0xFF1565C0)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Quote Review Required',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: const Color(0xFF1565C0), fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'A new quote and contract has been proposed. Please review the stages, revision rules, and items before proceeding.',
+            style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF1565C0)),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final providerName = _working?.providerDisplayName ?? '';
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => QuoteReviewPage(contract: contract, providerName: providerName)),
+              );
+              if (result == true) _loadWorkspaceData();
+            },
+            icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
+            label: const Text('Review Quote Details'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1976D2),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

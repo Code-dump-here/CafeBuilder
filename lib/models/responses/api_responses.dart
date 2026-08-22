@@ -839,6 +839,62 @@ class SurveyResponse {
   );
 }
 
+class ContractStage {
+  final String id;
+  final String name;
+  final double amount;
+  final String? description;
+  final DateTime? estimatedDelivery;
+
+  ContractStage({
+    required this.id,
+    required this.name,
+    required this.amount,
+    this.description,
+    this.estimatedDelivery,
+  });
+
+  factory ContractStage.fromJson(Map<String, dynamic> json) => ContractStage(
+        id: json['id']?.toString() ?? '',
+        name: json['name'] ?? '',
+        amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+        description: json['description'],
+        estimatedDelivery: json['estimatedDelivery'] != null
+            ? DateTime.parse(json['estimatedDelivery'])
+            : null,
+      );
+}
+
+class ContractItem {
+  final String id;
+  final String name;
+  final String? description;
+  final int quantity;
+  final String unit;
+  final double unitPrice;
+  final double totalPrice;
+
+  ContractItem({
+    required this.id,
+    required this.name,
+    this.description,
+    required this.quantity,
+    required this.unit,
+    required this.unitPrice,
+    required this.totalPrice,
+  });
+
+  factory ContractItem.fromJson(Map<String, dynamic> json) => ContractItem(
+        id: json['id']?.toString() ?? '',
+        name: json['name'] ?? '',
+        description: json['description'],
+        quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+        unit: json['unit'] ?? 'pcs',
+        unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0.0,
+        totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0.0,
+      );
+}
+
 class ContractResponse {
   final String id;
   final String projectWorkingId;
@@ -855,6 +911,13 @@ class ContractResponse {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // New fields for Quote / Milestones Review
+  final List<ContractStage> stages;
+  final List<ContractItem> items;
+  final int? allowedRevisions;
+  final double? revisionFee;
+  final String? quoteNote;
+
   ContractResponse({
     required this.id,
     required this.projectWorkingId,
@@ -870,6 +933,11 @@ class ContractResponse {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.stages = const [],
+    this.items = const [],
+    this.allowedRevisions,
+    this.revisionFee,
+    this.quoteNote,
   });
 
   factory ContractResponse.fromJson(Map<String, dynamic> json) =>
@@ -892,6 +960,17 @@ class ContractResponse {
         status: json['status'] ?? '',
         createdAt: _parseDate(json['createdAt']),
         updatedAt: _parseDate(json['updatedAt']),
+        stages: (json['stages'] as List?)
+                ?.map((e) => ContractStage.fromJson(e))
+                .toList() ??
+            [],
+        items: (json['items'] as List?)
+                ?.map((e) => ContractItem.fromJson(e))
+                .toList() ??
+            [],
+        allowedRevisions: (json['allowedRevisions'] as num?)?.toInt(),
+        revisionFee: (json['revisionFee'] as num?)?.toDouble(),
+        quoteNote: json['quoteNote'],
       );
 }
 
