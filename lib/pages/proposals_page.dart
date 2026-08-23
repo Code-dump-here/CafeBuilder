@@ -403,24 +403,31 @@ class _ProposalsPageState extends State<ProposalsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 18,
-                    backgroundColor: AppColors.primaryFixedDim,
-                    child: Icon(Icons.person, color: AppColors.espresso, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: Text(
-                      apply.providerDisplayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+              // Expanded, not a bare Row. A non-flex child of a Row is laid out
+              // with unbounded width, so the Flexible below would have nothing
+              // to flex against — that throws during layout and takes the whole
+              // proposals list down with it, leaving the page blank.
+              Expanded(
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppColors.primaryFixedDim,
+                      child: Icon(Icons.person, color: AppColors.espresso, size: 20),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        apply.providerDisplayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
