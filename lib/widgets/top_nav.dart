@@ -53,6 +53,9 @@ class _TopNavState extends State<TopNav> {
         onNotificationRead: () {
           if (mounted && _unreadCount > 0) setState(() => _unreadCount--);
         },
+        onAllNotificationsRead: () {
+          if (mounted) setState(() => _unreadCount = 0);
+        },
       ),
     );
     _loadUnreadCount();

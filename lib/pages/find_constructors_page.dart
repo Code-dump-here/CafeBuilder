@@ -292,18 +292,23 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD9EAA3).withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  type,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF56642B),
+              // Flexible so a long label ('CONSTRUCTION FIRM') shrinks instead
+              // of pushing the rating badge past the card edge.
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD9EAA3).withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    type,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF56642B),
+                    ),
                   ),
                 ),
               ),
@@ -344,9 +349,14 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
             children: [
               const Icon(Icons.coffee_outlined, size: 14, color: AppColors.placeholder),
               const SizedBox(width: 8),
-              Text(
-                experience,
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+              // A Row hands its children unbounded width, so this label ran off
+              // the card once the provider supplied a longer one.
+              Expanded(
+                child: Text(
+                  experience,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                ),
               ),
             ],
           ),
@@ -355,9 +365,12 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
             children: [
               const Icon(Icons.location_on_outlined, size: 14, color: AppColors.placeholder),
               const SizedBox(width: 8),
-              Text(
-                provider.isVerified ? 'Verified partner · Vietnam' : 'Vietnam',
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+              Expanded(
+                child: Text(
+                  provider.isVerified ? 'Verified partner · Vietnam' : 'Vietnam',
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                ),
               ),
             ],
           ),
