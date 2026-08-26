@@ -5,9 +5,12 @@ import '../models/responses/api_responses.dart';
 import '../services/apply_service.dart';
 import '../services/project_service.dart';
 import '../services/survey_service.dart';
+import '../services/project_working_service.dart';
 import '../widgets/confirm_dialog.dart';
 import 'collaboration_workspace_page.dart';
 import 'survey_detail_page.dart';
+import 'designer_detail_page.dart';
+import 'constructor_detail_page.dart';
 
 class ProposalsPage extends StatefulWidget {
   /// Posts as the caller knew them. Used only as the initial value — the page
@@ -51,6 +54,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
   /// doesn't refetch.
   final Map<String, List<SurveyResponse>> _surveysByApply = {};
   String? _loadingSurveyFor;
+  final Map<String, int> _completedProjectsCount = {};
 
   /// Id of the application currently being declined, so only that card shows a
   /// spinner and the rest stay interactive.
@@ -160,10 +164,25 @@ class _ProposalsPageState extends State<ProposalsPage> {
 
       final List<ApplyResponse> allApplies = [];
       final Map<String, List<SurveyResponse>> surveys = {};
+      final Map<String, int> completedProjectsCount = {};
 
       for (final post in posts) {
         final result = await ApplyService.getApplies(postId: post.id, pageSize: 50);
         allApplies.addAll(result.items);
+
+        await Future.wait(result.items.map((apply) async {
+          if (!completedProjectsCount.containsKey(apply.serviceProviderProfileId)) {
+            completedProjectsCount[apply.serviceProviderProfileId] = 0;
+            try {
+              final workings = await ProjectWorkingService.getProjectWorkings(
+                serviceProviderProfileId: apply.serviceProviderProfileId,
+                status: 'completed',
+                pageSize: 1,
+              );
+              completedProjectsCount[apply.serviceProviderProfileId] = workings.totalItems;
+            } catch (_) {}
+          }
+        }));
 
         // One request per post for every bidder's survey, instead of one per
         // application when a card is opened. `?postId=` exists for exactly this
@@ -203,6 +222,9 @@ class _ProposalsPageState extends State<ProposalsPage> {
           _surveysByApply
             ..clear()
             ..addAll(surveys);
+          _completedProjectsCount
+            ..clear()
+            ..addAll(completedProjectsCount);
           _loading = false;
         });
       }
@@ -335,6 +357,23 @@ class _ProposalsPageState extends State<ProposalsPage> {
     }
   }
 
+  void _goToBio(ApplyResponse apply) {
+    final kind = _kindFor(apply);
+    if (kind == 'design' || kind == 'both') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => DesignerDetailPage(
+        serviceProviderProfileId: apply.serviceProviderProfileId,
+        contextProjectId: widget.projectId,
+        contextContractType: kind,
+      )));
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ConstructorDetailPage(
+        serviceProviderProfileId: apply.serviceProviderProfileId,
+        contextProjectId: widget.projectId,
+        contextContractType: kind,
+      )));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -417,11 +456,40 @@ class _ProposalsPageState extends State<ProposalsPage> {
                     ),
                     const SizedBox(width: 12),
                     Flexible(
-                      child: Text(
-                        apply.providerDisplayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            apply.providerDisplayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Text(
+                                '${_completedProjectsCount[apply.serviceProviderProfileId] ?? 0} completed projects',
+                                style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
+                              ),
+                              const SizedBox(width: 4),
+                              const Text('•', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                              const SizedBox(width: 4),
+                              InkWell(
+                                onTap: () => _goToBio(apply),
+                                child: Text(
+                                  'View Bio',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: const Color(0xFF56642B),
+                                    fontWeight: FontWeight.bold,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
