@@ -7,6 +7,7 @@ import '../services/project_service.dart';
 import '../services/survey_service.dart';
 import '../widgets/confirm_dialog.dart';
 import 'collaboration_workspace_page.dart';
+import 'provider_brand_page.dart';
 import 'survey_detail_page.dart';
 
 class ProposalsPage extends StatefulWidget {
@@ -382,6 +383,21 @@ class _ProposalsPageState extends State<ProposalsPage> {
     );
   }
 
+  /// Opens the applicant's brand page. The owner is comparing bids, and the
+  /// name on the card is the only thing identifying who is behind each one —
+  /// the portfolio, rating and past work all live one tap away.
+  void _openProviderProfile(ApplyResponse apply) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProviderBrandPage(
+          serviceProviderProfileId: apply.serviceProviderProfileId,
+          providerName: apply.providerDisplayName,
+        ),
+      ),
+    );
+  }
+
   Widget _buildProposalCard(ApplyResponse apply) {
     final bool isPending = apply.status.toLowerCase() == 'pending';
     final String? blockedReason = isPending ? _blockedReason(apply) : null;
@@ -408,23 +424,41 @@ class _ProposalsPageState extends State<ProposalsPage> {
               // to flex against — that throws during layout and takes the whole
               // proposals list down with it, leaving the page blank.
               Expanded(
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.primaryFixedDim,
-                      child: Icon(Icons.person, color: AppColors.espresso, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: Text(
-                        apply.providerDisplayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                // The card is a Container with a white BoxDecoration, so an
+                // ink splash would be painted over by it. A transparent
+                // Material gives the ripple a surface of its own without
+                // changing how the card looks.
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _openProviderProfile(apply),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          const CircleAvatar(
+                            radius: 18,
+                            backgroundColor: AppColors.primaryFixedDim,
+                            child: Icon(Icons.person, color: AppColors.espresso, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Text(
+                              apply.providerDisplayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                            ),
+                          ),
+                          // Without this nothing tells the owner the name is
+                          // more than a label.
+                          const SizedBox(width: 2),
+                          const Icon(Icons.chevron_right, size: 16, color: AppColors.placeholder),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
