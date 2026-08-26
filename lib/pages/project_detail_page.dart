@@ -1076,14 +1076,17 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
               ),
             )
           else
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
               children: [
-                TextButton.icon(
-                  onPressed: _showRecruitProviderSheet,
-                  icon: const Icon(Icons.add_circle_outline, size: 14, color: AppColors.espresso),
-                  label: Text('Post Opening', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
-                ),
+                // Hidden once every remaining role already has a listing —
+                // inviting a provider directly is still available below.
+                if (_hasRoleToPost)
+                  TextButton.icon(
+                    onPressed: _showRecruitProviderSheet,
+                    icon: const Icon(Icons.add_circle_outline, size: 14, color: AppColors.espresso),
+                    label: Text('Post Opening', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso)),
+                  ),
                 TextButton.icon(
                   onPressed: _browseProvidersForProject,
                   icon: const Icon(Icons.person_search_outlined, size: 14, color: AppColors.espresso),
@@ -1105,6 +1108,25 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
   bool get _designTaken => _roleTaken('design');
   bool get _constructionTaken => _roleTaken('construction');
+
+  /// True when an open listing already advertises this role. A 'both' listing
+  /// asks for one provider covering design and construction, so it counts for
+  /// either role on its own.
+  bool _roleHasOpenPost(String role) => _openPosts.any((p) {
+        final k = p.serviceKind.toLowerCase();
+        return k == role || k == 'both';
+      });
+
+  /// A role still worth advertising: nobody is engaged for it and no open
+  /// listing is already asking for it. Posting a second listing for a role
+  /// that already has one just splits the applicants across two queues.
+  bool _roleNeedsPost(String role) => !_roleTaken(role) && !_roleHasOpenPost(role);
+
+  /// Whether there is anything left to advertise. Drives the 'Post Opening'
+  /// button on both the team card and the recruiting card — a project that
+  /// posted for a designer can still need a constructor, and vice versa.
+  bool get _hasRoleToPost =>
+      _roleNeedsPost('design') || _roleNeedsPost('construction');
 
   String _postLabel(OpenPostResponse p) {
     final k = p.serviceKind.toLowerCase();
@@ -1328,15 +1350,23 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   void _showRecruitProviderSheet() {
     if (_project == null) return;
 
-    final designOpen = !_designTaken;
-    final constructionOpen = !_constructionTaken;
+    // A role drops off this sheet once it is engaged OR already advertised,
+    // so an owner who posted for a designer is offered the constructor slot
+    // and not a duplicate designer listing.
+    final designOpen = _roleNeedsPost('design');
+    final constructionOpen = _roleNeedsPost('construction');
     // 'both' is a single provider covering both roles — only offer it while
     // neither slot is taken.
     final bothOpen = designOpen && constructionOpen;
 
     if (!designOpen && !constructionOpen) {
+      final teamComplete = _designTaken && _constructionTaken;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This project already has a designer and a constructor.')),
+        SnackBar(
+          content: Text(teamComplete
+              ? 'This project already has a designer and a constructor.'
+              : 'Every role this project still needs already has an open listing.'),
+        ),
       );
       return;
     }
@@ -2140,19 +2170,36 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    // Wrap, not Row: 'DESIGNER + CONSTRUCTOR' next to a full
+                    // deadline runs past the card edge on a phone. Letting the
+                    // two facts fall onto separate lines keeps them readable
+                    // instead of clipping the second one.
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        const Icon(Icons.work_outline, size: 12, color: AppColors.textSecondary),
-                        const SizedBox(width: 4),
-                        Text(_postLabel(post).toUpperCase(), style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
-                        const SizedBox(width: 16),
-                        const Icon(Icons.timer_outlined, size: 12, color: AppColors.textSecondary),
-                        const SizedBox(width: 4),
-                        Text('Deadline: $deadlineStr', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.work_outline, size: 12, color: AppColors.textSecondary),
+                            const SizedBox(width: 4),
+                            Text(_postLabel(post).toUpperCase(), style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.timer_outlined, size: 12, color: AppColors.textSecondary),
+                            const SizedBox(width: 4),
+                            Text('Deadline: $deadlineStr', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
+                          ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    Wrap(
+                      spacing: 8,
                       children: [
                         TextButton.icon(
                           onPressed: () => _editPostDeadline(post),
@@ -2164,7 +2211,6 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         TextButton.icon(
                           onPressed: () => _closePost(post, stale: false),
                           icon: const Icon(Icons.close_rounded, size: 14, color: Colors.red),
@@ -2183,34 +2229,56 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             );
           }),
           const SizedBox(height: 8),
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: openPosts.isEmpty
-                  ? null
-                  : () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProposalsPage(
-                      openPosts: openPosts,
-                      projectId: widget.projectId,
-                      designTaken: _designTaken,
-                      constructionTaken: _constructionTaken,
-                    ),
-                  ),
-                ).then((_) => _loadProject());
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.espresso,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                minimumSize: const Size(0, 36),
+          // This card replaces the team card entirely while no provider has
+          // been accepted yet, so it has to carry the posting action too —
+          // otherwise a project that advertised for a designer had no way
+          // left to also advertise for a constructor.
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ElevatedButton.icon(
+                onPressed: openPosts.isEmpty
+                    ? null
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProposalsPage(
+                              openPosts: openPosts,
+                              projectId: widget.projectId,
+                              designTaken: _designTaken,
+                              constructionTaken: _constructionTaken,
+                            ),
+                          ),
+                        ).then((_) => _loadProject());
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.espresso,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                  minimumSize: const Size(0, 36),
+                ),
+                icon: const Icon(Icons.list_alt, size: 14),
+                label: Text('View Proposals', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold)),
               ),
-              icon: const Icon(Icons.list_alt, size: 14),
-              label: Text('View Proposals', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold)),
-            ),
+              if (_hasRoleToPost)
+                OutlinedButton.icon(
+                  onPressed: _showRecruitProviderSheet,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.espresso,
+                    side: const BorderSide(color: AppColors.espresso),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    minimumSize: const Size(0, 36),
+                  ),
+                  icon: const Icon(Icons.add_circle_outline, size: 14),
+                  label: Text('Post Opening', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+            ],
           )
         ],
       )
