@@ -43,8 +43,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
 
   // Broadcast settings
   final List<String> _reqs = ['Designer'];
-  String _visibility = 'Public'; // Public or Restricted
-  String _expectedStart = 'Oct 2024';
+  final String _expectedStart = 'Oct 2024';
   late String _budgetTier;
   late DateTime _submissionDeadline;
 
@@ -578,7 +577,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                       style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.placeholder, letterSpacing: 1.0),
                     ),
                     Text(
-                      'Select one',
+                      'Select at least one',
                       style: GoogleFonts.inter(fontSize: 11, color: AppColors.placeholder),
                     ),
                   ],
@@ -587,14 +586,6 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                 _buildServiceCheckbox('Designer', 'Interior and architectural design'),
                 _buildServiceCheckbox('Constructor', 'Full project construction and build'),
                 _buildServiceCheckbox('Both', 'End-to-end design and construction'),
-                const SizedBox(height: 28),
-                Text(
-                  'VISIBILITY SETTINGS',
-                  style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.placeholder, letterSpacing: 1.0),
-                ),
-                const SizedBox(height: 12),
-                _buildVisibilityRadio('Public Broadcast', 'All verified professionals', true),
-                _buildVisibilityRadio('Restricted', 'Invite-only selection', false),
                 const SizedBox(height: 28),
                 Text(
                   'PROJECT PARAMETERS',
@@ -687,19 +678,36 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     );
   }
 
+  /// Designer and Constructor are independent picks, so an owner who needs
+  /// both roles can tick them together. 'Both' is shorthand for the same pair,
+  /// so choosing it clears the individual picks (and picking either one clears
+  /// 'Both') rather than leaving two overlapping selections on screen.
+  void _toggleService(String title) {
+    setState(() {
+      if (title == 'Both') {
+        _reqs
+          ..clear()
+          ..add('Both');
+        return;
+      }
+      _reqs.remove('Both');
+      if (_reqs.contains(title)) {
+        _reqs.remove(title);
+      } else {
+        _reqs.add(title);
+      }
+      // A broadcast with no role selected has nothing to match providers on,
+      // so the last remaining pick can't be cleared.
+      if (_reqs.isEmpty) _reqs.add(title);
+    });
+  }
+
   Widget _buildServiceCheckbox(String title, String desc) {
     bool isChecked = _reqs.contains(title);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: GestureDetector(
-        onTap: () {
-          setState(() {
-            if (!isChecked) {
-              _reqs.clear();
-              _reqs.add(title);
-            }
-          });
-        },
+        onTap: () => _toggleService(title),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -732,64 +740,6 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVisibilityRadio(String title, String desc, bool isPublic) {
-    bool selected = (isPublic && _visibility == 'Public') || (!isPublic && _visibility == 'Restricted');
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _visibility = isPublic ? 'Public' : 'Restricted';
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: selected ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.5),
-              width: selected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                isPublic ? Icons.public : Icons.lock_outline,
-                color: selected ? AppColors.espresso : AppColors.placeholder,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.playfairDisplay(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
-                    ),
-                    Text(
-                      desc,
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              Radio<String>(
-                value: isPublic ? 'Public' : 'Restricted',
-                groupValue: _visibility,
-                activeColor: AppColors.espresso,
-                onChanged: (val) {
-                  if (val != null) setState(() => _visibility = val);
-                },
               ),
             ],
           ),
