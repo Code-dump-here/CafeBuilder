@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../models/responses/quotation_responses.dart';
+import '../models/responses/quotation_payment_responses.dart';
 import '../services/quotation_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/confirm_dialog.dart';
@@ -60,7 +60,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
       message: 'Are you sure you want to ${action.toLowerCase()} this quotation?',
       confirmLabel: action,
     );
-    if (!confirmed) return;
+    if (!confirmed || !mounted) return;
 
     if (action == 'Request Revision') {
       final noteController = TextEditingController();
@@ -81,9 +81,21 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
       );
       if (submitRevision != true) return;
 
+      // The server requires a non-empty reason, so an empty box is stopped
+      // here rather than coming back as a 400 the owner can't act on.
+      final reason = noteController.text.trim();
+      if (reason.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please describe what needs to change.')),
+          );
+        }
+        return;
+      }
+
       setState(() => _isActionLoading = true);
       try {
-        await QuotationService.requestRevision(widget.quotationId, note: noteController.text);
+        await QuotationService.requestRevision(widget.quotationId, reason: reason);
         await _fetchQuotation();
       } catch (e) {
         if (mounted) {
@@ -127,7 +139,11 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
 
     final q = _quotation!;
     final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'VND', decimalDigits: 0);
-    final isPending = q.status.toLowerCase() == 'pending' || q.status.toLowerCase() == 'sent';
+    // `sent` is the only state the owner can act on: `draft` hasn't been sent
+    // yet, `revision_requested` is waiting on the provider's new version, and
+    // the rest are final. Status values are the server's enum names verbatim
+    // (draft | sent | revision_requested | accepted | rejected | superseded).
+    final isPending = q.status.toLowerCase() == 'sent';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -148,15 +164,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
                 if (q.items.isNotEmpty) _buildItemsList(q.items, currencyFormatter),
                 if (q.paymentTerms.isNotEmpty) _buildPaymentTerms(q.paymentTerms, currencyFormatter),
                 _buildRevisionInfo(q, currencyFormatter),
-                if (q.documentUrl != null && q.documentUrl!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: ElevatedButton.icon(
-                      onPressed: () => launchUrl(Uri.parse(q.documentUrl!)),
-                      icon: const Icon(Icons.picture_as_pdf),
-                      label: const Text('View Quotation Document'),
-                    ),
-                  ),
+                if (q.attachments.isNotEmpty) _buildAttachments(q.attachments),
               ],
             ),
           ),
@@ -177,8 +185,10 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(q.title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(q.description, style: GoogleFonts.inter(color: AppColors.textSecondary)),
+          if (q.note != null && q.note!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(q.note!, style: GoogleFonts.inter(color: AppColors.textSecondary)),
+          ],
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -192,7 +202,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
             children: [
               const Text('Status: '),
               Chip(
-                label: Text(q.status),
+                label: Text(_statusLabel(q.status)),
                 backgroundColor: _getStatusColor(q.status),
               ),
             ],
@@ -222,13 +232,13 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(item.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-                      if (item.description.isNotEmpty)
-                        Text(item.description, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
-                      Text('${item.quantity} ${item.unit} x ${formatter.format(item.unitPrice)}', style: GoogleFonts.inter(fontSize: 12)),
+                      if (item.description != null && item.description!.isNotEmpty)
+                        Text(item.description!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
+                      Text('${item.quantity} ${item.unit ?? ''} x ${formatter.format(item.unitPrice)}'.replaceAll('  ', ' '), style: GoogleFonts.inter(fontSize: 12)),
                     ],
                   ),
                 ),
-                Text(formatter.format(item.totalPrice), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                Text(formatter.format(item.amount), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               ],
             ),
           )),
@@ -247,13 +257,27 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
         children: [
           Text('Payment Milestones', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
           const Divider(),
+          // The schedule has no dates — an instalment is triggered by a
+          // condition ("on signing", "after handover"), and the percentage is
+          // what the owner checks the split against.
           ...terms.map((term) => ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(term.description),
-            subtitle: term.expectedPaymentDate != null
-                ? Text('Expected: ${DateFormat('dd MMM yyyy').format(term.expectedPaymentDate!)}')
+            title: Text(term.name),
+            subtitle: term.condition != null && term.condition!.isNotEmpty
+                ? Text(term.condition!)
                 : null,
-            trailing: Text(formatter.format(term.amount), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(formatter.format(term.amount), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                if (term.percentage != null)
+                  Text(
+                    '${term.percentage!.toStringAsFixed(term.percentage! % 1 == 0 ? 0 : 1)}%',
+                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+              ],
+            ),
           )),
         ],
       ),
@@ -273,13 +297,56 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Included Revisions'),
-            trailing: Text(q.maxRevisions.toString(), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            trailing: Text(
+              q.freeRevisionCount?.toString() ?? 'Not stated',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            ),
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Extra Revision Fee'),
-            trailing: Text(formatter.format(q.revisionFee), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            // null is not zero here: it means the provider hasn't published a
+            // price per extra round, not that extra rounds are free.
+            trailing: Text(
+              q.extraRevisionFee != null ? formatter.format(q.extraRevisionFee) : 'Not stated',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Files the provider attached to the bid.
+  ///
+  /// `fileUrl` is the raw object name in the bucket; `fileViewUrl` is the
+  /// absolute URL the server already resolved, so it is the one to open.
+  Widget _buildAttachments(List<QuotationAttachmentResponse> attachments) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Attachments', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Divider(),
+          ...attachments.map((file) {
+            final url = file.fileViewUrl;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.attach_file, color: AppColors.espresso),
+              title: Text(
+                file.fileName?.isNotEmpty == true ? file.fileName! : 'Attachment',
+                style: GoogleFonts.inter(fontSize: 14),
+              ),
+              trailing: const Icon(Icons.open_in_new, size: 18),
+              enabled: url != null && url.isNotEmpty,
+              onTap: url == null || url.isEmpty
+                  ? null
+                  : () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+            );
+          }),
         ],
       ),
     );
@@ -320,14 +387,37 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
     );
   }
 
+  /// The server sends its enum names (`revision_requested`), which are not
+  /// meant to be read as-is.
+  String _statusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return 'Draft';
+      case 'sent':
+        return 'Awaiting your decision';
+      case 'revision_requested':
+        return 'Revision requested';
+      case 'accepted':
+        return 'Accepted';
+      case 'rejected':
+        return 'Rejected';
+      case 'superseded':
+        return 'Superseded';
+      default:
+        return status;
+    }
+  }
+
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'accepted':
         return Colors.green.shade100;
       case 'rejected':
         return Colors.red.shade100;
-      case 'revisionrequested':
+      case 'revision_requested':
         return Colors.orange.shade100;
+      case 'superseded':
+        return Colors.grey.shade300;
       default:
         return Colors.blue.shade100;
     }
