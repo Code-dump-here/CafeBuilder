@@ -5,11 +5,10 @@ import 'api_client.dart';
 /// Quotations as the **owner's decision surface** — the comparison screen.
 ///
 /// Separate from [QuotationService] on purpose, and the difference is the
-/// model, not the endpoints: `quotation_responses.dart` (used by the details
-/// screen) does not carry the fields the comparison is actually made on —
-/// `version`, the provider's rating / years of experience / verified badge,
-/// and instalments expressed as a percentage of the total. Those live in
-/// `quotation_payment_responses.dart`, which mirrors what the API returns.
+/// screen, not the data: this one queries by `postId` to put every provider's
+/// bid side by side, while `QuotationService` opens a single bid from one
+/// application. Both parse `quotation_payment_responses.dart`, which mirrors
+/// the API response field for field.
 ///
 /// The consequential call is [accept]. It is not just a status change: for a
 /// quotation attached to an application it also accepts that application,
