@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/responses/quotation_payment_responses.dart';
-import '../services/owner_quotation_service.dart';
+import '../services/quotation_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/quotation_status.dart';
+import '../widgets/confirm_dialog.dart';
 
 /// Where the owner compares priced bids and picks a provider.
 ///
@@ -62,8 +65,13 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
       _error = null;
     });
     try {
-      final page = await OwnerQuotationService.getQuotationsForPost(
-        widget.postId,
+      // Page size is 50 rather than the API default of 10 because a bid set is
+      // read as a whole; a second page would hide a rival bid from the
+      // comparison. The server already scopes results to the signed-in
+      // account, so an owner only ever sees bids sent to their own projects.
+      final page = await QuotationService.getQuotations(
+        postId: widget.postId,
+        pageSize: 50,
       );
       if (!mounted) return;
       setState(() {
@@ -99,26 +107,26 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(
-          'Duyệt báo giá này?',
+          'Accept this quotation?',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: Text(
-          '${quotation.providerName ?? 'Nhà cung cấp'} · '
+          '${quotation.providerName ?? 'Provider'} · '
           '${_money.format(quotation.totalAmount)} VND\n\n'
-          'Duyệt báo giá đồng thời là CHỌN nhà cung cấp này: hồ sơ ứng tuyển của '
-          'họ được chấp nhận, bài đăng đóng lại, và các báo giá còn lại hết hiệu '
-          'lực. Không hoàn tác được.',
+          'Accepting a quotation also CHOOSES this provider: their application '
+          'is accepted, the post closes, and every rival bid is superseded. '
+          'This cannot be undone.',
           style: GoogleFonts.inter(fontSize: 13, height: 1.45),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Huỷ'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.espresso),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Duyệt & chọn'),
+            child: const Text('Accept & choose'),
           ),
         ],
       ),
@@ -127,9 +135,9 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
 
     setState(() => _busy.add(quotation.id));
     try {
-      await OwnerQuotationService.accept(quotation.id);
+      await QuotationService.acceptQuotation(quotation.id);
       _accepted = true;
-      _toast('Đã duyệt báo giá và chọn nhà cung cấp này.');
+      _toast('Quotation accepted — this provider is now hired.');
       await _load();
     } catch (e) {
       _toast(_cleanError(e), error: true);
@@ -142,18 +150,19 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
     // The reason is the only feedback the provider gets. Optional server-side,
     // asked for here — a bid turned down with no explanation tells them
     // nothing about whether to bid differently next time.
-    final reason = await _askReason(
-      title: 'Từ chối báo giá',
-      hint: 'Vì sao bạn không chọn bản này?',
-      confirmLabel: 'Từ chối',
+    final reason = await showReasonDialog(
+      context,
+      title: 'Reject quotation',
+      hint: 'Why are you turning this bid down?',
+      confirmLabel: 'Reject',
       destructive: true,
     );
     if (reason == null) return;
 
     setState(() => _busy.add(quotation.id));
     try {
-      await OwnerQuotationService.reject(quotation.id, reason: reason);
-      _toast('Đã từ chối báo giá.');
+      await QuotationService.rejectQuotation(quotation.id, reason: reason);
+      _toast('Quotation rejected.');
       await _load();
     } catch (e) {
       _toast(_cleanError(e), error: true);
@@ -163,10 +172,11 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
   }
 
   Future<void> _requestRevision(QuotationResponse quotation) async {
-    final reason = await _askReason(
-      title: 'Yêu cầu bản báo giá khác',
-      hint: 'Cần sửa gì so với bản này?',
-      confirmLabel: 'Gửi yêu cầu',
+    final reason = await showReasonDialog(
+      context,
+      title: 'Ask for a different quotation',
+      hint: 'What needs to change compared to this version?',
+      confirmLabel: 'Send request',
       // Required by the server, not just by us: a revision request with an
       // empty reason is refused with a 400.
       requireText: true,
@@ -175,67 +185,14 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
 
     setState(() => _busy.add(quotation.id));
     try {
-      await OwnerQuotationService.requestRevision(quotation.id, reason: reason);
-      _toast('Đã gửi yêu cầu. Nhà cung cấp sẽ gửi bản mới.');
+      await QuotationService.requestRevision(quotation.id, reason: reason);
+      _toast('Request sent — the provider will submit a new version.');
       await _load();
     } catch (e) {
       _toast(_cleanError(e), error: true);
     } finally {
       if (mounted) setState(() => _busy.remove(quotation.id));
     }
-  }
-
-  Future<String?> _askReason({
-    required String title,
-    required String hint,
-    required String confirmLabel,
-    bool destructive = false,
-    bool requireText = false,
-  }) async {
-    final controller = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: Text(
-            title,
-            style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-          ),
-          content: TextField(
-            controller: controller,
-            maxLines: 4,
-            autofocus: true,
-            onChanged: (_) => setLocal(() {}),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: GoogleFonts.inter(
-                fontSize: 13,
-                color: AppColors.placeholder,
-              ),
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Huỷ'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor:
-                    destructive ? Colors.red.shade700 : AppColors.espresso,
-              ),
-              onPressed: requireText && controller.text.trim().isEmpty
-                  ? null
-                  : () => Navigator.pop(ctx, controller.text.trim()),
-              child: Text(confirmLabel),
-            ),
-          ],
-        ),
-      ),
-    );
-    controller.dispose();
-    return result;
   }
 
   @override
@@ -256,7 +213,7 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
             onPressed: () => Navigator.pop(context, _accepted),
           ),
           title: Text(
-            'So sánh báo giá',
+            'Compare quotations',
             style: GoogleFonts.playfairDisplay(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -291,14 +248,14 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
         padding: const EdgeInsets.all(24),
         children: [
           Text(
-            'Chưa có nhà cung cấp nào gửi báo giá cho bài đăng này.',
+            'No provider has sent a quotation for this post yet.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
           ),
           const SizedBox(height: 8),
           Text(
-            'Nhà cung cấp lập báo giá sau khi ứng tuyển. Bạn sẽ nhận thông báo '
-            'ngay khi có bản đầu tiên.',
+            'Providers write a quotation after they apply. You will be notified '
+            'as soon as the first one arrives.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 12,
@@ -325,7 +282,7 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
         ),
         const SizedBox(height: 4),
         Text(
-          '${_quotations.length} báo giá · duyệt một bản là chọn nhà cung cấp đó',
+          '${_quotations.length} quotations · accepting one is how you choose a provider',
           style: GoogleFonts.inter(fontSize: 12, color: Colors.black54),
         ),
         const SizedBox(height: 16),
@@ -343,7 +300,7 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
         if (closed.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text(
-            'Đã xử lý',
+            'Closed',
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -368,16 +325,6 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
   }
 }
 
-/// Vietnamese labels for `QuotationStatus`, written from the owner's side.
-const Map<String, String> _kStatusLabels = {
-  'draft': 'Bản nháp',
-  'sent': 'Chờ bạn duyệt',
-  'revision_requested': 'Đã yêu cầu bản khác',
-  'accepted': 'Đã duyệt',
-  'rejected': 'Đã từ chối',
-  'superseded': 'Hết hiệu lực',
-};
-
 class _QuotationCard extends StatelessWidget {
   final QuotationResponse quotation;
   final NumberFormat money;
@@ -399,26 +346,7 @@ class _QuotationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    late final Color statusBg;
-    late final Color statusFg;
-    switch (quotation.status) {
-      case 'accepted':
-        statusBg = Colors.green.shade50;
-        statusFg = Colors.green.shade800;
-        break;
-      case 'rejected':
-      case 'superseded':
-        statusBg = Colors.red.shade50;
-        statusFg = Colors.red.shade700;
-        break;
-      case 'sent':
-        statusBg = Colors.amber.shade50;
-        statusFg = Colors.amber.shade900;
-        break;
-      default:
-        statusBg = AppColors.background;
-        statusFg = Colors.black54;
-    }
+    final status = quotationStatusStyle(quotation.status);
 
     return Opacity(
       opacity: quotation.isClosed ? 0.7 : 1,
@@ -443,15 +371,15 @@ class _QuotationCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: statusBg,
+                    color: status.background,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    _kStatusLabels[quotation.status] ?? quotation.status,
+                    status.label,
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: statusFg,
+                      color: status.foreground,
                     ),
                   ),
                 ),
@@ -463,7 +391,7 @@ class _QuotationCard extends StatelessWidget {
                 if (isCheapest) ...[
                   const SizedBox(width: 8),
                   Text(
-                    'giá thấp nhất',
+                    'lowest price',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -506,7 +434,7 @@ class _QuotationCard extends StatelessWidget {
                         children: [
                           Flexible(
                             child: Text(
-                              quotation.providerName ?? 'Nhà cung cấp',
+                              quotation.providerName ?? 'Provider',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
@@ -545,7 +473,7 @@ class _QuotationCard extends StatelessWidget {
                           ],
                           if (quotation.providerYearsExperience != null)
                             Text(
-                              '${quotation.providerYearsExperience} năm kinh nghiệm',
+                              '${quotation.providerYearsExperience} years experience',
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 color: Colors.black54,
@@ -561,14 +489,14 @@ class _QuotationCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${quotation.estimatedDurationDays} ngày',
+                        '${quotation.estimatedDurationDays} days',
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       Text(
-                        'dự kiến',
+                        'estimated',
                         style: GoogleFonts.inter(
                           fontSize: 10,
                           color: Colors.black38,
@@ -602,7 +530,7 @@ class _QuotationCard extends StatelessWidget {
             if (quotation.items.isNotEmpty) ...[
               const SizedBox(height: 10),
               _Section(
-                label: 'Hạng mục',
+                label: 'Line items',
                 children: quotation.items
                     .map(
                       (item) => _LineRow(
@@ -622,7 +550,7 @@ class _QuotationCard extends StatelessWidget {
               _Section(
                 // Worth its own block: these exact rows become the instalments
                 // the owner will be asked to pay once the contract is signed.
-                label: 'Điều kiện thanh toán',
+                label: 'Payment terms',
                 children: quotation.paymentTerms
                     .map(
                       (term) => _LineRow(
@@ -643,40 +571,59 @@ class _QuotationCard extends StatelessWidget {
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: quotation.attachments
-                    .map(
-                      (attachment) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(6),
-                          border:
-                              Border.all(color: AppColors.outlineVariant),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                children: quotation.attachments.map((attachment) {
+                  // `fileViewUrl` is the absolute URL the server resolved;
+                  // `fileUrl` is only the storage key, so a chip without the
+                  // former stays inert rather than opening a broken link.
+                  final url = attachment.fileViewUrl;
+                  final openable = url != null && url.isNotEmpty;
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(6),
+                    onTap: openable
+                        ? () => launchUrl(
+                              Uri.parse(url),
+                              mode: LaunchMode.externalApplication,
+                            )
+                        : null,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppColors.outlineVariant),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.attach_file,
+                            size: 12,
+                            color: Colors.black45,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            attachment.fileName ?? 'Attachment',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          if (openable) ...[
+                            const SizedBox(width: 4),
                             const Icon(
-                              Icons.attach_file,
-                              size: 12,
+                              Icons.open_in_new,
+                              size: 11,
                               color: Colors.black45,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              attachment.fileName ?? 'File đính kèm',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: Colors.black54,
-                              ),
-                            ),
                           ],
-                        ),
+                        ],
                       ),
-                    )
-                    .toList(),
+                    ),
+                  );
+                }).toList(),
               ),
             ],
 
@@ -684,7 +631,7 @@ class _QuotationCard extends StatelessWidget {
                 quotation.revisionReason!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                'Bạn đã yêu cầu sửa: ${quotation.revisionReason}',
+                'You asked for changes: ${quotation.revisionReason}',
                 style: GoogleFonts.inter(fontSize: 12, color: Colors.black54),
               ),
             ],
@@ -692,7 +639,7 @@ class _QuotationCard extends StatelessWidget {
                 quotation.rejectReason!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                'Bạn đã từ chối: ${quotation.rejectReason}',
+                'You rejected this: ${quotation.rejectReason}',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: Colors.red.shade700,
@@ -721,7 +668,7 @@ class _QuotationCard extends StatelessWidget {
                               ),
                             )
                           : Text(
-                              'Duyệt & chọn',
+                              'Accept & choose',
                               style: GoogleFonts.inter(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -734,14 +681,14 @@ class _QuotationCard extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: busy ? null : onRequestRevision,
                       child: Text(
-                        'Xin bản khác',
+                        'Ask for another',
                         style: GoogleFonts.inter(fontSize: 12),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    tooltip: 'Từ chối',
+                    tooltip: 'Reject',
                     onPressed: busy ? null : onReject,
                     icon: Icon(Icons.close, color: Colors.red.shade700),
                   ),
@@ -850,7 +797,7 @@ class _ErrorView extends StatelessWidget {
               style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
       ),
