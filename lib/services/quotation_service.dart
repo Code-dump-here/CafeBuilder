@@ -34,12 +34,12 @@ class QuotationService {
   }
 
   static Future<void> sendQuotation(String id) async {
-    final response = await ApiClient.authPost('/quotations/$id/send');
+    final response = await ApiClient.authPost('/quotations/$id/send', {});
     ApiClient.throwIfError(response);
   }
 
   static Future<void> acceptQuotation(String id) async {
-    final response = await ApiClient.authPost('/quotations/$id/accept');
+    final response = await ApiClient.authPost('/quotations/$id/accept', {});
     ApiClient.throwIfError(response);
   }
 
