@@ -485,52 +485,77 @@ class _ProposalsPageState extends State<ProposalsPage> {
               // to flex against — that throws during layout and takes the whole
               // proposals list down with it, leaving the page blank.
               Expanded(
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.primaryFixedDim,
-                      child: Icon(Icons.person, color: AppColors.espresso, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                // The card is a Container with a white BoxDecoration, so an
+                // ink splash would be painted over by it. A transparent
+                // Material gives the ripple a surface of its own without
+                // changing how the card looks.
+                //
+                // The whole avatar + name block is the tap target, not just
+                // the "View Bio" link: at 11px that link is a small thing to
+                // hit, and tapping a person's name to see who they are is the
+                // gesture an owner reaches for first. The link stays as the
+                // label that says where the tap goes.
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _goToBio(apply),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
                         children: [
-                          Text(
-                            apply.providerDisplayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                          const CircleAvatar(
+                            radius: 18,
+                            backgroundColor: AppColors.primaryFixedDim,
+                            child: Icon(Icons.person, color: AppColors.espresso, size: 20),
                           ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Text(
-                                '${_completedProjectsCount[apply.serviceProviderProfileId] ?? 0} completed projects',
-                                style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
-                              ),
-                              const SizedBox(width: 4),
-                              const Text('•', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-                              const SizedBox(width: 4),
-                              InkWell(
-                                onTap: () => _goToBio(apply),
-                                child: Text(
-                                  'View Bio',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    color: const Color(0xFF56642B),
-                                    fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.underline,
-                                  ),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  apply.providerDisplayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        '${_completedProjectsCount[apply.serviceProviderProfileId] ?? 0} completed projects',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Text('•', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                                    const SizedBox(width: 4),
+                                    // No InkWell of its own — it sits inside the
+                                    // one above and would lead to the same page,
+                                    // so nesting them only buys two overlapping
+                                    // ripples on the same tap.
+                                    Text(
+                                      'View Bio',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        color: const Color(0xFF56642B),
+                                        fontWeight: FontWeight.bold,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(width: 8),

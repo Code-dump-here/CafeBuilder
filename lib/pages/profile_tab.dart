@@ -281,33 +281,40 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Widget _buildMenuItem(IconData icon, String title, {VoidCallback? onTap}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      // Material carries the white background, not a Container with a
+      // BoxDecoration. ListTile paints its own background and its tap ripple
+      // onto the nearest Material ancestor, so a coloured box sitting between
+      // the two covers both: Flutter asserts about it in debug, and in release
+      // the row just silently stops giving any feedback when tapped.
+      // clipBehavior keeps the ripple inside the rounded corners.
+      child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF6F3F2),
-            borderRadius: BorderRadius.circular(8),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          onTap: onTap,
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F3F2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 20),
           ),
-          child: Icon(icon, color: AppColors.primary, size: 20),
-        ),
-        title: Text(
-          title,
-          style: GoogleFonts.inter(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primary,
+          title: Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+            ),
           ),
+          trailing: const Icon(Icons.chevron_right, color: AppColors.outline, size: 20),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.outline, size: 20),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

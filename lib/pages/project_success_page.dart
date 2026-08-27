@@ -43,6 +43,15 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
 
   // Broadcast settings
   final List<String> _reqs = ['Designer'];
+
+  /// Service kinds the server has already accepted during this visit.
+  ///
+  /// Hiring a designer and a constructor posts twice, and the second call can
+  /// fail after the first has landed. Retrying then must skip what already
+  /// exists, or the project ends up with a duplicate opening the owner has to
+  /// find and close by hand.
+  final Set<String> _postedServiceKinds = <String>{};
+
   final String _expectedStart = 'Oct 2024';
   late String _budgetTier;
   late DateTime _submissionDeadline;
@@ -137,17 +146,18 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     String detailedDescription =
         'Redesign of space into a premium ${widget.style.toLowerCase()} cafe inspired by ${widget.mood.toLowerCase()} atmosphere.\nLocation: ${widget.location}\nStyle: ${widget.style}\nBudget: $_budgetTier\nExpected Start: $_expectedStart';
 
-    try {
-      // Map UI requirements to backend serviceKind enum
-      bool hasDesign = _reqs.contains('Designer') || _reqs.contains('Both');
-      bool hasBuild = _reqs.contains('Constructor') || _reqs.contains('Both');
-      String mappedServiceKind = 'design';
-      if (hasDesign && hasBuild) {
-        mappedServiceKind = 'both';
-      } else if (hasBuild) {
-        mappedServiceKind = 'construction';
-      }
+    // Designer + Constructor ticked together posts TWICE — a design opening
+    // and a construction opening — because the owner is hiring two providers,
+    // each with its own applicants and its own contract. Folding that into a
+    // single `both` post, which is what this used to do, quietly asked for one
+    // provider to deliver everything: the opposite arrangement.
+    //
+    // Both are declared out here so the catch block can report a broadcast
+    // that failed halfway.
+    final serviceKinds = _selectedServiceKinds;
+    final createdBroadcasts = <BroadcastProject>[];
 
+    try {
       if (widget.aiReport != null) {
         final r = widget.aiReport!;
         final buffer = StringBuffer();
@@ -178,21 +188,33 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
         detailedDescription = buffer.toString();
       }
 
-      final request = CreatePostRequest(
-        projectShopOwnerId: widget.projectId,
-        serviceKind: mappedServiceKind,
-        title: widget.cafeName,
-        description: detailedDescription,
-        submissionDeadline: _submissionDeadline,
-      );
-      
-      final post = await PostService.createPost(request);
-      
-      if (mounted) {
-        Navigator.pop(context); // hide loading
-        
-        final aiImageUrl = widget.aiReport?.imageArtifactUrl;
-        final newBroadcast = BroadcastProject(
+      final aiImageUrl = widget.aiReport?.imageArtifactUrl;
+
+      // Sequential, not Future.wait: if the second call fails we need to know
+      // that the first already landed, so the catch below can say which
+      // opening exists instead of claiming nothing was posted.
+      for (final kind in serviceKinds) {
+        // Skipped on a retry after a half-finished broadcast. Posting it again
+        // would leave the project with a duplicate opening the owner has to
+        // hunt down and close by hand.
+        if (_postedServiceKinds.contains(kind)) continue;
+
+        final post = await PostService.createPost(CreatePostRequest(
+          projectShopOwnerId: widget.projectId,
+          serviceKind: kind,
+          // Two openings for one cafe are indistinguishable in a provider's
+          // feed without this — both would read as the same listing posted
+          // twice.
+          title: serviceKinds.length > 1
+              ? '${widget.cafeName} — ${_serviceKindLabel(kind)}'
+              : widget.cafeName,
+          description: detailedDescription,
+          submissionDeadline: _submissionDeadline,
+        ));
+
+        _postedServiceKinds.add(kind);
+
+        final broadcast = BroadcastProject(
           id: post.id.toString(),
           title: post.title,
           location: post.location,
@@ -208,13 +230,28 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
               ? aiImageUrl
               : 'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600',
         );
+        createdBroadcasts.add(broadcast);
+        // Added as each one lands rather than in a batch at the end, so a
+        // broadcast that fails halfway still leaves local state matching what
+        // the server actually holds.
+        MarketplaceState.addBroadcast(broadcast);
+      }
 
-        // Save to global list and notify MarketplacePage to rebuild
-        MarketplaceState.activeProject = newBroadcast;
-        MarketplaceState.addBroadcast(newBroadcast);
+      if (mounted) {
+        Navigator.pop(context); // hide loading
+
+        if (createdBroadcasts.isNotEmpty) {
+          MarketplaceState.activeProject = createdBroadcasts.first;
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Project posted to marketplace.')),
+          SnackBar(
+            content: Text(
+              createdBroadcasts.length > 1
+                  ? 'Posted ${createdBroadcasts.length} openings to the marketplace.'
+                  : 'Project posted to marketplace.',
+            ),
+          ),
         );
         // Straight to Home instead of the "Project Live" splash (step 2).
         // `onNeedsRefresh` tells the still-alive Home instance to
@@ -226,13 +263,24 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
       if (mounted) {
         Navigator.pop(context); // hide loading
 
-        // The post was NOT created. Stay on this step so the user can retry —
-        // never advance to "Project Live", which would claim a broadcast that
-        // the backend never received.
+        // Stay on this step so the user can retry — never advance to "Project
+        // Live", which would claim a broadcast the backend never received.
+        //
+        // With two openings the failure can be partial, and saying "broadcast
+        // failed" then would be a lie: one of them is live and taking
+        // applications. Name what got through; RETRY posts only the remainder.
         final message = e is ApiException ? e.message : 'Could not reach the server.';
+        final landed = serviceKinds
+            .where(_postedServiceKinds.contains)
+            .map(_serviceKindLabel)
+            .join(' and ');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Broadcast failed: $message'),
+            content: Text(
+              landed.isEmpty
+                  ? 'Broadcast failed: $message'
+                  : 'The $landed opening is live, but the rest failed: $message',
+            ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 6),
             action: SnackBarAction(
@@ -582,10 +630,24 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                Text(
+                  'Hire specialists separately, or hand the whole job to one '
+                  'provider. The two are different postings, not two ways of '
+                  'saying the same thing.',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    height: 1.5,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 14),
                 _buildServiceCheckbox('Designer', 'Interior and architectural design'),
                 _buildServiceCheckbox('Constructor', 'Full project construction and build'),
-                _buildServiceCheckbox('Both', 'End-to-end design and construction'),
+                _buildServiceDivider(),
+                _buildServiceCheckbox('Both', 'One provider covers design and construction'),
+                const SizedBox(height: 12),
+                _buildServiceOutcome(),
                 const SizedBox(height: 28),
                 Text(
                   'PROJECT PARAMETERS',
@@ -678,10 +740,34 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
     );
   }
 
-  /// Designer and Constructor are independent picks, so an owner who needs
-  /// both roles can tick them together. 'Both' is shorthand for the same pair,
-  /// so choosing it clears the individual picks (and picking either one clears
-  /// 'Both') rather than leaving two overlapping selections on screen.
+  /// Short role name for a `serviceKind`, used to tell two openings apart in
+  /// the marketplace feed and in the failure message.
+  String _serviceKindLabel(String kind) => switch (kind) {
+        'design' => 'Design',
+        'construction' => 'Construction',
+        _ => 'Design & Construction',
+      };
+
+  /// The `serviceKind` values this selection posts, in creation order.
+  ///
+  /// Ticking Designer and Constructor together is NOT the same as 'Both'.
+  /// Two ticks means two independent hires, so it posts twice — a design
+  /// opening and a construction opening, each with its own applicants, each
+  /// awarded separately. 'Both' is a single opening that one provider wins
+  /// outright and delivers end to end.
+  List<String> get _selectedServiceKinds {
+    if (_reqs.contains('Both')) return const ['both'];
+    return [
+      if (_reqs.contains('Designer')) 'design',
+      if (_reqs.contains('Constructor')) 'construction',
+    ];
+  }
+
+  /// Designer and Constructor are independent picks, so an owner hiring two
+  /// specialists ticks them together. 'Both' is a different arrangement rather
+  /// than a shorthand for that pair, so the two are mutually exclusive:
+  /// choosing 'Both' clears the individual picks and picking either one clears
+  /// 'Both'. See [_selectedServiceKinds] for what each ends up posting.
   void _toggleService(String title) {
     setState(() {
       if (title == 'Both') {
@@ -744,6 +830,93 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Sets the two independent roles apart from the single end-to-end hire.
+  /// Stacked flush together the three boxes read as interchangeable options,
+  /// which is the misreading that makes owners tick two and expect one
+  /// contract.
+  Widget _buildServiceDivider() {
+    final line = Divider(
+      color: AppColors.outlineVariant.withValues(alpha: 0.7),
+      height: 1,
+      thickness: 1,
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 6, 0, 16),
+      child: Row(
+        children: [
+          Expanded(child: line),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              'or hand it all to one provider',
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.placeholder,
+              ),
+            ),
+          ),
+          Expanded(child: line),
+        ],
+      ),
+    );
+  }
+
+  /// Spells out what Broadcast will actually create.
+  ///
+  /// Two ticks versus 'Both' is the difference between two postings and one,
+  /// and nothing about three checkboxes conveys that on its own.
+  Widget _buildServiceOutcome() {
+    final kinds = _selectedServiceKinds;
+    if (kinds.isEmpty) return const SizedBox.shrink();
+
+    final String message;
+    if (kinds.length == 2) {
+      message = 'Two separate posts: designers apply to one, constructors to '
+          'the other. You pick each provider on its own, and they sign '
+          'separate contracts.';
+    } else if (kinds.first == 'both') {
+      message = 'One post. A single provider takes the job from design '
+          'through to construction under one contract.';
+    } else if (kinds.first == 'design') {
+      message = 'One post for a designer. You can post for a constructor '
+          'later from the project page.';
+    } else {
+      message = 'One post for a constructor. You can post for a designer '
+          'later from the project page.';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F3F1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            kinds.length == 2 ? Icons.call_split : Icons.trending_flat,
+            size: 16,
+            color: AppColors.espresso,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                height: 1.5,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
