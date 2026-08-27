@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_colors.dart';
 import '../services/service_provider_service.dart';
 import '../services/project_service.dart';
@@ -56,10 +57,33 @@ class DashboardTabState extends State<DashboardTab> {
   String? _error;
   int _unreadCount = 0;
 
+  /// Whether the three-step primer is still showing.
+  ///
+  /// Starts hidden rather than visible: reading the stored flag is async, and
+  /// defaulting to shown would flash the card onto the screen of every owner
+  /// who dismissed it months ago.
+  bool _showHowItWorks = false;
+  static const String _howItWorksDismissedKey = 'how_it_works_dismissed';
+
   @override
   void initState() {
     super.initState();
     _loadDashboard();
+    _loadHowItWorksPreference();
+  }
+
+  Future<void> _loadHowItWorksPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _showHowItWorks = !(prefs.getBool(_howItWorksDismissedKey) ?? false);
+    });
+  }
+
+  Future<void> _dismissHowItWorks() async {
+    setState(() => _showHowItWorks = false);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_howItWorksDismissedKey, true);
   }
 
   /// Refetches everything. Call when returning to the Home tab or after an
@@ -334,8 +358,13 @@ class DashboardTabState extends State<DashboardTab> {
                   ),
                 ),
                 
+                if (_showHowItWorks) ...[
+                  const SizedBox(height: 28),
+                  _buildHowItWorks(),
+                ],
+
                 const SizedBox(height: 40),
-                
+
                 // Active Project Card
                 _buildActiveProjectCard(),
                 
@@ -366,6 +395,134 @@ class DashboardTabState extends State<DashboardTab> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Three-step primer: Post → Match → Build.
+  ///
+  /// Mirrors the "How a project moves through" section on the web homepage,
+  /// same wording and same three verbs, so an owner who saw it there meets the
+  /// same model here. The web version lives on a public marketing page and
+  /// stays forever; this one sits on a dashboard the owner sees every day, so
+  /// it can be dismissed for good.
+  Widget _buildHowItWorks() {
+    const steps = [
+      (
+        label: 'POST',
+        title: 'Post the brief',
+        body: 'Square meters, style, budget and target customers. '
+            'AI turns it into a shareable spec in under a minute.',
+      ),
+      (
+        label: 'MATCH',
+        title: 'Pick your team',
+        body: 'Designers and constructors apply with real portfolios. '
+            'Compare bids side by side and accept the ones that fit.',
+      ),
+      (
+        label: 'BUILD',
+        title: 'Ship the cafe',
+        body: 'Designs, drawings, milestones, issues and payments live in '
+            'one timeline you can share with your crew.',
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'How a project moves through',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.espresso,
+                  ),
+                ),
+              ),
+              // A dismiss that leaves no way back would be a trap, so it reads
+              // as "I've got it" rather than a bare close cross.
+              TextButton(
+                onPressed: _dismissHowItWorks,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'Got it',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.espresso,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          for (var i = 0; i < steps.length; i++) ...[
+            if (i > 0) const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryFixed.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${i + 1}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.espresso,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${steps[i].label} · ${steps[i].title}',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.espresso,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        steps[i].body,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          height: 1.5,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../models/responses/quotation_payment_responses.dart';
-import '../services/quotation_service.dart';
+import '../services/owner_quotation_service.dart';
 import '../theme/app_colors.dart';
 
 /// Where the owner compares priced bids and picks a provider.
@@ -62,9 +62,8 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
       _error = null;
     });
     try {
-      final page = await QuotationService.getQuotations(
-        postId: widget.postId,
-        pageSize: 50,
+      final page = await OwnerQuotationService.getQuotationsForPost(
+        widget.postId,
       );
       if (!mounted) return;
       setState(() {
@@ -128,7 +127,7 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
 
     setState(() => _busy.add(quotation.id));
     try {
-      await QuotationService.accept(quotation.id);
+      await OwnerQuotationService.accept(quotation.id);
       _accepted = true;
       _toast('Đã duyệt báo giá và chọn nhà cung cấp này.');
       await _load();
@@ -153,7 +152,7 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
 
     setState(() => _busy.add(quotation.id));
     try {
-      await QuotationService.reject(quotation.id, reason: reason);
+      await OwnerQuotationService.reject(quotation.id, reason: reason);
       _toast('Đã từ chối báo giá.');
       await _load();
     } catch (e) {
@@ -176,7 +175,7 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
 
     setState(() => _busy.add(quotation.id));
     try {
-      await QuotationService.requestRevision(quotation.id, reason: reason);
+      await OwnerQuotationService.requestRevision(quotation.id, reason: reason);
       _toast('Đã gửi yêu cầu. Nhà cung cấp sẽ gửi bản mới.');
       await _load();
     } catch (e) {

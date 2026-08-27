@@ -985,19 +985,58 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _stillRecruiting
-                  .map((post) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryFixed.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${_postLabel(post)} · ${post.status}',
-                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.espresso),
-                        ),
-                      ))
-                  .toList(),
+              // Each chip carries its own application count. Accepting a
+              // provider swaps the recruiting card out for this one, and the
+              // roles still being recruited used to lose their counts in the
+              // process — the owner could see "Constructor · open" but not
+              // that someone was already waiting on it. The stats are fetched
+              // on every load regardless of which card renders, so this only
+              // had to start reading them.
+              children: _stillRecruiting.map((post) {
+                final stats = _applyStatsByPost[post.id];
+                final countLabel = stats == null
+                    ? null
+                    : stats.total == 0
+                        ? 'No applications yet'
+                        : stats.pending > 0
+                            ? '${stats.total} applied · ${stats.pending} to review'
+                            : '${stats.total} applied';
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _openProposals,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryFixed.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${_postLabel(post)} · ${post.status}',
+                            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.espresso),
+                          ),
+                          if (countLabel != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              countLabel,
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: stats!.pending > 0 ? FontWeight.bold : FontWeight.normal,
+                                color: stats.pending > 0 ? AppColors.espresso : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ],
           // Deliberately outside the `_stillRecruiting` block above, and fed
@@ -1010,19 +1049,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             const SizedBox(height: 10),
             Center(
               child: TextButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProposalsPage(
-                        openPosts: _openPosts,
-                        projectId: widget.projectId,
-                        designTaken: _designTaken,
-                        constructionTaken: _constructionTaken,
-                      ),
-                    ),
-                  ).then((_) => _loadProject());
-                },
+                onPressed: _openProposals,
                 icon: const Icon(Icons.how_to_reg_outlined, size: 16, color: AppColors.espresso),
                 label: Text('View applications',
                     style: GoogleFonts.inter(
@@ -1171,6 +1198,26 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
   List<OpenPostResponse> get _stalePosts =>
       (_project?.openPosts ?? const <OpenPostResponse>[]).where(_postIsStale).toList();
+
+  /// Opens the applications list for every post still open on this project.
+  ///
+  /// Fed [_openPosts] rather than [_stillRecruiting]: applications keep
+  /// arriving on a post whose slot is now filled, and the owner still needs to
+  /// reach those applicants to decline them. `ProposalsPage` disables Accept
+  /// per card with a reason when the slot has gone.
+  void _openProposals() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProposalsPage(
+          openPosts: _openPosts,
+          projectId: widget.projectId,
+          designTaken: _designTaken,
+          constructionTaken: _constructionTaken,
+        ),
+      ),
+    ).then((_) => _loadProject());
+  }
 
   Future<void> _closePost(OpenPostResponse post, {required bool stale}) async {
     final confirmed = await showDialog<bool>(

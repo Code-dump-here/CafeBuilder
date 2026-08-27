@@ -7,6 +7,8 @@ import '../services/api_client.dart';
 import '../services/project_service.dart';
 import '../services/review_service.dart';
 import '../services/service_provider_service.dart';
+import '../services/project_working_service.dart';
+import '../services/design_service.dart';
 import 'select_project_page.dart';
 
 class DesignerDetailPage extends StatefulWidget {
@@ -36,6 +38,9 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
   ProviderReviewSummary? _summary;
   List<ReviewResponse> _reviews = [];
   final Map<String, ProjectOwnerResponse> _reviewOwners = {};
+  List<ProjectWorkingResponse> _completedProjects = [];
+  final Map<String, String> _completedProjectImages = {};
+  int _completedProjectCount = 0;
   bool _loading = true;
   String? _error;
 
@@ -55,10 +60,17 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
         ServiceProviderService.getProvider(widget.serviceProviderProfileId),
         ReviewService.getProviderReviewSummary(widget.serviceProviderProfileId),
         ReviewService.getReviewsForProvider(widget.serviceProviderProfileId),
+        ProjectWorkingService.getProjectWorkings(
+          serviceProviderProfileId: widget.serviceProviderProfileId,
+          status: 'completed',
+          pageNumber: 1,
+          pageSize: 10,
+        ),
       ]);
       final provider = results[0] as ServiceProviderResponse;
       final summary = results[1] as ProviderReviewSummary;
       final reviews = results[2] as List<ReviewResponse>;
+      final workingsResponse = results[3] as PaginationResponse<ProjectWorkingResponse>;
 
       final owners = <String, ProjectOwnerResponse>{};
       for (final review in reviews) {
@@ -71,14 +83,42 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
         } catch (_) {}
       }
 
+      final projectImages = <String, String>{};
+      await Future.wait(workingsResponse.items.map((working) async {
+        try {
+          final designs = await DesignService.getDesigns(projectWorkingId: working.id);
+          for (final d in designs.items) {
+             if (d.status == 'approved' && d.images.isNotEmpty) {
+                final img = d.images.first;
+                projectImages[working.id] = img.viewUrl.isNotEmpty ? img.viewUrl : img.imageUrl;
+                break;
+             }
+          }
+          if (!projectImages.containsKey(working.id) && designs.items.isNotEmpty) {
+             for (final d in designs.items) {
+                if (d.images.isNotEmpty) {
+                   final img = d.images.first;
+                   projectImages[working.id] = img.viewUrl.isNotEmpty ? img.viewUrl : img.imageUrl;
+                   break;
+                }
+             }
+          }
+        } catch (_) {}
+      }));
+
       if (mounted) {
         setState(() {
           _provider = provider;
           _summary = summary;
           _reviews = reviews;
+          _completedProjects = workingsResponse.items;
+          _completedProjectCount = workingsResponse.totalItems;
           _reviewOwners
             ..clear()
             ..addAll(owners);
+          _completedProjectImages
+            ..clear()
+            ..addAll(projectImages);
           _loading = false;
         });
       }
@@ -237,6 +277,13 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
                       ),
                     ],
                   ),
+                  if (!_loading && _completedProjectCount > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '$_completedProjectCount+ quán cà phê đã hoàn thiện',
+                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.placeholder),
+                    ),
+                  ],
                   if (_provider?.portfolioHeadline != null) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -347,6 +394,15 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
                     'Aether Lounge',
                   ),
                   const SizedBox(height: 32),
+                  if (_completedProjects.isNotEmpty) ...[
+                    _buildLeftAlignedTitle('Completed Projects'),
+                    const SizedBox(height: 16),
+                    ..._completedProjects.map((project) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildCompletedProjectCard(project, _completedProjectImages[project.id]),
+                        )),
+                    const SizedBox(height: 16),
+                  ],
                   _buildDetailCard(
                     Icons.trending_up,
                     'Suitable for: Mid-range to Premium café projects',
@@ -556,6 +612,7 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
 
   Widget _buildDetailCard(IconData icon, String title, String desc) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -582,6 +639,79 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
           Text(
             desc,
             style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletedProjectCard(ProjectWorkingResponse project, String? realImageUrl) {
+    // If the API gives us an image, use it. Otherwise use a consistent placeholder based on ID
+    final int hash = project.id.hashCode.abs();
+    final List<String> placeholders = [
+      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=300',
+      'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=300',
+      'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=300',
+      'https://images.unsplash.com/photo-1525610553991-2bede1a236e2?auto=format&fit=crop&q=80&w=300',
+      'https://images.unsplash.com/photo-1542181961-9590d0c79dab?auto=format&fit=crop&q=80&w=300',
+    ];
+    final String imageUrl = realImageUrl ?? placeholders[hash % placeholders.length];
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              bottomLeft: Radius.circular(16),
+            ),
+            child: Image.network(
+              imageUrl,
+              height: 100,
+              width: 100,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    project.projectName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF9F9F9),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${project.contractType.toUpperCase()}',
+                      style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: const Color(0xFF56642B)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

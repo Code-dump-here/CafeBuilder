@@ -5,10 +5,15 @@ import '../models/responses/api_responses.dart';
 import '../services/apply_service.dart';
 import '../services/project_service.dart';
 import '../services/survey_service.dart';
+import '../services/project_working_service.dart';
 import '../widgets/confirm_dialog.dart';
 import 'collaboration_workspace_page.dart';
 import 'quotation_comparison_page.dart';
 import 'survey_detail_page.dart';
+import 'designer_detail_page.dart';
+import 'constructor_detail_page.dart';
+import 'quotation_details_page.dart';
+import '../services/quotation_service.dart';
 
 class ProposalsPage extends StatefulWidget {
   /// Posts as the caller knew them. Used only as the initial value — the page
@@ -52,6 +57,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
   /// doesn't refetch.
   final Map<String, List<SurveyResponse>> _surveysByApply = {};
   String? _loadingSurveyFor;
+  final Map<String, int> _completedProjectsCount = {};
 
   /// Id of the application currently being declined, so only that card shows a
   /// spinner and the rest stay interactive.
@@ -161,10 +167,25 @@ class _ProposalsPageState extends State<ProposalsPage> {
 
       final List<ApplyResponse> allApplies = [];
       final Map<String, List<SurveyResponse>> surveys = {};
+      final Map<String, int> completedProjectsCount = {};
 
       for (final post in posts) {
         final result = await ApplyService.getApplies(postId: post.id, pageSize: 50);
         allApplies.addAll(result.items);
+
+        await Future.wait(result.items.map((apply) async {
+          if (!completedProjectsCount.containsKey(apply.serviceProviderProfileId)) {
+            completedProjectsCount[apply.serviceProviderProfileId] = 0;
+            try {
+              final workings = await ProjectWorkingService.getProjectWorkings(
+                serviceProviderProfileId: apply.serviceProviderProfileId,
+                status: 'completed',
+                pageSize: 1,
+              );
+              completedProjectsCount[apply.serviceProviderProfileId] = workings.totalItems;
+            } catch (_) {}
+          }
+        }));
 
         // One request per post for every bidder's survey, instead of one per
         // application when a card is opened. `?postId=` exists for exactly this
@@ -204,6 +225,9 @@ class _ProposalsPageState extends State<ProposalsPage> {
           _surveysByApply
             ..clear()
             ..addAll(surveys);
+          _completedProjectsCount
+            ..clear()
+            ..addAll(completedProjectsCount);
           _loading = false;
         });
       }
@@ -255,6 +279,42 @@ class _ProposalsPageState extends State<ProposalsPage> {
       context,
       MaterialPageRoute(builder: (_) => SurveyDetailPage(surveys: surveys!)),
     );
+  }
+
+  Future<void> _openQuotation(ApplyResponse apply) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
+    );
+    try {
+      final result = await QuotationService.getQuotations(applyId: apply.id, pageSize: 1);
+      if (mounted) {
+        Navigator.pop(context); // close loader
+        if (result.items.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => QuotationDetailsPage(
+                quotationId: result.items.first.id,
+                initialQuotation: result.items.first,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No quotation available for this proposal.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load quotation: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _acceptApply(ApplyResponse apply) async {
@@ -333,6 +393,23 @@ class _ProposalsPageState extends State<ProposalsPage> {
       );
     } finally {
       if (mounted) setState(() => _rejectingId = null);
+    }
+  }
+
+  void _goToBio(ApplyResponse apply) {
+    final kind = _kindFor(apply);
+    if (kind == 'design' || kind == 'both') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => DesignerDetailPage(
+        serviceProviderProfileId: apply.serviceProviderProfileId,
+        contextProjectId: widget.projectId,
+        contextContractType: kind,
+      )));
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ConstructorDetailPage(
+        serviceProviderProfileId: apply.serviceProviderProfileId,
+        contextProjectId: widget.projectId,
+        contextContractType: kind,
+      )));
     }
   }
 
@@ -492,23 +569,77 @@ class _ProposalsPageState extends State<ProposalsPage> {
               // to flex against — that throws during layout and takes the whole
               // proposals list down with it, leaving the page blank.
               Expanded(
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.primaryFixedDim,
-                      child: Icon(Icons.person, color: AppColors.espresso, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: Text(
-                        apply.providerDisplayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                // The card is a Container with a white BoxDecoration, so an
+                // ink splash would be painted over by it. A transparent
+                // Material gives the ripple a surface of its own without
+                // changing how the card looks.
+                //
+                // The whole avatar + name block is the tap target, not just
+                // the "View Bio" link: at 11px that link is a small thing to
+                // hit, and tapping a person's name to see who they are is the
+                // gesture an owner reaches for first. The link stays as the
+                // label that says where the tap goes.
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _goToBio(apply),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          const CircleAvatar(
+                            radius: 18,
+                            backgroundColor: AppColors.primaryFixedDim,
+                            child: Icon(Icons.person, color: AppColors.espresso, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  apply.providerDisplayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        '${_completedProjectsCount[apply.serviceProviderProfileId] ?? 0} completed projects',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Text('•', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                                    const SizedBox(width: 4),
+                                    // No InkWell of its own — it sits inside the
+                                    // one above and would lead to the same page,
+                                    // so nesting them only buys two overlapping
+                                    // ripples on the same tap.
+                                    Text(
+                                      'View Bio',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        color: const Color(0xFF56642B),
+                                        fontWeight: FontWeight.bold,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -529,6 +660,33 @@ class _ProposalsPageState extends State<ProposalsPage> {
               ),
             ],
           ),
+
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.request_quote_outlined, size: 14, color: AppColors.espresso),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Quotation Details',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                ),
+              ),
+              TextButton(
+                onPressed: () => _openQuotation(apply),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(0, 28),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'View',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                ),
+              ),
+            ],
+          ),
+
           const SizedBox(height: 16),
           Text(
             apply.postTitle,
