@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/responses/quotation_payment_responses.dart';
 import '../services/quotation_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/quotation_status.dart';
 import '../widgets/confirm_dialog.dart';
 
 class QuotationDetailsPage extends StatefulWidget {
@@ -53,67 +54,60 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
     }
   }
 
-  Future<void> _handleAction(String action) async {
+  /// Ask for a different version. The server refuses a blank reason with a
+  /// 400, so [showReasonDialog] keeps the button disabled until there is one.
+  Future<void> _requestRevision() async {
+    final reason = await showReasonDialog(
+      context,
+      title: 'Request revision',
+      hint: 'What needs to change compared to this version?',
+      confirmLabel: 'Send request',
+      requireText: true,
+    );
+    if (reason == null) return;
+    await _run(
+      () => QuotationService.requestRevision(widget.quotationId, reason: reason),
+    );
+  }
+
+  /// Turn the bid down. The reason is optional server-side but it is the only
+  /// feedback the provider gets, so it is asked for here.
+  Future<void> _reject() async {
+    final reason = await showReasonDialog(
+      context,
+      title: 'Reject quotation',
+      hint: 'Why are you turning this bid down?',
+      confirmLabel: 'Reject',
+      destructive: true,
+    );
+    if (reason == null) return;
+    await _run(
+      () => QuotationService.rejectQuotation(widget.quotationId, reason: reason),
+    );
+  }
+
+  /// Accepting is choosing: the server also accepts the provider's
+  /// application, opens the engagement and supersedes the rival bids, so the
+  /// confirmation says so rather than asking a generic "are you sure".
+  Future<void> _accept() async {
     final confirmed = await showConfirmDialog(
       context,
-      title: 'Confirm $action',
-      message: 'Are you sure you want to ${action.toLowerCase()} this quotation?',
-      confirmLabel: action,
+      title: 'Accept this quotation?',
+      message: 'Accepting a quotation also chooses this provider: their '
+          'application is accepted, the post closes, and every rival bid is '
+          'superseded. This cannot be undone.',
+      confirmLabel: 'Accept & choose',
     );
-    if (!confirmed || !mounted) return;
+    if (!confirmed) return;
+    await _run(() => QuotationService.acceptQuotation(widget.quotationId));
+  }
 
-    if (action == 'Request Revision') {
-      final noteController = TextEditingController();
-      final submitRevision = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Request Revision'),
-          content: TextField(
-            controller: noteController,
-            decoration: const InputDecoration(hintText: 'Enter your revision notes here...'),
-            maxLines: 3,
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Submit')),
-          ],
-        ),
-      );
-      if (submitRevision != true) return;
-
-      // The server requires a non-empty reason, so an empty box is stopped
-      // here rather than coming back as a 400 the owner can't act on.
-      final reason = noteController.text.trim();
-      if (reason.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please describe what needs to change.')),
-          );
-        }
-        return;
-      }
-
-      setState(() => _isActionLoading = true);
-      try {
-        await QuotationService.requestRevision(widget.quotationId, reason: reason);
-        await _fetchQuotation();
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-        }
-      } finally {
-        if (mounted) setState(() => _isActionLoading = false);
-      }
-      return;
-    }
-
+  /// Runs one decision behind the blocking loader and reloads afterwards —
+  /// the three actions differ only in which call they make.
+  Future<void> _run(Future<void> Function() action) async {
     setState(() => _isActionLoading = true);
     try {
-      if (action == 'Accept') {
-        await QuotationService.acceptQuotation(widget.quotationId);
-      } else if (action == 'Reject') {
-        await QuotationService.rejectQuotation(widget.quotationId);
-      }
+      await action();
       await _fetchQuotation();
     } catch (e) {
       if (mounted) {
@@ -201,10 +195,19 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
           Row(
             children: [
               const Text('Status: '),
-              Chip(
-                label: Text(_statusLabel(q.status)),
-                backgroundColor: _getStatusColor(q.status),
-              ),
+              Builder(builder: (_) {
+                final status = quotationStatusStyle(q.status);
+                return Chip(
+                  label: Text(
+                    status.label,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      color: status.foreground,
+                    ),
+                  ),
+                  backgroundColor: status.background,
+                );
+              }),
             ],
           ),
         ],
@@ -361,7 +364,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: () => _handleAction('Reject'),
+                onPressed: _reject,
                 style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
                 child: const Text('Reject'),
               ),
@@ -369,14 +372,14 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton(
-                onPressed: () => _handleAction('Request Revision'),
+                onPressed: _requestRevision,
                 child: const Text('Revise'),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton(
-                onPressed: () => _handleAction('Accept'),
+                onPressed: _accept,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 child: const Text('Accept'),
               ),
@@ -387,41 +390,6 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
     );
   }
 
-  /// The server sends its enum names (`revision_requested`), which are not
-  /// meant to be read as-is.
-  String _statusLabel(String status) {
-    switch (status.toLowerCase()) {
-      case 'draft':
-        return 'Draft';
-      case 'sent':
-        return 'Awaiting your decision';
-      case 'revision_requested':
-        return 'Revision requested';
-      case 'accepted':
-        return 'Accepted';
-      case 'rejected':
-        return 'Rejected';
-      case 'superseded':
-        return 'Superseded';
-      default:
-        return status;
-    }
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'accepted':
-        return Colors.green.shade100;
-      case 'rejected':
-        return Colors.red.shade100;
-      case 'revision_requested':
-        return Colors.orange.shade100;
-      case 'superseded':
-        return Colors.grey.shade300;
-      default:
-        return Colors.blue.shade100;
-    }
-  }
 }
 
 class ContainerWithLoader extends StatelessWidget {

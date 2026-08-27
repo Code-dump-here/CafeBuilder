@@ -43,9 +43,15 @@ class QuotationService {
     ApiClient.throwIfError(response);
   }
 
+  /// Turn a bid down for good. [reason] is optional server-side but is the
+  /// only feedback the provider gets, so the UI should ask for one.
+  ///
+  /// An empty reason is omitted rather than sent: posting `""` would store a
+  /// blank `rejectReason` on the quotation, which reads as "explained, with
+  /// nothing to say" instead of "no explanation given".
   static Future<void> rejectQuotation(String id, {String? reason}) async {
     final response = await ApiClient.authPost('/quotations/$id/reject', {
-      if (reason != null) 'reason': reason,
+      if (reason != null && reason.isNotEmpty) 'reason': reason,
     });
     ApiClient.throwIfError(response);
   }
