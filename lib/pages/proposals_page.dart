@@ -11,6 +11,8 @@ import 'collaboration_workspace_page.dart';
 import 'survey_detail_page.dart';
 import 'designer_detail_page.dart';
 import 'constructor_detail_page.dart';
+import 'quotation_details_page.dart';
+import '../services/quotation_service.dart';
 
 class ProposalsPage extends StatefulWidget {
   /// Posts as the caller knew them. Used only as the initial value — the page
@@ -278,6 +280,42 @@ class _ProposalsPageState extends State<ProposalsPage> {
     );
   }
 
+  Future<void> _openQuotation(ApplyResponse apply) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.espresso)),
+    );
+    try {
+      final result = await QuotationService.getQuotations(applyId: apply.id, pageSize: 1);
+      if (mounted) {
+        Navigator.pop(context); // close loader
+        if (result.items.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => QuotationDetailsPage(
+                quotationId: result.items.first.id,
+                initialQuotation: result.items.first,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No quotation available for this proposal.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load quotation: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _acceptApply(ApplyResponse apply) async {
     // The backend closes a post and rejects its other applicants on accept, so
     // it can't be double-filled from one post — but nothing stops a second post
@@ -513,6 +551,33 @@ class _ProposalsPageState extends State<ProposalsPage> {
               ),
             ],
           ),
+
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.request_quote_outlined, size: 14, color: AppColors.espresso),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Quotation Details',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                ),
+              ),
+              TextButton(
+                onPressed: () => _openQuotation(apply),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(0, 28),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'View',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
+                ),
+              ),
+            ],
+          ),
+
           const SizedBox(height: 16),
           Text(
             apply.postTitle,
