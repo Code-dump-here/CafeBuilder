@@ -7,6 +7,7 @@ import '../services/project_service.dart';
 import '../services/survey_service.dart';
 import '../widgets/confirm_dialog.dart';
 import 'collaboration_workspace_page.dart';
+import 'quotation_comparison_page.dart';
 import 'survey_detail_page.dart';
 
 class ProposalsPage extends StatefulWidget {
@@ -370,15 +371,98 @@ class _ProposalsPageState extends State<ProposalsPage> {
                   : RefreshIndicator(
                       onRefresh: _fetchApplies,
                       color: AppColors.espresso,
-                      child: ListView.builder(
+                      child: ListView(
                         padding: const EdgeInsets.all(16),
-                        itemCount: _applies.length,
-                        itemBuilder: (context, index) {
-                          final apply = _applies[index];
-                          return _buildProposalCard(apply);
-                        },
+                        children: [
+                          // Quotations first: review 3 put the priced bid at
+                          // the centre of the choice, and approving one is
+                          // what accepts its application. Accepting straight
+                          // off a proposal card still works, but it skips the
+                          // prices entirely.
+                          ..._posts.map(_buildQuotationBanner),
+                          ..._applies.map(_buildProposalCard),
+                        ],
                       ),
                     ),
+    );
+  }
+
+  /// Entry point to the side-by-side price comparison for one post.
+  Widget _buildQuotationBanner(OpenPostResponse post) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 18,
+            backgroundColor: AppColors.primaryFixedDim,
+            child: Icon(
+              Icons.request_quote_outlined,
+              color: AppColors.espresso,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Báo giá cho "${post.title}"',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.espresso,
+                  ),
+                ),
+                Text(
+                  'So sánh giá, thời gian và điều kiện thanh toán rồi chọn',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.espresso,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            ),
+            onPressed: () async {
+              final accepted = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => QuotationComparisonPage(
+                    postId: post.id,
+                    postTitle: post.title,
+                  ),
+                ),
+              );
+              // Approving a quotation accepts its application and closes the
+              // post, so this list is stale the moment it happens.
+              if (accepted == true && mounted) await _fetchApplies();
+            },
+            child: Text(
+              'So sánh',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

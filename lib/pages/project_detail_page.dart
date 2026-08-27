@@ -25,6 +25,8 @@ import 'find_designers_page.dart';
 import 'find_constructors_page.dart';
 import 'site_profile_page.dart';
 import 'change_orders_page.dart';
+import 'payment_batches_page.dart';
+import 'daily_logs_page.dart';
 
 class ProjectDetailPage extends StatefulWidget {
   final String projectId;
@@ -1704,6 +1706,25 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 'Contract',
                 onTap: () => _checkContract(context),
               ),
+              const SizedBox(height: 12),
+              _buildActionCard(
+                Icons.account_balance_wallet_outlined,
+                'Payments',
+                onTap: () {
+                  // Instalments owed under the contract. Reloads on the way
+                  // back: submitting proof does not move money, but it does
+                  // change what the budget card above reports as settled.
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PaymentBatchesPage(
+                        projectWorkings: _projectWorkings,
+                        projectName: _project?.name ?? 'Dự án',
+                      ),
+                    ),
+                  ).then((_) => _loadProject());
+                },
+              ),
             ],
           ),
         ),
@@ -1745,6 +1766,24 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       ),
                     ),
                   ).then((_) => _loadProject());
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildActionCard(
+                Icons.event_note_outlined,
+                'Daily log',
+                onTap: () {
+                  // Read-only: the provider files it from site. No reload on
+                  // return — nothing here writes.
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DailyLogsPage(
+                        projectWorkings: _projectWorkings,
+                        projectName: _project?.name ?? 'Dự án',
+                      ),
+                    ),
+                  );
                 },
               ),
               const SizedBox(height: 12),
