@@ -1,5 +1,5 @@
 import '../models/responses/api_responses.dart';
-import '../models/responses/quotation_responses.dart';
+import '../models/responses/quotation_payment_responses.dart';
 import 'api_client.dart';
 
 class QuotationService {
@@ -43,16 +43,27 @@ class QuotationService {
     ApiClient.throwIfError(response);
   }
 
+  /// Turn a bid down for good. [reason] is optional server-side but is the
+  /// only feedback the provider gets, so the UI should ask for one.
+  ///
+  /// An empty reason is omitted rather than sent: posting `""` would store a
+  /// blank `rejectReason` on the quotation, which reads as "explained, with
+  /// nothing to say" instead of "no explanation given".
   static Future<void> rejectQuotation(String id, {String? reason}) async {
     final response = await ApiClient.authPost('/quotations/$id/reject', {
-      if (reason != null) 'reason': reason,
+      if (reason != null && reason.isNotEmpty) 'reason': reason,
     });
     ApiClient.throwIfError(response);
   }
 
-  static Future<void> requestRevision(String id, {required String note}) async {
+  /// Ask the provider for a different version.
+  ///
+  /// The server reads `reason` (`RespondQuotationRequest.Reason`) and rejects
+  /// the call with 400 when it is blank — sending it under any other key loses
+  /// the note and fails the request.
+  static Future<void> requestRevision(String id, {required String reason}) async {
     final response = await ApiClient.authPost('/quotations/$id/request-revision', {
-      'note': note,
+      'reason': reason,
     });
     ApiClient.throwIfError(response);
   }

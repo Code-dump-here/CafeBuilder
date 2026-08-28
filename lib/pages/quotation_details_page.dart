@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../models/responses/quotation_responses.dart';
+import '../models/responses/quotation_payment_responses.dart';
 import '../services/quotation_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/quotation_status.dart';
 import '../widgets/confirm_dialog.dart';
 
 class QuotationDetailsPage extends StatefulWidget {
@@ -53,55 +54,60 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
     }
   }
 
-  Future<void> _handleAction(String action) async {
+  /// Ask for a different version. The server refuses a blank reason with a
+  /// 400, so [showReasonDialog] keeps the button disabled until there is one.
+  Future<void> _requestRevision() async {
+    final reason = await showReasonDialog(
+      context,
+      title: 'Request revision',
+      hint: 'What needs to change compared to this version?',
+      confirmLabel: 'Send request',
+      requireText: true,
+    );
+    if (reason == null) return;
+    await _run(
+      () => QuotationService.requestRevision(widget.quotationId, reason: reason),
+    );
+  }
+
+  /// Turn the bid down. The reason is optional server-side but it is the only
+  /// feedback the provider gets, so it is asked for here.
+  Future<void> _reject() async {
+    final reason = await showReasonDialog(
+      context,
+      title: 'Reject quotation',
+      hint: 'Why are you turning this bid down?',
+      confirmLabel: 'Reject',
+      destructive: true,
+    );
+    if (reason == null) return;
+    await _run(
+      () => QuotationService.rejectQuotation(widget.quotationId, reason: reason),
+    );
+  }
+
+  /// Accepting is choosing: the server also accepts the provider's
+  /// application, opens the engagement and supersedes the rival bids, so the
+  /// confirmation says so rather than asking a generic "are you sure".
+  Future<void> _accept() async {
     final confirmed = await showConfirmDialog(
       context,
-      title: 'Confirm $action',
-      message: 'Are you sure you want to ${action.toLowerCase()} this quotation?',
-      confirmLabel: action,
+      title: 'Accept this quotation?',
+      message: 'Accepting a quotation also chooses this provider: their '
+          'application is accepted, the post closes, and every rival bid is '
+          'superseded. This cannot be undone.',
+      confirmLabel: 'Accept & choose',
     );
     if (!confirmed) return;
+    await _run(() => QuotationService.acceptQuotation(widget.quotationId));
+  }
 
-    if (action == 'Request Revision') {
-      final noteController = TextEditingController();
-      final submitRevision = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Request Revision'),
-          content: TextField(
-            controller: noteController,
-            decoration: const InputDecoration(hintText: 'Enter your revision notes here...'),
-            maxLines: 3,
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Submit')),
-          ],
-        ),
-      );
-      if (submitRevision != true) return;
-
-      setState(() => _isActionLoading = true);
-      try {
-        await QuotationService.requestRevision(widget.quotationId, note: noteController.text);
-        await _fetchQuotation();
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-        }
-      } finally {
-        if (mounted) setState(() => _isActionLoading = false);
-      }
-      return;
-    }
-
+  /// Runs one decision behind the blocking loader and reloads afterwards —
+  /// the three actions differ only in which call they make.
+  Future<void> _run(Future<void> Function() action) async {
     setState(() => _isActionLoading = true);
     try {
-      if (action == 'Accept') {
-        await QuotationService.acceptQuotation(widget.quotationId);
-      } else if (action == 'Reject') {
-        await QuotationService.rejectQuotation(widget.quotationId);
-      }
+      await action();
       await _fetchQuotation();
     } catch (e) {
       if (mounted) {
@@ -127,7 +133,11 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
 
     final q = _quotation!;
     final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'VND', decimalDigits: 0);
-    final isPending = q.status.toLowerCase() == 'pending' || q.status.toLowerCase() == 'sent';
+    // `sent` is the only state the owner can act on: `draft` hasn't been sent
+    // yet, `revision_requested` is waiting on the provider's new version, and
+    // the rest are final. Status values are the server's enum names verbatim
+    // (draft | sent | revision_requested | accepted | rejected | superseded).
+    final isPending = q.status.toLowerCase() == 'sent';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -148,15 +158,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
                 if (q.items.isNotEmpty) _buildItemsList(q.items, currencyFormatter),
                 if (q.paymentTerms.isNotEmpty) _buildPaymentTerms(q.paymentTerms, currencyFormatter),
                 _buildRevisionInfo(q, currencyFormatter),
-                if (q.documentUrl != null && q.documentUrl!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: ElevatedButton.icon(
-                      onPressed: () => launchUrl(Uri.parse(q.documentUrl!)),
-                      icon: const Icon(Icons.picture_as_pdf),
-                      label: const Text('View Quotation Document'),
-                    ),
-                  ),
+                if (q.attachments.isNotEmpty) _buildAttachments(q.attachments),
               ],
             ),
           ),
@@ -177,8 +179,10 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(q.title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(q.description, style: GoogleFonts.inter(color: AppColors.textSecondary)),
+          if (q.note != null && q.note!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(q.note!, style: GoogleFonts.inter(color: AppColors.textSecondary)),
+          ],
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -191,10 +195,19 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
           Row(
             children: [
               const Text('Status: '),
-              Chip(
-                label: Text(q.status),
-                backgroundColor: _getStatusColor(q.status),
-              ),
+              Builder(builder: (_) {
+                final status = quotationStatusStyle(q.status);
+                return Chip(
+                  label: Text(
+                    status.label,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      color: status.foreground,
+                    ),
+                  ),
+                  backgroundColor: status.background,
+                );
+              }),
             ],
           ),
         ],
@@ -222,13 +235,13 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(item.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-                      if (item.description.isNotEmpty)
-                        Text(item.description, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
-                      Text('${item.quantity} ${item.unit} x ${formatter.format(item.unitPrice)}', style: GoogleFonts.inter(fontSize: 12)),
+                      if (item.description != null && item.description!.isNotEmpty)
+                        Text(item.description!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
+                      Text('${item.quantity} ${item.unit ?? ''} x ${formatter.format(item.unitPrice)}'.replaceAll('  ', ' '), style: GoogleFonts.inter(fontSize: 12)),
                     ],
                   ),
                 ),
-                Text(formatter.format(item.totalPrice), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                Text(formatter.format(item.amount), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               ],
             ),
           )),
@@ -247,13 +260,27 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
         children: [
           Text('Payment Milestones', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
           const Divider(),
+          // The schedule has no dates — an instalment is triggered by a
+          // condition ("on signing", "after handover"), and the percentage is
+          // what the owner checks the split against.
           ...terms.map((term) => ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(term.description),
-            subtitle: term.expectedPaymentDate != null
-                ? Text('Expected: ${DateFormat('dd MMM yyyy').format(term.expectedPaymentDate!)}')
+            title: Text(term.name),
+            subtitle: term.condition != null && term.condition!.isNotEmpty
+                ? Text(term.condition!)
                 : null,
-            trailing: Text(formatter.format(term.amount), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(formatter.format(term.amount), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                if (term.percentage != null)
+                  Text(
+                    '${term.percentage!.toStringAsFixed(term.percentage! % 1 == 0 ? 0 : 1)}%',
+                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+              ],
+            ),
           )),
         ],
       ),
@@ -273,13 +300,56 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Included Revisions'),
-            trailing: Text(q.maxRevisions.toString(), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            trailing: Text(
+              q.freeRevisionCount?.toString() ?? 'Not stated',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            ),
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Extra Revision Fee'),
-            trailing: Text(formatter.format(q.revisionFee), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            // null is not zero here: it means the provider hasn't published a
+            // price per extra round, not that extra rounds are free.
+            trailing: Text(
+              q.extraRevisionFee != null ? formatter.format(q.extraRevisionFee) : 'Not stated',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Files the provider attached to the bid.
+  ///
+  /// `fileUrl` is the raw object name in the bucket; `fileViewUrl` is the
+  /// absolute URL the server already resolved, so it is the one to open.
+  Widget _buildAttachments(List<QuotationAttachmentResponse> attachments) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Attachments', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Divider(),
+          ...attachments.map((file) {
+            final url = file.fileViewUrl;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.attach_file, color: AppColors.espresso),
+              title: Text(
+                file.fileName?.isNotEmpty == true ? file.fileName! : 'Attachment',
+                style: GoogleFonts.inter(fontSize: 14),
+              ),
+              trailing: const Icon(Icons.open_in_new, size: 18),
+              enabled: url != null && url.isNotEmpty,
+              onTap: url == null || url.isEmpty
+                  ? null
+                  : () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+            );
+          }),
         ],
       ),
     );
@@ -294,7 +364,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: () => _handleAction('Reject'),
+                onPressed: _reject,
                 style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
                 child: const Text('Reject'),
               ),
@@ -302,14 +372,14 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton(
-                onPressed: () => _handleAction('Request Revision'),
+                onPressed: _requestRevision,
                 child: const Text('Revise'),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton(
-                onPressed: () => _handleAction('Accept'),
+                onPressed: _accept,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 child: const Text('Accept'),
               ),
@@ -320,18 +390,6 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'accepted':
-        return Colors.green.shade100;
-      case 'rejected':
-        return Colors.red.shade100;
-      case 'revisionrequested':
-        return Colors.orange.shade100;
-      default:
-        return Colors.blue.shade100;
-    }
-  }
 }
 
 class ContainerWithLoader extends StatelessWidget {
