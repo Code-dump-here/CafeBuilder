@@ -175,6 +175,12 @@ class ProjectResponse {
   final String ownerId;
   final String name;
   final String address;
+
+  /// Map pin for [address], or null when the project was only ever given text.
+  /// Always paired: the backend rejects one without the other.
+  final double? latitude;
+  final double? longitude;
+
   final double areaM2;
   final double budget;
   final String status;
@@ -190,6 +196,8 @@ class ProjectResponse {
     required this.ownerId,
     required this.name,
     required this.address,
+    this.latitude,
+    this.longitude,
     required this.areaM2,
     required this.budget,
     required this.status,
@@ -207,6 +215,8 @@ class ProjectResponse {
         ownerId: json['ownerId']?.toString() ?? '',
         name: json['name'] ?? '',
         address: json['address'] ?? '',
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
         areaM2: json['areaM2'] is num ? (json['areaM2'] as num).toDouble() : 0,
         budget: json['budget'] is num ? (json['budget'] as num).toDouble() : 0,
         status: json['status'] ?? '',
