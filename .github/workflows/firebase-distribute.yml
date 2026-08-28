@@ -18,6 +18,23 @@ jobs:
     name: Build APK & distribute to testers
     runs-on: ubuntu-latest
     steps:
+      # An empty key is the one failure this pipeline cannot survive quietly.
+      # GOOGLE_MAPS_API_KEY is read through String.fromEnvironment, so it is a
+      # COMPILE-TIME constant: with no value, PlacesService.isConfigured folds to
+      # a const false, every map branch becomes unreachable, and dart2js strips
+      # the entire map layer out of the bundle. The build still goes green and
+      # the app silently falls back to plain-text address entry. That is exactly
+      # how the maps went missing from production the first time, so a missing or
+      # misspelled secret has to stop the run instead.
+      - name: Verify the maps key reached the runner
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: |
+          if [ -z "$MAPS_API_KEY" ]; then
+            echo "::error::MAPS_API_KEY is empty. Set it under Settings -> Secrets and variables -> Actions. Without it the map layer is silently tree-shaken out of the build."
+            exit 1
+          fi
+          echo "maps key present (${#MAPS_API_KEY} chars)"
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -40,7 +57,7 @@ jobs:
       # google-services.json is committed to the repo, so no secret is needed
       # to inject it here. The google-services Gradle plugin reads it at build.
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define=GOOGLE_MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}
 
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
@@ -58,6 +75,23 @@ jobs:
     name: Build web & deploy to Firebase Hosting
     runs-on: ubuntu-latest
     steps:
+      # An empty key is the one failure this pipeline cannot survive quietly.
+      # GOOGLE_MAPS_API_KEY is read through String.fromEnvironment, so it is a
+      # COMPILE-TIME constant: with no value, PlacesService.isConfigured folds to
+      # a const false, every map branch becomes unreachable, and dart2js strips
+      # the entire map layer out of the bundle. The build still goes green and
+      # the app silently falls back to plain-text address entry. That is exactly
+      # how the maps went missing from production the first time, so a missing or
+      # misspelled secret has to stop the run instead.
+      - name: Verify the maps key reached the runner
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: |
+          if [ -z "$MAPS_API_KEY" ]; then
+            echo "::error::MAPS_API_KEY is empty. Set it under Settings -> Secrets and variables -> Actions. Without it the map layer is silently tree-shaken out of the build."
+            exit 1
+          fi
+          echo "maps key present (${#MAPS_API_KEY} chars)"
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -72,7 +106,7 @@ jobs:
         run: flutter pub get
 
       - name: Build web (release)
-        run: flutter build web --release
+        run: flutter build web --release --dart-define=GOOGLE_MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}
 
       # Deploy build/web to Firebase Hosting via the Firebase CLI. We pin
       # firebase-tools to a major that still accepts FIREBASE_TOKEN, since
