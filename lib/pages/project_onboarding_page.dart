@@ -9,6 +9,8 @@ import '../services/api_client.dart';
 import '../services/service_provider_service.dart';
 import '../models/requests/project_requests.dart';
 import '../models/requests/design_brief_requests.dart';
+import '../models/place_location.dart';
+import '../widgets/location_field.dart';
 import 'ai_design_report_page.dart';
 
 class _FloorItem {
@@ -49,7 +51,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
 
   // Form State
   final _cafeNameCtrl = TextEditingController();
-  final _locationCtrl = TextEditingController();
+  /// Project location plus its map pin. The picker hands back both at once, so
+  /// this replaced the plain controller that could only hold the text.
+  PickedLocation? _location;
   String _projectType = 'New'; // New, Renovation
   final List<String> _selectedCafeTypes = ['Dine-in Cafe'];
   final _conceptNarrativeCtrl = TextEditingController();
@@ -102,7 +106,6 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   @override
   void dispose() {
     _cafeNameCtrl.dispose();
-    _locationCtrl.dispose();
     _conceptNarrativeCtrl.dispose();
     _differentiatorsCtrl.dispose();
     _budgetCtrl.dispose();
@@ -116,7 +119,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
 
   void _nextStep() {
     if (_currentStep == 0 &&
-        (_cafeNameCtrl.text.trim().isEmpty || _locationCtrl.text.trim().isEmpty)) {
+        (_cafeNameCtrl.text.trim().isEmpty || (_location?.address.trim().isEmpty ?? true))) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a cafe name and location to continue.')),
       );
@@ -175,8 +178,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     String? errorMessage;
 
     // Resolve address – never send an empty string
-    final address = _locationCtrl.text.isNotEmpty
-        ? _locationCtrl.text
+    final location = _location;
+    final address = (location?.address.trim().isNotEmpty ?? false)
+        ? location!.address.trim()
         : 'Vietnam';
 
     try {
@@ -190,6 +194,11 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         ownerId: shopOwnerId,
         name: _cafeNameCtrl.text.isEmpty ? 'My Cafe' : _cafeNameCtrl.text,
         address: address,
+        // Only when the address survived the fallback above — pinning
+        // coordinates onto the literal string "Vietnam" would put a marker in
+        // the middle of the country and call it the build site.
+        latitude: address == location?.address.trim() ? location?.latitude : null,
+        longitude: address == location?.address.trim() ? location?.longitude : null,
         areaM2: _totalArea > 0 ? _totalArea : 1.0,
         budget: _totalBudget,
       );
@@ -234,7 +243,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     if (errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage!),
+          content: Text(errorMessage),
           duration: const Duration(seconds: 6),
           backgroundColor: Colors.red.shade700,
         ),
@@ -247,7 +256,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
       MaterialPageRoute(
         builder: (context) => DesignSynthesisLoadingPage(
           cafeName: _cafeNameCtrl.text.isEmpty ? 'My Cafe' : _cafeNameCtrl.text,
-          location: _locationCtrl.text.isEmpty ? 'City, Country' : _locationCtrl.text,
+          location: (_location?.address.trim().isEmpty ?? true) ? 'City, Country' : _location!.address,
           style: _selectedSoul,
           budgetLevel: _selectedBudgetLevel,
           totalBudget: _totalBudget,
@@ -395,10 +404,11 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         ),
         const SizedBox(height: 20),
         _buildTextFieldLabel('Project Location'),
-        TextField(
-          controller: _locationCtrl,
-          decoration: _buildInputDec('City, Country'),
-          style: GoogleFonts.inter(color: AppColors.textPrimary),
+        LocationField(
+          value: _location,
+          onChanged: (picked) => setState(() => _location = picked),
+          hintText: 'Search for the site address',
+          pickerSubtitle: 'Where the cafe will be built',
         ),
         const SizedBox(height: 24),
         _buildTextFieldLabel('Project Type'),

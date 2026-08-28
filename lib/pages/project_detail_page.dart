@@ -16,6 +16,7 @@ import '../services/construction_service.dart';
 import '../services/design_service.dart';
 import '../services/design_brief_service.dart';
 import '../widgets/notifications_sheet.dart';
+import '../widgets/location_map_preview.dart';
 import 'home_page.dart';
 import 'messages_page.dart';
 import '../services/post_service.dart';
@@ -429,6 +430,16 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                             fontWeight: FontWeight.w600,
                             color: AppColors.placeholder,
                           ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Renders nothing when the project has no pin, so no
+                        // guard is needed here — a project saved before the
+                        // map picker existed simply keeps the address line above.
+                        LocationMapPreview(
+                          address: project.address,
+                          latitude: project.latitude,
+                          longitude: project.longitude,
+                          showAddress: false,
                         ),
                         const SizedBox(height: 24),
                         _buildProgressCard(project),
