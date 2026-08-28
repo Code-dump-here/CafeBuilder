@@ -7,6 +7,8 @@ import '../services/service_provider_service.dart';
 import '../models/requests/project_requests.dart';
 import '../models/marketplace_state.dart';
 import '../services/api_client.dart';
+import '../models/place_location.dart';
+import '../widgets/location_field.dart';
 
 class ProjectManualCreatePage extends StatefulWidget {
   const ProjectManualCreatePage({super.key});
@@ -17,7 +19,11 @@ class ProjectManualCreatePage extends StatefulWidget {
 
 class _ProjectManualCreatePageState extends State<ProjectManualCreatePage> {
   final _nameCtrl = TextEditingController();
-  final _addressCtrl = TextEditingController();
+
+  /// Address plus its map pin. Held as a value rather than a controller because
+  /// the picker returns both halves at once, and a controller could only carry
+  /// the text — the coordinates would have nowhere to live.
+  PickedLocation? _location;
   final _areaCtrl = TextEditingController();
   final _budgetCtrl = TextEditingController();
   bool _isSaving = false;
@@ -25,7 +31,6 @@ class _ProjectManualCreatePageState extends State<ProjectManualCreatePage> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _addressCtrl.dispose();
     _areaCtrl.dispose();
     _budgetCtrl.dispose();
     super.dispose();
@@ -33,7 +38,8 @@ class _ProjectManualCreatePageState extends State<ProjectManualCreatePage> {
 
   Future<void> _createProject() async {
     final name = _nameCtrl.text.trim();
-    final address = _addressCtrl.text.trim();
+    final location = _location;
+    final address = location?.address.trim() ?? '';
     final areaStr = _areaCtrl.text.trim();
     final budgetStr = _budgetCtrl.text.trim();
 
@@ -68,6 +74,8 @@ class _ProjectManualCreatePageState extends State<ProjectManualCreatePage> {
         ownerId: shopOwnerId,
         name: name,
         address: address,
+        latitude: location?.latitude,
+        longitude: location?.longitude,
         areaM2: area,
         budget: budget,
       );
@@ -189,10 +197,10 @@ class _ProjectManualCreatePageState extends State<ProjectManualCreatePage> {
               const SizedBox(height: 20),
               
               _buildTextFieldLabel('Location / Address'),
-              TextField(
-                controller: _addressCtrl,
-                decoration: _buildInputDec('e.g., Ho Chi Minh City, Vietnam'),
-                style: GoogleFonts.inter(color: AppColors.textPrimary),
+              LocationField(
+                value: _location,
+                onChanged: (picked) => setState(() => _location = picked),
+                pickerSubtitle: 'Where the cafe will be built',
               ),
               const SizedBox(height: 20),
               
