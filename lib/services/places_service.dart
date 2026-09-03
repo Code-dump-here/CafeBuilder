@@ -197,85 +197,6 @@ class PlacesService {
     }
   }
 
-  // ── Points of interest ──────────────────────────────────────────────────────
-
-  /// Named places near a point — cafes, hotels, shops — for the pin to latch
-  /// onto.
-  ///
-  /// Reverse geocoding restricted to `types=poi`, which is the only reverse
-  /// mode MapTiler lets you raise the limit on: asking for more than one
-  /// result without pinning the type answers
-  /// `ERR_VALIDATION: Parameter limit must be combined with a single type`.
-  ///
-  /// Unnamed entries are dropped. OpenStreetMap has plenty of tagged-but-
-  /// nameless features (a shoe shop with no name recorded), and MapTiler
-  /// renders those as a bare `-` — a dot the user can latch onto that then
-  /// labels their site "-" is worse than no dot at all.
-  ///
-  /// Returns an empty list on any failure; POIs are an aid, and losing them
-  /// must never block placing a pin by hand.
-  static Future<List<MapPoi>> nearbyPois(double latitude, double longitude) async {
-    if (!isConfigured) return const [];
-
-    try {
-      final response = await http.get(
-        Uri.https(_host, '/geocoding/$longitude,$latitude.json', {
-          'key': apiKey,
-          'language': _language,
-          'types': 'poi',
-          'limit': '10',
-        }),
-      );
-
-      if (response.statusCode != 200) {
-        _logFailure('nearbyPois', response.statusCode, response.body);
-        return const [];
-      }
-
-      final body = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-      final features = body['features'] as List<dynamic>? ?? const [];
-
-      return features
-          .whereType<Map<String, dynamic>>()
-          .map(_poiFrom)
-          .whereType<MapPoi>()
-          .toList();
-    } catch (e) {
-      dev.log('[PlacesService] nearbyPois failed: $e', name: 'PlacesService');
-      return const [];
-    }
-  }
-
-  static MapPoi? _poiFrom(Map<String, dynamic> feature) {
-    final centre = feature['center'] as List<dynamic>? ??
-        (feature['geometry'] as Map<String, dynamic>?)?['coordinates'] as List<dynamic>?;
-    if (centre == null || centre.length < 2) return null;
-
-    // GeoJSON order: longitude first.
-    final lng = (centre[0] as num?)?.toDouble();
-    final lat = (centre[1] as num?)?.toDouble();
-    if (lat == null || lng == null) return null;
-
-    final name = (feature['text_vi'] ?? feature['text']) as String?;
-    // '-' is MapTiler's placeholder for an unnamed feature.
-    if (name == null || name.trim().isEmpty || name.trim() == '-') return null;
-
-    final address = (feature['place_name_vi'] ?? feature['place_name']) as String? ?? name;
-    final props = feature['properties'] as Map<String, dynamic>?;
-    final categories = props?['categories'] as List<dynamic>?;
-
-    return MapPoi(
-      id: props?['ref'] as String? ?? '$lat,$lng',
-      name: name.trim(),
-      address: address,
-      category: categories != null && categories.isNotEmpty
-          ? categories.first as String?
-          : null,
-      latitude: lat,
-      longitude: lng,
-    );
-  }
-
   // ── Tiles ───────────────────────────────────────────────────────────────────
 
   /// URL of one raster map tile.
@@ -300,6 +221,27 @@ class PlacesService {
     final y = (1.0 - math.log(math.tan(latRad) + 1.0 / math.cos(latRad)) / math.pi) / 2.0 * scale;
 
     return (x: x, y: y);
+  }
+
+  /// How much ground one screen pixel covers, in metres.
+  ///
+  /// The conversion between the two units this file deals in, and the thing
+  /// that makes a threshold mean the same to a user at every zoom. A rule
+  /// written in metres alone is a different rule at every zoom level: 40m is
+  /// most of the screen at zoom 19 and four pixels at zoom 13.
+  ///
+  /// Mercator stretches east-west with latitude, hence the cosine. In Ho Chi
+  /// Minh City at zoom 17 this is 0.587 m/px, so the picker's 240px-tall box
+  /// shows about 141m of ground.
+  static double metresPerPixel(int zoom, double latitude) {
+    // Equatorial circumference. The projection is a sphere here, matching
+    // [metresBetween] — the ellipsoidal difference is under 0.3%, well inside
+    // the tolerance of anything measured in screen pixels.
+    const equatorMetres = 40075016.686;
+    final lat = latitude.clamp(-85.05112878, 85.05112878);
+    return equatorMetres *
+        math.cos(lat * math.pi / 180.0) /
+        (tileSize * math.pow(2, zoom));
   }
 
   /// The tiles needed to fill a [width] x [height] box centred on a coordinate,
