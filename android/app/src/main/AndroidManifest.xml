@@ -1,5 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Both, because the picker asks for a street address rather than a
+         navigation fix: coarse is enough to land on the right block, and a
+         device that only grants coarse must still get an answer instead of an
+         error. See DeviceLocation. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="SmartCafeBuilder"
         android:name="${applicationName}"

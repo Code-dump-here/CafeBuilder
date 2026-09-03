@@ -6,6 +6,13 @@ import 'package:cafe_builder/models/place_location.dart';
 import 'package:cafe_builder/services/places_service.dart';
 import 'package:cafe_builder/widgets/interactive_map_picker.dart';
 
+/// Run with the map key defined, or every assertion here fails:
+///
+///   flutter test --dart-define=GOOGLE_MAPS_API_KEY=`key`
+///
+/// `PlacesService.isConfigured` is a compile-time constant, so without it the
+/// map builds to a `SizedBox.shrink()` and there is nothing to find.
+///
 /// The picker opens at this zoom, and the fixtures below are built with the
 /// same projection the widget uses, so a pixel offset here means what it means
 /// on screen.
@@ -64,11 +71,16 @@ int _labelMetres(WidgetTester tester) {
   return int.parse(parts[parts.length - 2]);
 }
 
+/// The locate button, which is the only thing on the map carrying this label.
+final _locateButton = find.byTooltip('Move the pin to where I am');
+
 Future<void> _pumpPicker(
   WidgetTester tester,
   List<MapPoi> pois, {
   void Function(double latitude, double longitude)? onPoisNeeded,
   void Function(double latitude, double longitude)? onChanged,
+  VoidCallback? onLocateMe,
+  bool locating = false,
 }) async {
   await tester.pumpWidget(MaterialApp(
     home: Scaffold(
@@ -82,6 +94,8 @@ Future<void> _pumpPicker(
             onChanged: onChanged ?? (_, _) {},
             pois: pois,
             onPoisNeeded: onPoisNeeded,
+            onLocateMe: onLocateMe,
+            locating: locating,
           ),
         ),
       ),
@@ -215,11 +229,41 @@ void main() {
     expect(asks.first[0], closeTo(pinLat, 1e-9));
     expect(asks.first[1], closeTo(pinLng, 1e-9));
 
-    // Still empty, still dragging, but the throttle holds the next one back
-    // rather than firing a request per frame.
-    await gesture.moveBy(const Offset(-500, 0));
-    await tester.pump();
-    await gesture.moveBy(const Offset(-500, 0));
+    // Still empty, still dragging, and the throttle keeps a fling costing a
+    // handful of asks rather than one per frame. Eight more frames of it is
+    // two and a half kilometres of map, and it is still a handful.
+    for (var frame = 0; frame < 8; frame++) {
+      await gesture.moveBy(const Offset(-500, 0));
+      await tester.pump();
+    }
+    expect(asks.length, lessThan(4),
+        reason: 'eight frames of fling should not be eight asks');
+
+    await gesture.up();
+  });
+
+  testWidgets('asks sooner than the dots take to go stale, because the '
+      'parent answers most asks from its cache', (tester) async {
+    final asks = <List<double>>[];
+    await _pumpPicker(
+      tester,
+      [
+        _poiEastOfCentre('A', 8),
+        _poiEastOfCentre('B', 16),
+        _poiEastOfCentre('C', 28),
+      ],
+      onPoisNeeded: (lat, lng) => asks.add([lat, lng]),
+    );
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byType(InteractiveMapPicker)));
+
+    // 40px is about 23m: half of what a refill used to need, and barely more
+    // than the width of the cluster itself. It asks anyway. Over ground the
+    // cache already holds, the answer costs nothing and buys a re-rank against
+    // places the last reply never contained; over new ground the parent is the
+    // one that decides whether to spend a request.
+    await gesture.moveBy(const Offset(-40, 0));
     await tester.pump();
     expect(asks, hasLength(1));
 
@@ -266,11 +310,11 @@ void main() {
     await gesture.up();
   });
 
-  testWidgets('a batch that reaches further is carried further', (tester) async {
+  testWidgets('a batch that reaches further is carried further, but never past '
+      'half a screen', (tester) async {
     final asks = <List<double>>[];
     // Same three places, but spread out to about 200m - what the geocoder
-    // returns away from the centre of town. Nothing has gone stale yet after
-    // the walk that emptied the dense batch above.
+    // returns away from the centre of town.
     await _pumpPicker(
       tester,
       [
@@ -283,19 +327,82 @@ void main() {
 
     final gesture =
         await tester.startGesture(tester.getCenter(find.byType(InteractiveMapPicker)));
-    await gesture.moveBy(const Offset(-150, 0));
-    await tester.pump();
 
-    // 150px is about 88m, further than the dense batch tolerated, and still
-    // well inside this one's reach.
+    // 60px is about 35m. The dense batch above is stale after 17m, so this one
+    // is being carried more than twice as far on the strength of its own reach.
+    await gesture.moveBy(const Offset(-60, 0));
+    await tester.pump();
     expect(asks, isEmpty);
 
-    // Keep going and it does eventually ask.
-    await gesture.moveBy(const Offset(-250, 0));
+    // Only up to a point, though. Its 200m reach would once have carried it
+    // 110m; the box shows 141m of ground across its short side, and half of
+    // that is as stale as the dots are allowed to get however far the batch
+    // reaches. 140px is about 82m.
+    await gesture.moveBy(const Offset(-80, 0));
     await tester.pump();
     expect(asks, hasLength(1));
 
+    final travelled = PlacesService.metresBetween(
+      _centreLat,
+      _centreLng,
+      asks.first[0],
+      asks.first[1],
+    );
+    expect(travelled, closeTo(82, 5),
+        reason: 'capped by half the screen, not by the 110m its reach alone '
+            'would have allowed');
+
     await gesture.up();
+  });
+
+  testWidgets('the refresh distance is a share of the screen, not a fixed '
+      'number of metres', (tester) async {
+    // How far the pin had travelled, in metres, the first time the map asked.
+    Future<double> metresBeforeFirstAsk({required int zoomOutSteps}) async {
+      final asks = <List<double>>[];
+      await _pumpPicker(
+        tester,
+        [
+          _poiEastOfCentre('A', 8),
+          _poiEastOfCentre('B', 16),
+          _poiEastOfCentre('C', 28),
+        ],
+        onPoisNeeded: (lat, lng) => asks.add([lat, lng]),
+      );
+
+      for (var step = 0; step < zoomOutSteps; step++) {
+        await tester.tap(find.byTooltip('Zoom out'));
+        await tester.pump();
+      }
+      // A zoom step can empty the box and ask on its own account; only the
+      // drag below is being measured.
+      asks.clear();
+
+      final gesture = await tester
+          .startGesture(tester.getCenter(find.byType(InteractiveMapPicker)));
+      // 40px, comfortably past the ~29px the floor works out to at any zoom.
+      await gesture.moveBy(const Offset(-40, 0));
+      await tester.pump();
+      await gesture.up();
+      // Tear the picker down so the next call gets a fresh State rather than
+      // one carrying the last run's anchor and throttle.
+      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+
+      expect(asks, hasLength(1), reason: 'zoomOutSteps=$zoomOutSteps');
+      return PlacesService.metresBetween(
+          _centreLat, _centreLng, asks.first[0], asks.first[1]);
+    }
+
+    final atStreetLevel = await metresBeforeFirstAsk(zoomOutSteps: 0);
+    final zoomedOut = await metresBeforeFirstAsk(zoomOutSteps: 4);
+
+    // The same gesture, the same batch, the same fraction of the screen
+    // crossed - and sixteen times the ground, because that is what four zoom
+    // steps mean. A threshold fixed in metres could only ever have been right
+    // at one of these two.
+    expect(atStreetLevel, closeTo(23, 3));
+    expect(zoomedOut / atStreetLevel, closeTo(16, 1),
+        reason: 'four zoom steps is a factor of 2^4');
   });
 
   testWidgets('asks for nothing when no one is listening', (tester) async {
@@ -323,6 +430,50 @@ void main() {
       expect(_scaleOf(tester, name), greaterThan(0.9), reason: name);
       expect(_opacityOf(tester, name), greaterThan(0.85), reason: name);
     }
+  });
+
+  testWidgets('no locate button when nobody can answer it', (tester) async {
+    // Zoom is always there; locate is not, because taking a fix needs
+    // permissions and a way to report failure, which the map does not have.
+    await _pumpPicker(tester, const []);
+    expect(find.byTooltip('Zoom in'), findsOneWidget);
+    expect(_locateButton, findsNothing);
+  });
+
+  testWidgets('the locate button asks the parent for a fix', (tester) async {
+    var asked = 0;
+    await _pumpPicker(tester, const [], onLocateMe: () => asked++);
+
+    expect(_locateButton, findsOneWidget);
+    await tester.tap(_locateButton);
+    await tester.pump();
+    expect(asked, 1);
+  });
+
+  testWidgets('while a fix is being taken the button spins and stops asking',
+      (tester) async {
+    var asked = 0;
+    await _pumpPicker(
+      tester,
+      const [],
+      onLocateMe: () => asked++,
+      locating: true,
+    );
+
+    // A cold GPS start takes seconds. The spinner is what stops the button
+    // reading as broken, and it sits in the same box so nothing shifts.
+    expect(
+      find.descendant(
+        of: _locateButton,
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.my_location), findsNothing);
+
+    await tester.tap(_locateButton);
+    await tester.pump();
+    expect(asked, 0, reason: 'a second tap must not start a second fix');
   });
 
   testWidgets('the label spells out the real distance, not the relative rank',
