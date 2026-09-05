@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/responses/provider_brand_responses.dart';
 import '../services/provider_brand_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/money.dart';
 
 /// A provider's public face, as the owner reads it while deciding who to hire.
 ///
@@ -39,8 +39,6 @@ class _ProviderBrandPageState extends State<ProviderBrandPage> {
   List<ProviderPortfolioResponse> _portfolios = [];
   bool _loading = true;
   String? _error;
-
-  final _money = NumberFormat.decimalPattern('vi_VN');
 
   @override
   void initState() {
@@ -317,7 +315,6 @@ class _ProviderBrandPageState extends State<ProviderBrandPage> {
           .map(
             (entry) => _PortfolioCard(
               entry: entry,
-              money: _money,
               onOpenVideo: entry.videoViewUrl == null ||
                       entry.videoViewUrl!.isEmpty
                   ? null
@@ -496,12 +493,10 @@ class _CertificateTile extends StatelessWidget {
 
 class _PortfolioCard extends StatelessWidget {
   final ProviderPortfolioResponse entry;
-  final NumberFormat money;
   final VoidCallback? onOpenVideo;
 
   const _PortfolioCard({
     required this.entry,
-    required this.money,
     this.onOpenVideo,
   });
 
@@ -574,7 +569,7 @@ class _PortfolioCard extends StatelessWidget {
                 if (entry.contractValue != null) ...[
                   const SizedBox(height: 6),
                   Text(
-                    '${money.format(entry.contractValue)} VND',
+                    formatVnd(entry.contractValue!),
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,

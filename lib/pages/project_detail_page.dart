@@ -28,6 +28,7 @@ import 'site_profile_page.dart';
 import 'change_orders_page.dart';
 import 'payment_batches_page.dart';
 import 'daily_logs_page.dart';
+import '../utils/money.dart';
 
 class ProjectDetailPage extends StatefulWidget {
   final String projectId;
@@ -304,26 +305,6 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         .where((w) => w.isNotEmpty)
         .map((w) => w[0].toUpperCase() + w.substring(1).toLowerCase())
         .join(' ');
-  }
-
-  // Budgets are stored in VND, not USD. Without the billions tier a typical
-  // 1.5 tỷ budget rendered as the unreadable "1500.0M".
-  String _formatMoney(double value) {
-    if (value >= 1000000000) return '${(value / 1000000000).toStringAsFixed(1)}B VND';
-    if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M VND';
-    if (value >= 1000) return '${(value / 1000).toStringAsFixed(0)}k VND';
-    return '${value.toStringAsFixed(0)} VND';
-  }
-
-  String _formatMoneyFull(double value) {
-    final s = value.toStringAsFixed(0);
-    final buf = StringBuffer();
-    for (var i = 0; i < s.length; i++) {
-      final fromEnd = s.length - i;
-      buf.write(s[i]);
-      if (fromEnd > 1 && fromEnd % 3 == 1) buf.write(',');
-    }
-    return '$buf VND';
   }
 
   @override
@@ -605,7 +586,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _formatMoney(project.budget),
+                          formatVndCompact(project.budget),
                           style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso),
                         ),
                         Text('Budget', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
@@ -627,7 +608,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                   Text('Total Budget', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
                   Text(
-                    _formatMoneyFull(project.budget),
+                    formatVnd(project.budget),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),

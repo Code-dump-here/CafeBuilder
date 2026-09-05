@@ -12,6 +12,7 @@ import '../models/requests/design_brief_requests.dart';
 import '../models/place_location.dart';
 import '../widgets/location_field.dart';
 import 'ai_design_report_page.dart';
+import '../utils/money.dart';
 
 class _FloorItem {
   TextEditingController nameCtrl;
@@ -88,7 +89,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
   final List<_FloorItem> _floors = [_FloorItem('Ground Floor')];
   double _ceilingHeight = 3.2;
   double _storefrontWidth = 8.0;
-  late final _budgetCtrl = TextEditingController(text: _formatVND(_totalBudget));
+  late final _budgetCtrl = TextEditingController(text: formatVndDigits(_totalBudget));
   late final _ceilingHeightCtrl = TextEditingController(text: _ceilingHeight.toString());
   late final _storefrontWidthCtrl = TextEditingController(text: _storefrontWidth.toString());
 
@@ -913,7 +914,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         setState(() {
           _selectedBudgetLevel = name;
           _totalBudget = value;
-          _budgetCtrl.text = _formatVND(_totalBudget);
+          _budgetCtrl.text = formatVndDigits(_totalBudget);
         });
       },
       child: Container(
@@ -961,10 +962,6 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
     );
   }
 
-  String _formatVND(double amount) {
-    return amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
-  }
-
   Widget _buildAllocationSlider(String label, double val, ValueChanged<double> onChanged) {
     double amt = _totalBudget * val;
     return Column(
@@ -975,7 +972,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           children: [
             Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.espresso)),
             Text(
-              '${(val * 100).toStringAsFixed(0)}% (${_formatVND(amt)} VND)',
+              '${(val * 100).toStringAsFixed(0)}% (${formatVnd(amt)})',
               style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.placeholder),
             ),
           ],
