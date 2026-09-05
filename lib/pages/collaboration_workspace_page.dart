@@ -561,13 +561,21 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                     overallRating: rating,
                     comment: commentController.text.trim(),
                   );
-                  if (mounted) {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Review submitted! Thank you.')),
-                    );
-                  }
+                  // Two different contexts with two different lifetimes: `ctx`
+                  // belongs to the dialog, `context` to the page behind it. The
+                  // dialog can be gone while the page is still fine, so one
+                  // `mounted` check cannot stand in for both.
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Review submitted! Thank you.')),
+                  );
                 } catch (e) {
+                  // This branch had no guard at all: a review POST that failed
+                  // after the user left the screen reached ScaffoldMessenger on
+                  // a dead context and threw on top of the error it was
+                  // reporting.
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Failed to submit review: $e')),
                   );

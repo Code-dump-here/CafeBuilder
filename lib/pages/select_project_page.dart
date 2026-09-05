@@ -375,7 +375,9 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                           // may have been filled while this page sat open.
                           _slotConflict.remove(projectId);
                           await _checkSlot(projectId);
-                          if (!mounted) return;
+                          // `context` here is the builder's, not the State's,
+                          // so check the element that actually owns it.
+                          if (!context.mounted) return;
                           final conflict = _slotConflict[projectId];
                           if (conflict != null) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -405,7 +407,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                                   : message,
                             );
 
-                            if (mounted) {
+                            if (context.mounted) {
                               Navigator.pop(context); // hide loading
                               if (widget.isConstructor) {
                                 Navigator.push(
@@ -429,7 +431,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                               }
                             }
                           } catch (e) {
-                             if (mounted) {
+                             if (context.mounted) {
                                Navigator.pop(context);
                                String errorMessage = e.toString();
                                if (errorMessage.contains('409')) {

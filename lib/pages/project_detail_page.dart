@@ -1696,7 +1696,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       }
 
       if (matchedWorking == null) {
-        if (mounted) {
+        // `context` is a parameter here, so the State's `mounted` says nothing
+        // about whether *this* context is still usable.
+        if (context.mounted) {
           Navigator.pop(context); // close dialog
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('No active collaboration found for this project yet.')),
@@ -1705,7 +1707,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         return;
       }
 
-      if (mounted) {
+      if (context.mounted) {
         final workingId = matchedWorking.id;
         Navigator.pop(context); // close dialog
         Navigator.push(
@@ -1716,7 +1718,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         ).then((_) => _loadProject());
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         Navigator.pop(context); // close dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Could not open workspace: $e')),
@@ -1873,7 +1875,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         allContracts.addAll(ContractService.ownerVisible(res.items));
       }
 
-      if (mounted) {
+      if (context.mounted) {
         Navigator.pop(context); // close loading
         if (allContracts.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No active contracts for this project.')));
@@ -1934,7 +1936,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         }
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         Navigator.pop(context); // close loading
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
