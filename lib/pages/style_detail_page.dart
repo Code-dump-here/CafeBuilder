@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../theme/app_colors.dart';
@@ -70,9 +71,14 @@ class StyleDetailPage extends StatelessWidget {
                 color: AppColors.primary,
               ),
             ),
+            // Copies rather than opening a share sheet: there is no share
+            // package in this project, and the clipboard needs none. Removing
+            // the button instead would have pushed the title off centre — the
+            // Row is spaceBetween and this is what balances the back arrow.
             IconButton(
               icon: const Icon(Icons.share_outlined, color: AppColors.primary),
-              onPressed: () {},
+              tooltip: 'Copy link to this style',
+              onPressed: () => _copyLink(context),
               style: IconButton.styleFrom(
                 backgroundColor: AppColors.white.withOpacity(0.5),
               ),
@@ -80,6 +86,14 @@ class StyleDetailPage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _copyLink(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: item.imageUrl));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Link to "${item.title}" copied.')),
     );
   }
 

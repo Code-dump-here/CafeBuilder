@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
+import '../services/api_client.dart';
 import '../services/post_service.dart';
+import '../widgets/notifications_sheet.dart';
 
 class MarketplacePage extends StatefulWidget {
   final bool showBackButton;
@@ -37,6 +39,19 @@ class _MarketplacePageState extends State<MarketplacePage>
     MarketplaceState.onBroadcastsChanged = () {
       if (mounted) setState(() {});
     };
+  }
+
+  /// Same sheet the project detail screen opens. The login guard matters
+  /// here in a way it does not there: the marketplace is a tab on the home
+  /// page, so it builds for signed-out visitors too.
+  void _showNotifications() async {
+    if (!await ApiClient.isLoggedIn() || !mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => NotificationsSheet(onNotificationRead: () {}),
+    );
   }
 
   Future<void> _fetchPosts() async {
@@ -280,7 +295,7 @@ class _MarketplacePageState extends State<MarketplacePage>
           IconButton(
             icon: const Icon(Icons.notifications_none_rounded,
                 color: AppColors.espresso),
-            onPressed: () {},
+            onPressed: _showNotifications,
           ),
         ],
       ),
@@ -311,10 +326,21 @@ class _MarketplacePageState extends State<MarketplacePage>
                 GoogleFonts.inter(fontSize: 13, color: AppColors.placeholder),
             prefixIcon: const Icon(Icons.search,
                 color: AppColors.placeholder, size: 20),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.tune, color: AppColors.espresso, size: 20),
-              onPressed: () {},
-            ),
+            // Was a `tune` icon that did nothing — there are no filters on
+            // this screen to open. A search field's suffix earns its place by
+            // clearing the query, which otherwise takes selecting the whole
+            // string by hand.
+            suffixIcon: _searchQuery.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.close,
+                        color: AppColors.espresso, size: 20),
+                    tooltip: 'Clear search',
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  ),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 14),
           ),
