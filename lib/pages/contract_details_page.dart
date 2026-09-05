@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/contract_service.dart';
 import '../widgets/confirm_dialog.dart';
+import '../utils/money.dart';
 
 class ContractDetailsPage extends StatefulWidget {
   final ContractResponse contract;
@@ -105,10 +106,6 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Amounts are VND. This formatted them as US dollars, so a 50,000,000
-    // VND contract read as "$50,000,000.00".
-    final currencyFormatter =
-        NumberFormat.currency(locale: 'vi_VN', symbol: 'VND', decimalDigits: 0);
     final isPendingOtp = _contract.status.toLowerCase() == 'pending_otp';
     final isDrafted = _contract.status.toLowerCase() == 'drafted';
 
@@ -205,7 +202,7 @@ class _ContractDetailsPageState extends State<ContractDetailsPage> {
 
                   _buildSectionTitle('Agreed Value'),
                   Text(
-                    currencyFormatter.format(_contract.agreedValue),
+                    formatVnd(_contract.agreedValue),
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,

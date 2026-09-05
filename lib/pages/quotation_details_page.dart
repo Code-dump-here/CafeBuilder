@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/responses/quotation_payment_responses.dart';
 import '../services/quotation_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/money.dart';
 import '../utils/quotation_status.dart';
 import '../widgets/confirm_dialog.dart';
 
@@ -132,7 +132,6 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
     }
 
     final q = _quotation!;
-    final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'VND', decimalDigits: 0);
     // `sent` is the only state the owner can act on: `draft` hasn't been sent
     // yet, `revision_requested` is waiting on the provider's new version, and
     // the rest are final. Status values are the server's enum names verbatim
@@ -154,10 +153,10 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildHeaderInfo(q, currencyFormatter),
-                if (q.items.isNotEmpty) _buildItemsList(q.items, currencyFormatter),
-                if (q.paymentTerms.isNotEmpty) _buildPaymentTerms(q.paymentTerms, currencyFormatter),
-                _buildRevisionInfo(q, currencyFormatter),
+                _buildHeaderInfo(q),
+                if (q.items.isNotEmpty) _buildItemsList(q.items),
+                if (q.paymentTerms.isNotEmpty) _buildPaymentTerms(q.paymentTerms),
+                _buildRevisionInfo(q),
                 if (q.attachments.isNotEmpty) _buildAttachments(q.attachments),
               ],
             ),
@@ -170,7 +169,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
     );
   }
 
-  Widget _buildHeaderInfo(QuotationResponse q, NumberFormat formatter) {
+  Widget _buildHeaderInfo(QuotationResponse q) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
@@ -188,7 +187,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Total Amount:', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600)),
-              Text(formatter.format(q.totalAmount), style: GoogleFonts.inter(fontSize: 20, color: Colors.green[700], fontWeight: FontWeight.bold)),
+              Text(formatVnd(q.totalAmount), style: GoogleFonts.inter(fontSize: 20, color: Colors.green[700], fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 8),
@@ -215,7 +214,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
     );
   }
 
-  Widget _buildItemsList(List<QuotationItemResponse> items, NumberFormat formatter) {
+  Widget _buildItemsList(List<QuotationItemResponse> items) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
@@ -237,11 +236,11 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
                       Text(item.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                       if (item.description != null && item.description!.isNotEmpty)
                         Text(item.description!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
-                      Text('${item.quantity} ${item.unit ?? ''} x ${formatter.format(item.unitPrice)}'.replaceAll('  ', ' '), style: GoogleFonts.inter(fontSize: 12)),
+                      Text('${formatQuantity(item.quantity)} ${item.unit ?? ''} x ${formatVnd(item.unitPrice)}'.replaceAll('  ', ' '), style: GoogleFonts.inter(fontSize: 12)),
                     ],
                   ),
                 ),
-                Text(formatter.format(item.amount), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                Text(formatVnd(item.amount), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               ],
             ),
           )),
@@ -250,7 +249,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
     );
   }
 
-  Widget _buildPaymentTerms(List<QuotationPaymentTermResponse> terms, NumberFormat formatter) {
+  Widget _buildPaymentTerms(List<QuotationPaymentTermResponse> terms) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
@@ -273,10 +272,10 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(formatter.format(term.amount), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                Text(formatVnd(term.amount), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
                 if (term.percentage != null)
                   Text(
-                    '${term.percentage!.toStringAsFixed(term.percentage! % 1 == 0 ? 0 : 1)}%',
+                    '${formatPercent(term.percentage!)}%',
                     style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
                   ),
               ],
@@ -287,7 +286,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
     );
   }
 
-  Widget _buildRevisionInfo(QuotationResponse q, NumberFormat formatter) {
+  Widget _buildRevisionInfo(QuotationResponse q) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
@@ -311,7 +310,7 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
             // null is not zero here: it means the provider hasn't published a
             // price per extra round, not that extra rounds are free.
             trailing: Text(
-              q.extraRevisionFee != null ? formatter.format(q.extraRevisionFee) : 'Not stated',
+              q.extraRevisionFee != null ? formatVnd(q.extraRevisionFee!) : 'Not stated',
               style: GoogleFonts.inter(fontWeight: FontWeight.bold),
             ),
           ),

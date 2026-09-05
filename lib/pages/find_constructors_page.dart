@@ -494,13 +494,39 @@ class FilterConstructorsSheet extends StatefulWidget {
 }
 
 class _FilterConstructorsSheetState extends State<FilterConstructorsSheet> {
-  String selectedBudget = 'MID';
-  String selectedSpec = 'Bistro';
-  String selectedProjects = '10+';
-  String selectedArea = '50 - 100m²';
-  String selectedTime = '30-60 days';
-  String selectedWarranty = '12 mo';
-  bool verifiedPartner = true;
+  // Named so "Reset" and the initial state cannot drift apart: the button
+  // restores exactly what the sheet opens with, rather than a second copy of
+  // the same literals that someone updates only one of.
+  static const _defaultBudget = 'MID';
+  static const _defaultSpec = 'Bistro';
+  static const _defaultProjects = '10+';
+  static const _defaultArea = '50 - 100m²';
+  static const _defaultTime = '30-60 days';
+  static const _defaultWarranty = '12 mo';
+  static const _defaultVerifiedPartner = true;
+
+  String selectedBudget = _defaultBudget;
+  String selectedSpec = _defaultSpec;
+  String selectedProjects = _defaultProjects;
+  String selectedArea = _defaultArea;
+  String selectedTime = _defaultTime;
+  String selectedWarranty = _defaultWarranty;
+  bool verifiedPartner = _defaultVerifiedPartner;
+
+  /// Puts every control back to the state the sheet opened in. Without this
+  /// the button was inert, so a filter could be changed but never undone
+  /// short of closing the sheet and reopening it.
+  void _resetFilters() {
+    setState(() {
+      selectedBudget = _defaultBudget;
+      selectedSpec = _defaultSpec;
+      selectedProjects = _defaultProjects;
+      selectedArea = _defaultArea;
+      selectedTime = _defaultTime;
+      selectedWarranty = _defaultWarranty;
+      verifiedPartner = _defaultVerifiedPartner;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -526,7 +552,7 @@ class _FilterConstructorsSheetState extends State<FilterConstructorsSheet> {
                 style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.espresso),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: _resetFilters,
                 child: Text('Reset', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary)),
               ),
             ],

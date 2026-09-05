@@ -13,6 +13,7 @@ import 'design_deliverables_detail_page.dart';
 import 'construction_progress_detail_page.dart';
 import 'survey_detail_page.dart';
 import '../widgets/confirm_dialog.dart';
+import '../utils/money.dart';
 
 class CollaborationWorkspacePage extends StatefulWidget {
   final String? projectWorkingId;
@@ -593,7 +594,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
             children: [
               Text('Status: ${contract.status.toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text('Agreed Value: ${contract.agreedValue.toStringAsFixed(0)} VND', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text('Agreed Value: ${formatVnd(contract.agreedValue)}', style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               if (contract.partyInfo != null) ...[
                 const Text('Parties Involved:', style: TextStyle(fontWeight: FontWeight.bold)),

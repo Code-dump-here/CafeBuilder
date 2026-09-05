@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
 import '../models/responses/api_responses.dart';
 import '../models/responses/change_order_responses.dart';
 import '../services/change_order_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/money.dart';
 
 /// Where the owner answers the money a provider asks for after the contract.
 ///
@@ -43,8 +43,6 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
 
   /// Ids mid-request, so only the affected card shows a spinner.
   final Set<String> _busy = {};
-
-  final _money = NumberFormat.decimalPattern('vi_VN');
 
   @override
   void initState() {
@@ -103,7 +101,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
         ),
         content: Text(
           '${order.title}\n\n'
-          '${_money.format(order.amount)} VND sẽ được cộng vào tổng cam kết '
+          '${formatVnd(order.amount)} sẽ được cộng vào tổng cam kết '
           'của hợp tác này. Duyệt rồi thì không sửa lại được.',
           style: GoogleFonts.inter(fontSize: 13),
         ),
@@ -314,7 +312,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
             style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          if (summary != null) _SummaryCard(summary: summary, money: _money),
+          if (summary != null) _SummaryCard(summary: summary),
           const SizedBox(height: 10),
           if (orders.isEmpty)
             Container(
@@ -335,7 +333,6 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
             ...orders.map(
               (order) => _OrderCard(
                 order: order,
-                money: _money,
                 busy: _busy.contains(order.id),
                 onAccept: () => _accept(order),
                 onReject: () => _reject(order),
@@ -350,14 +347,13 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
 
 class _SummaryCard extends StatelessWidget {
   final ChangeOrderSummaryResponse summary;
-  final NumberFormat money;
 
-  const _SummaryCard({required this.summary, required this.money});
+  const _SummaryCard({required this.summary});
 
   @override
   Widget build(BuildContext context) {
     String vnd(double? value) =>
-        value == null ? 'Chưa ký hợp đồng' : '${money.format(value)} VND';
+        value == null ? 'Chưa ký hợp đồng' : formatVnd(value);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -380,7 +376,7 @@ class _SummaryCard extends StatelessWidget {
               Expanded(
                 child: _Metric(
                   label: 'Phát sinh đã duyệt',
-                  value: '${money.format(summary.acceptedAmount)} VND',
+                  value: formatVnd(summary.acceptedAmount),
                   hint: '${summary.acceptedCount} khoản',
                 ),
               ),
@@ -392,7 +388,7 @@ class _SummaryCard extends StatelessWidget {
               Expanded(
                 child: _Metric(
                   label: 'Đang chờ bạn duyệt',
-                  value: '${money.format(summary.pendingAmount)} VND',
+                  value: formatVnd(summary.pendingAmount),
                   hint: '${summary.pendingCount} khoản',
                   highlight: summary.pendingCount > 0,
                 ),
@@ -413,14 +409,14 @@ class _SummaryCard extends StatelessWidget {
               Expanded(
                 child: _Metric(
                   label: 'Đã ra đợt thu',
-                  value: '${money.format(summary.billedAmount)} VND',
+                  value: formatVnd(summary.billedAmount),
                   hint: 'Có đợt để bạn trả',
                 ),
               ),
               Expanded(
                 child: _Metric(
                   label: 'Đã thanh toán',
-                  value: '${money.format(summary.paidAmount)} VND',
+                  value: formatVnd(summary.paidAmount),
                   hint: 'Nhà cung cấp đã xác nhận',
                 ),
               ),
@@ -429,7 +425,7 @@ class _SummaryCard extends StatelessWidget {
           if (summary.acceptedRevisionFee > 0) ...[
             const SizedBox(height: 10),
             Text(
-              'Trong đó ${money.format(summary.acceptedRevisionFee)} VND là phí '
+              'Trong đó ${formatVnd(summary.acceptedRevisionFee)} là phí '
               'sửa thiết kế vượt hạn mức.',
               style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
             ),
@@ -456,7 +452,7 @@ class _SummaryCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${money.format(summary.unbilledAmount)} VND đã thống nhất '
+                      '${formatVnd(summary.unbilledAmount)} đã thống nhất '
                       'nhưng chưa có đợt thanh toán nào phủ — hoặc hợp tác chưa '
                       'ký hợp đồng, hoặc khoản được duyệt từ trước khi hệ thống '
                       'sinh đợt cho phát sinh.',
@@ -525,7 +521,6 @@ class _Metric extends StatelessWidget {
 
 class _OrderCard extends StatelessWidget {
   final ChangeOrderResponse order;
-  final NumberFormat money;
   final bool busy;
   final VoidCallback onAccept;
   final VoidCallback onReject;
@@ -533,7 +528,6 @@ class _OrderCard extends StatelessWidget {
 
   const _OrderCard({
     required this.order,
-    required this.money,
     required this.busy,
     required this.onAccept,
     required this.onReject,
@@ -600,7 +594,7 @@ class _OrderCard extends StatelessWidget {
               Text(
                 order.needsPricing
                     ? 'Chưa báo giá'
-                    : '${money.format(order.amount)} VND',
+                    : formatVnd(order.amount),
                 style: GoogleFonts.inter(
                   fontSize: order.needsPricing ? 12 : 15,
                   fontWeight: FontWeight.w700,

@@ -7,6 +7,7 @@ import '../models/responses/api_responses.dart';
 import '../models/responses/quotation_payment_responses.dart';
 import '../services/payment_batch_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/money.dart';
 
 /// Where the owner pays the provider by instalment.
 ///
@@ -45,8 +46,6 @@ class _PaymentBatchesPageState extends State<PaymentBatchesPage> {
 
   /// Ids mid-request, so only the affected card shows a spinner.
   final Set<String> _busy = {};
-
-  final _money = NumberFormat.decimalPattern('vi_VN');
 
   @override
   void initState() {
@@ -98,7 +97,7 @@ class _PaymentBatchesPageState extends State<PaymentBatchesPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ProofSheet(batch: batch, money: _money),
+      builder: (_) => _ProofSheet(batch: batch),
     );
     if (result == null) return;
 
@@ -216,7 +215,7 @@ class _PaymentBatchesPageState extends State<PaymentBatchesPage> {
           ),
           const SizedBox(height: 8),
           if (batches.isNotEmpty)
-            _SummaryCard(summary: summary, money: _money),
+            _SummaryCard(summary: summary),
           const SizedBox(height: 10),
           if (batches.isEmpty)
             Container(
@@ -242,7 +241,6 @@ class _PaymentBatchesPageState extends State<PaymentBatchesPage> {
             ...batches.map(
               (batch) => _BatchCard(
                 batch: batch,
-                money: _money,
                 busy: _busy.contains(batch.id),
                 onSubmitProof: () => _submitProof(batch),
               ),
@@ -255,14 +253,11 @@ class _PaymentBatchesPageState extends State<PaymentBatchesPage> {
 
 class _SummaryCard extends StatelessWidget {
   final PaymentBatchSummary summary;
-  final NumberFormat money;
 
-  const _SummaryCard({required this.summary, required this.money});
+  const _SummaryCard({required this.summary});
 
   @override
   Widget build(BuildContext context) {
-    String vnd(double value) => '${money.format(value)} VND';
-
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -278,13 +273,13 @@ class _SummaryCard extends StatelessWidget {
               Expanded(
                 child: _Metric(
                   label: 'Tổng theo hợp đồng',
-                  value: vnd(summary.total),
+                  value: formatVnd(summary.total),
                 ),
               ),
               Expanded(
                 child: _Metric(
                   label: 'Đã được xác nhận',
-                  value: vnd(summary.confirmed),
+                  value: formatVnd(summary.confirmed),
                   hint: '${summary.confirmedCount} đợt',
                 ),
               ),
@@ -296,14 +291,14 @@ class _SummaryCard extends StatelessWidget {
               Expanded(
                 child: _Metric(
                   label: 'Chờ nhà cung cấp xác nhận',
-                  value: vnd(summary.awaitingConfirmation),
+                  value: formatVnd(summary.awaitingConfirmation),
                   hint: '${summary.awaitingCount} đợt',
                 ),
               ),
               Expanded(
                 child: _Metric(
                   label: 'Còn phải trả',
-                  value: vnd(summary.outstanding),
+                  value: formatVnd(summary.outstanding),
                   hint: 'Chưa được xác nhận',
                   emphasis: true,
                   highlight: summary.actionableCount > 0,
@@ -376,13 +371,11 @@ const Map<String, String> _kStatusLabels = {
 
 class _BatchCard extends StatelessWidget {
   final PaymentBatchResponse batch;
-  final NumberFormat money;
   final bool busy;
   final VoidCallback onSubmitProof;
 
   const _BatchCard({
     required this.batch,
-    required this.money,
     required this.busy,
     required this.onSubmitProof,
   });
@@ -441,7 +434,7 @@ class _BatchCard extends StatelessWidget {
               if (batch.percentage != null) ...[
                 const SizedBox(width: 8),
                 Text(
-                  '${money.format(batch.percentage)}%',
+                  '${formatPercent(batch.percentage!)}%',
                   style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
                 ),
               ],
@@ -457,7 +450,7 @@ class _BatchCard extends StatelessWidget {
               ],
               const Spacer(),
               Text(
-                '${money.format(batch.amount)} VND',
+                formatVnd(batch.amount),
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -525,7 +518,7 @@ class _BatchCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            ...batch.proofs.map((proof) => _ProofRow(proof: proof, money: money)),
+            ...batch.proofs.map((proof) => _ProofRow(proof: proof)),
           ],
           if (batch.needsOwnerAction) ...[
             const SizedBox(height: 12),
@@ -566,9 +559,8 @@ class _BatchCard extends StatelessWidget {
 
 class _ProofRow extends StatelessWidget {
   final PaymentProofResponse proof;
-  final NumberFormat money;
 
-  const _ProofRow({required this.proof, required this.money});
+  const _ProofRow({required this.proof});
 
   @override
   Widget build(BuildContext context) {
@@ -618,7 +610,7 @@ class _ProofRow extends StatelessWidget {
                   // A proof with no amount means the whole instalment — see
                   // SubmitPaymentProofRequest. Showing 0 VND would be a lie.
                   proof.amount != null
-                      ? '${money.format(proof.amount)} VND'
+                      ? formatVnd(proof.amount!)
                       : 'Trọn đợt',
                   style: GoogleFonts.inter(
                     fontSize: 13,
@@ -673,9 +665,8 @@ class _ProofDraft {
 
 class _ProofSheet extends StatefulWidget {
   final PaymentBatchResponse batch;
-  final NumberFormat money;
 
-  const _ProofSheet({required this.batch, required this.money});
+  const _ProofSheet({required this.batch});
 
   @override
   State<_ProofSheet> createState() => _ProofSheetState();
@@ -762,8 +753,7 @@ class _ProofSheetState extends State<_ProofSheet> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${widget.batch.name} · '
-                '${widget.money.format(widget.batch.amount)} VND',
+                '${widget.batch.name} · ${formatVnd(widget.batch.amount)}',
                 style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
               ),
               const SizedBox(height: 12),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/responses/quotation_payment_responses.dart';
 import '../services/quotation_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/money.dart';
 import '../utils/quotation_status.dart';
 import '../widgets/confirm_dialog.dart';
 
@@ -46,8 +46,6 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
 
   /// Ids mid-request, so only the affected card shows a spinner.
   final Set<String> _busy = {};
-
-  final _money = NumberFormat.decimalPattern('vi_VN');
 
   /// True once a bid has been approved in this session — the caller reloads on
   /// the way back because the post and its applications have all just changed.
@@ -112,7 +110,7 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
         ),
         content: Text(
           '${quotation.providerName ?? 'Provider'} · '
-          '${_money.format(quotation.totalAmount)} VND\n\n'
+          '${formatVnd(quotation.totalAmount)}\n\n'
           'Accepting a quotation also CHOOSES this provider: their application '
           'is accepted, the post closes, and every rival bid is superseded. '
           'This cannot be undone.',
@@ -289,7 +287,6 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
         ...live.map(
           (quotation) => _QuotationCard(
             quotation: quotation,
-            money: _money,
             busy: _busy.contains(quotation.id),
             isCheapest: cheapest != null && quotation.id == cheapest.id,
             onAccept: () => _accept(quotation),
@@ -311,7 +308,6 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
           ...closed.map(
             (quotation) => _QuotationCard(
               quotation: quotation,
-              money: _money,
               busy: false,
               isCheapest: false,
               onAccept: () {},
@@ -327,7 +323,6 @@ class _QuotationComparisonPageState extends State<QuotationComparisonPage> {
 
 class _QuotationCard extends StatelessWidget {
   final QuotationResponse quotation;
-  final NumberFormat money;
   final bool busy;
   final bool isCheapest;
   final VoidCallback onAccept;
@@ -336,7 +331,6 @@ class _QuotationCard extends StatelessWidget {
 
   const _QuotationCard({
     required this.quotation,
-    required this.money,
     required this.busy,
     required this.isCheapest,
     required this.onAccept,
@@ -401,7 +395,7 @@ class _QuotationCard extends StatelessWidget {
                 ],
                 const Spacer(),
                 Text(
-                  '${money.format(quotation.totalAmount)} VND',
+                  formatVnd(quotation.totalAmount),
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -535,10 +529,10 @@ class _QuotationCard extends StatelessWidget {
                     .map(
                       (item) => _LineRow(
                         left: item.name,
-                        sub: '${money.format(item.quantity)}'
+                        sub: '${formatQuantity(item.quantity)}'
                             '${item.unit != null ? ' ${item.unit}' : ''}'
-                            ' × ${money.format(item.unitPrice)}',
-                        right: '${money.format(item.amount)} VND',
+                            ' × ${formatVnd(item.unitPrice)}',
+                        right: formatVnd(item.amount),
                       ),
                     )
                     .toList(),
@@ -557,9 +551,9 @@ class _QuotationCard extends StatelessWidget {
                         left: term.name,
                         sub: term.condition,
                         right: term.percentage != null
-                            ? '${money.format(term.percentage)}% · '
-                                '${money.format(term.amount)} VND'
-                            : '${money.format(term.amount)} VND',
+                            ? '${formatPercent(term.percentage!)}% · '
+                                '${formatVnd(term.amount)}'
+                            : formatVnd(term.amount),
                       ),
                     )
                     .toList(),

@@ -7,6 +7,7 @@ import 'project_success_page.dart';
 import '../services/ai_recommendation_service.dart';
 import '../models/responses/api_responses.dart';
 import '../models/marketplace_state.dart';
+import '../utils/money.dart';
 
 // ── Loading / Synthesis page ─────────────────────────────────────────────────
 
@@ -346,24 +347,18 @@ class AiDesignReportPage extends StatelessWidget {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  String _formatVnd(double amount) {
-    if (amount >= 1e9) return '${(amount / 1e9).toStringAsFixed(1)} tỷ';
-    if (amount >= 1e6) return '${(amount / 1e6).toStringAsFixed(0)} triệu';
-    return amount.toStringAsFixed(0);
-  }
-
   String _costRange() {
     final min = report?.fitoutMinVnd;
     final max = report?.fitoutMaxVnd;
-    if (min != null && max != null) return '${_formatVnd(min)} – ${_formatVnd(max)} VND';
+    if (min != null && max != null) return '${formatVndCompact(min)} – ${formatVndCompact(max)}';
     // Fallback: use totalBudget
-    return '${_formatVnd(totalBudget * 0.9)} – ${_formatVnd(totalBudget * 1.15)} VND';
+    return '${formatVndCompact(totalBudget * 0.9)} – ${formatVndCompact(totalBudget * 1.15)}';
   }
 
   String _equipRange() {
     final min = report?.equipmentMinVnd;
     final max = report?.equipmentMaxVnd;
-    if (min != null && max != null) return '${_formatVnd(min)} – ${_formatVnd(max)} VND';
+    if (min != null && max != null) return '${formatVndCompact(min)} – ${formatVndCompact(max)}';
     return '—';
   }
 

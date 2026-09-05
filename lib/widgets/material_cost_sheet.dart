@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
 import '../models/responses/review3_responses.dart';
 import '../services/material_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/money.dart';
 
 /// What a milestone costs in materials, for the shop owner.
 ///
@@ -36,8 +36,6 @@ class _MaterialCostSheetState extends State<MaterialCostSheet> {
   bool _loading = true;
   String? _error;
 
-  static final _money = NumberFormat.decimalPattern('vi_VN');
-
   @override
   void initState() {
     super.initState();
@@ -62,7 +60,7 @@ class _MaterialCostSheetState extends State<MaterialCostSheet> {
   }
 
   String _vnd(double? value) =>
-      value == null ? '—' : '${_money.format(value.round())} VND';
+      value == null ? '—' : formatVnd(value);
 
   @override
   Widget build(BuildContext context) {
