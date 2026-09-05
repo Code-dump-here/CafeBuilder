@@ -225,14 +225,14 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Nghiệm thu hợp tác'),
-        content: const Text('Bạn có chắc chắn muốn nghiệm thu và kết thúc hợp tác với nhà cung cấp này không?'),
+        title: const Text('Accept and close engagement'),
+        content: const Text('Are you sure you want to accept the work and end the engagement with this provider?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.espresso),
-            child: const Text('Nghiệm thu', style: TextStyle(color: Colors.white)),
+            child: const Text('Accept work', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -274,32 +274,32 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Đề nghị huỷ hợp tác'),
+        title: const Text('Request to end the engagement'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Hợp tác chỉ dừng khi bên còn lại đồng ý. Đề nghị của bạn sẽ được '
-              'gửi cho nhà cung cấp để họ phản hồi.',
+              'An engagement only ends when the other side agrees. Your request will be '
+              'sent to the provider for a response.',
             ),
             const SizedBox(height: 12),
             TextField(
               controller: reasonController,
               maxLines: 3,
               decoration: const InputDecoration(
-                labelText: 'Lý do (tuỳ chọn)',
+                labelText: 'Reason (optional)',
                 border: OutlineInputBorder(),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Không')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Gửi đề nghị', style: TextStyle(color: Colors.white)),
+            child: const Text('Send request', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -323,8 +323,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(ended
-                ? 'Hợp tác đã kết thúc.'
-                : 'Đã gửi đề nghị huỷ — đang chờ nhà cung cấp phản hồi.'),
+                ? 'The engagement has ended.'
+                : 'Request sent — waiting for the provider to respond.'),
           ),
         );
         _loadWorkspaceData();
@@ -347,16 +347,16 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Đồng ý huỷ hợp tác'),
+          title: const Text('Agree to end the engagement'),
           content: const Text(
-            'Hợp tác sẽ kết thúc ngay khi bạn đồng ý. Hành động này không thể hoàn tác.',
+            'The engagement ends as soon as you agree. This cannot be undone.',
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Không')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Đồng ý huỷ', style: TextStyle(color: Colors.white)),
+              child: const Text('Agree to end it', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -375,8 +375,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(approve
-                ? 'Hợp tác đã kết thúc.'
-                : 'Đã từ chối đề nghị huỷ — hợp tác tiếp tục.'),
+                ? 'The engagement has ended.'
+                : 'Request declined — the engagement continues.'),
           ),
         );
         _loadWorkspaceData();
@@ -417,8 +417,8 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               Expanded(
                 child: Text(
                   raisedByProvider
-                      ? 'Nhà cung cấp đề nghị huỷ hợp tác'
-                      : 'Đang chờ nhà cung cấp phản hồi đề nghị huỷ',
+                      ? 'The provider has asked to end the engagement'
+                      : 'Waiting for the provider to respond to your request',
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
@@ -431,15 +431,15 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
           if (note != null && note.trim().isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              'Lý do: $note',
+              'Reason: $note',
               style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
             ),
           ],
           const SizedBox(height: 8),
           Text(
             raisedByProvider
-                ? 'Hợp tác vẫn đang chạy cho tới khi bạn phản hồi.'
-                : 'Hợp tác vẫn đang chạy cho tới khi họ đồng ý.',
+                ? 'The engagement continues until you respond.'
+                : 'The engagement continues until they agree.',
             style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
           ),
           const SizedBox(height: 12),
@@ -454,7 +454,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                       side: const BorderSide(color: AppColors.outlineVariant),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text('Từ chối'),
+                    child: const Text('Decline'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -467,7 +467,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       elevation: 0,
                     ),
-                    child: const Text('Đồng ý huỷ'),
+                    child: const Text('Agree to end it'),
                   ),
                 ),
               ],
@@ -482,7 +482,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                   side: const BorderSide(color: AppColors.outlineVariant),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                child: const Text('Rút lại đề nghị'),
+                child: const Text('Withdraw request'),
               ),
             ),
         ],
@@ -499,7 +499,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       await ProjectWorkingService.cancelTerminationRequest(_activeWorkingId!);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã rút lại đề nghị huỷ.')),
+          const SnackBar(content: Text('Request withdrawn.')),
         );
         _loadWorkspaceData();
       }
@@ -1506,7 +1506,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                 child: ElevatedButton.icon(
                   onPressed: _engagementActionInProgress ? null : _completeProject,
                   icon: const Icon(Icons.check_circle, size: 20, color: Colors.white),
-                  label: Text(_working?.isAwaitingAcceptance == true ? 'Nghiệm thu (Đang chờ)' : 'Nghiệm thu'),
+                  label: Text(_working?.isAwaitingAcceptance == true ? 'Acceptance (pending)' : 'Accept work'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _working?.isAwaitingAcceptance == true ? Colors.green.shade700 : AppColors.espresso,
                     foregroundColor: Colors.white,
@@ -1529,7 +1529,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                   icon: const Icon(Icons.cancel, size: 20, color: Colors.red),
                   // Reads as a proposal, not a done deal — the provider still
                   // has to agree before anything ends.
-                  label: const Text('Đề nghị huỷ hợp tác'),
+                  label: const Text('Request to end the engagement'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),

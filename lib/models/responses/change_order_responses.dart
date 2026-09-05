@@ -252,23 +252,23 @@ class RevisionQuotaResponse {
 }
 
 const Map<String, String> kChangeOrderKindLabels = {
-  'extra_revision': 'Phí sửa thêm',
-  'scope_change': 'Đổi phạm vi',
-  'material_change': 'Đổi vật tư',
-  'other': 'Khác',
+  'extra_revision': 'Extra revision fee',
+  'scope_change': 'Scope change',
+  'material_change': 'Material change',
+  'other': 'Other',
 };
 
 const Map<String, String> kChangeOrderStatusLabels = {
-  'pending': 'Chờ bạn duyệt',
-  'accepted': 'Đã duyệt',
-  'rejected': 'Đã từ chối',
+  'pending': 'Waiting on your approval',
+  'accepted': 'Approved',
+  'rejected': 'Rejected',
 };
 
 /// Where the money got to after both sides agreed. Written from the owner's
 /// side: they are the one who transfers, the provider confirms receipt.
 const Map<String, String> kChangeOrderBillingLabels = {
-  'pending': 'Đã ra đợt thu — chờ bạn chuyển khoản',
-  'proof_submitted': 'Bạn đã báo chuyển — chờ nhà cung cấp đối chiếu',
-  'confirmed': 'Đã thanh toán xong',
-  'rejected': 'Nhà cung cấp bác minh chứng — nộp lại ở trang thanh toán',
+  'pending': 'Batch raised — waiting for your transfer',
+  'proof_submitted': 'You reported a transfer — waiting for the provider to check it',
+  'confirmed': 'Paid in full',
+  'rejected': 'Provider rejected the proof — resubmit on the payments page',
 };

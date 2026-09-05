@@ -83,7 +83,7 @@ class _ProviderBrandPageState extends State<ProviderBrandPage> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không mở được liên kết: $url')),
+        SnackBar(content: Text('Could not open the link: $url')),
       );
     }
   }
@@ -113,8 +113,8 @@ class _ProviderBrandPageState extends State<ProviderBrandPage> {
             labelStyle:
                 GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
             tabs: [
-              const Tab(text: 'Giới thiệu'),
-              Tab(text: 'Dự án mẫu (${_portfolios.length})'),
+              const Tab(text: 'About'),
+              Tab(text: 'Portfolio (${_portfolios.length})'),
             ],
           ),
         ),
@@ -135,7 +135,7 @@ class _ProviderBrandPageState extends State<ProviderBrandPage> {
   Widget _buildBrandTab() {
     final brand = _brand;
     if (brand == null) {
-      return const Center(child: Text('Không có dữ liệu.'));
+      return const Center(child: Text('No data.'));
     }
 
     return ListView(
@@ -177,33 +177,33 @@ class _ProviderBrandPageState extends State<ProviderBrandPage> {
           runSpacing: 12,
           children: [
             _Fact(
-              label: 'Thành lập',
-              value: brand.foundedYear?.toString() ?? 'Chưa có',
+              label: 'Founded',
+              value: brand.foundedYear?.toString() ?? 'Not set',
             ),
             _Fact(
-              label: 'Quy mô',
+              label: 'Size',
               value: brand.employeeCount == null
-                  ? 'Chưa có'
-                  : '${brand.employeeCount} người',
+                  ? 'Not set'
+                  : '${brand.employeeCount} people',
             ),
             _Fact(
-              label: 'Kinh nghiệm',
+              label: 'Experience',
               value: brand.yearsExperience == null
-                  ? 'Chưa có'
-                  : '${brand.yearsExperience} năm',
+                  ? 'Not set'
+                  : '${brand.yearsExperience} years',
             ),
             _Fact(
-              label: 'Đánh giá',
+              label: 'Rating',
               value: brand.reviewCount == 0
-                  ? 'Chưa có đánh giá'
-                  : '${brand.avgRating.toStringAsFixed(1)} · ${brand.reviewCount} lượt',
+                  ? 'No ratings yet'
+                  : '${brand.avgRating.toStringAsFixed(1)} · ${brand.reviewCount} reviews',
             ),
           ],
         ),
         if (brand.brandStory != null && brand.brandStory!.isNotEmpty) ...[
           const SizedBox(height: 18),
           Text(
-            'Câu chuyện thương hiệu',
+            'Brand story',
             style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
@@ -241,7 +241,7 @@ class _ProviderBrandPageState extends State<ProviderBrandPage> {
             brand.introVideoViewUrl!.isNotEmpty)
           _LinkTile(
             icon: Icons.play_circle_outline,
-            label: 'Video giới thiệu',
+            label: 'Intro video',
             value: brand.introVideoViewUrl!,
             onTap: () => _open(brand.introVideoViewUrl!),
           ),
@@ -256,7 +256,7 @@ class _ProviderBrandPageState extends State<ProviderBrandPage> {
         if (brand.serviceAreas.isNotEmpty) ...[
           const SizedBox(height: 18),
           Text(
-            'Khu vực nhận việc',
+            'Service areas',
             style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
@@ -271,12 +271,12 @@ class _ProviderBrandPageState extends State<ProviderBrandPage> {
         if (brand.certificates.isNotEmpty) ...[
           const SizedBox(height: 18),
           Text(
-            'Giấy phép và chứng chỉ',
+            'Licences and certificates',
             style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Text(
-            'Dấu "đã xác minh" do quản trị viên đặt, nhà cung cấp không tự đặt được.',
+            'The "verified" mark is set by an administrator; providers cannot set it themselves.',
             style: GoogleFonts.inter(fontSize: 11, color: Colors.black45),
           ),
           const SizedBox(height: 8),
@@ -301,7 +301,7 @@ class _ProviderBrandPageState extends State<ProviderBrandPage> {
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Text(
-            'Nhà cung cấp này chưa đăng dự án mẫu nào.',
+            'This provider has not published any portfolio projects yet.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(fontSize: 13, color: Colors.black45),
           ),
@@ -425,8 +425,8 @@ class _CertificateTile extends StatelessWidget {
       kCertificateKindLabels[cert.kind] ?? cert.kind,
       if (cert.issuer != null && cert.issuer!.isNotEmpty) cert.issuer!,
       if (cert.certificateNo != null && cert.certificateNo!.isNotEmpty)
-        'số ${cert.certificateNo}',
-      if (cert.expiresAt != null) 'hết hạn ${cert.expiresAt}',
+        'no. ${cert.certificateNo}',
+      if (cert.expiresAt != null) 'expires ${cert.expiresAt}',
     ].join(' · ');
 
     return Container(
@@ -463,7 +463,7 @@ class _CertificateTile extends StatelessWidget {
                     if (cert.isExpired == true) ...[
                       const SizedBox(width: 6),
                       Text(
-                        'hết hạn',
+                        'expired',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           color: Colors.red.shade700,
@@ -506,7 +506,7 @@ class _PortfolioCard extends StatelessWidget {
       if (entry.location != null && entry.location!.isNotEmpty) entry.location!,
       if (entry.style != null && entry.style!.isNotEmpty) entry.style!,
       if (entry.areaM2 != null) '${entry.areaM2!.toStringAsFixed(0)} m²',
-      if (entry.durationDays != null) '${entry.durationDays} ngày',
+      if (entry.durationDays != null) '${entry.durationDays} days',
       if (entry.completedAt != null) entry.completedAt!,
     ].join(' · ');
 
@@ -624,7 +624,7 @@ class _PortfolioCard extends StatelessWidget {
                     style: TextButton.styleFrom(padding: EdgeInsets.zero),
                     onPressed: onOpenVideo,
                     icon: const Icon(Icons.play_circle_outline, size: 18),
-                    label: const Text('Xem video công trình'),
+                    label: const Text('Watch project video'),
                   ),
                 ],
               ],
@@ -658,7 +658,7 @@ class _ErrorView extends StatelessWidget {
               style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
           ],
         ),
       ),

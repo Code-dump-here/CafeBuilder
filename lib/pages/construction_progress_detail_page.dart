@@ -513,7 +513,7 @@ class _ConstructionProgressDetailPageState
                             size: 12, color: Color(0xFF2E7D32)),
                         const SizedBox(width: 4),
                         Text(
-                          'Đã thanh toán',
+                          'Paid',
                           style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -535,7 +535,7 @@ class _ConstructionProgressDetailPageState
                         onPressed: () => _openChecklist(item),
                         icon: const Icon(Icons.fact_check_outlined, size: 16),
                         label: Text(
-                          'Nghiệm thu',
+                          'Acceptance',
                           style: GoogleFonts.inter(fontSize: 12),
                         ),
                       ),
@@ -546,7 +546,7 @@ class _ConstructionProgressDetailPageState
                         onPressed: () => _openMaterialCost(item),
                         icon: const Icon(Icons.inventory_2_outlined, size: 16),
                         label: Text(
-                          'Vật tư',
+                          'Materials',
                           style: GoogleFonts.inter(fontSize: 12),
                         ),
                       ),

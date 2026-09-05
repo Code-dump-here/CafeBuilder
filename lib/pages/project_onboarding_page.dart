@@ -801,13 +801,13 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              _buildBudgetLevelCard('Economy', 'Essential quality', '500Tr - 1 Tỷ', 700000000),
+              _buildBudgetLevelCard('Economy', 'Essential quality', '500M - 1B', 700000000),
               const SizedBox(width: 12),
-              _buildBudgetLevelCard('Standard', 'Good quality balance', '1 Tỷ - 2 Tỷ', 1500000000),
+              _buildBudgetLevelCard('Standard', 'Good quality balance', '1B - 2B', 1500000000),
               const SizedBox(width: 12),
-              _buildBudgetLevelCard('Premium', 'High-end materials', '2 Tỷ - 5 Tỷ', 3500000000),
+              _buildBudgetLevelCard('Premium', 'High-end materials', '2B - 5B', 3500000000),
               const SizedBox(width: 12),
-              _buildBudgetLevelCard('Luxury', 'Bespoke everything', '5 Tỷ+', 6000000000),
+              _buildBudgetLevelCard('Luxury', 'Bespoke everything', '5B+', 6000000000),
             ],
           ),
         ),

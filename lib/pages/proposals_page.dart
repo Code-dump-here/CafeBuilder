@@ -491,7 +491,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Báo giá cho "${post.title}"',
+                  'Quotations for "${post.title}"',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
@@ -501,7 +501,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
                   ),
                 ),
                 Text(
-                  'So sánh giá, thời gian và điều kiện thanh toán rồi chọn',
+                  'Compare price, duration and payment terms, then choose',
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     color: Colors.black54,
@@ -531,7 +531,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
               if (accepted == true && mounted) await _fetchApplies();
             },
             child: Text(
-              'So sánh',
+              'Compare',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

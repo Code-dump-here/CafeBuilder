@@ -67,10 +67,10 @@ class SiteFloorResponse {
   String get label => (name != null && name!.trim().isNotEmpty)
       ? name!
       : (floorNo == 0
-          ? 'Gác lửng'
+          ? 'Mezzanine'
           : floorNo < 0
-              ? 'Hầm B${-floorNo}'
-              : 'Tầng $floorNo');
+              ? 'Basement B${-floorNo}'
+              : 'Floor $floorNo');
 }
 
 /// A door, window, balcony, terrace or skylight.
@@ -229,22 +229,22 @@ class SiteProfileResponse {
 
 /// Vietnamese labels for the two server enums this screen shows.
 const Map<String, String> kOrientationLabels = {
-  'north': 'Bắc',
-  'northeast': 'Đông bắc',
-  'east': 'Đông',
-  'southeast': 'Đông nam',
+  'north': 'North',
+  'northeast': 'Northeast',
+  'east': 'East',
+  'southeast': 'Southeast',
   'south': 'Nam',
-  'southwest': 'Tây nam',
-  'west': 'Tây',
-  'northwest': 'Tây bắc',
+  'southwest': 'Southwest',
+  'west': 'West',
+  'northwest': 'Northwest',
 };
 
 const Map<String, String> kSiteOpeningLabels = {
-  'main_door': 'Cửa chính',
-  'secondary_door': 'Cửa phụ',
-  'service_door': 'Cửa kỹ thuật',
-  'window': 'Cửa sổ',
-  'balcony': 'Ban công',
-  'terrace': 'Sân thượng',
-  'skylight': 'Giếng trời',
+  'main_door': 'Main door',
+  'secondary_door': 'Secondary door',
+  'service_door': 'Service door',
+  'window': 'Window',
+  'balcony': 'Balcony',
+  'terrace': 'Terrace',
+  'skylight': 'Skylight',
 };

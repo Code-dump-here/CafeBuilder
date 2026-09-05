@@ -115,20 +115,20 @@ class _AcceptanceChecklistPageState extends State<AcceptanceChecklistPage> {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Chưa đạt: ${item.name}', style: GoogleFonts.inter()),
+        title: Text('Not passed: ${item.name}', style: GoogleFonts.inter()),
         content: TextField(
           controller: controller,
           autofocus: true,
           maxLines: 3,
           decoration: const InputDecoration(
-            hintText: 'Chưa đạt ở chỗ nào, cần sửa gì?',
+            hintText: 'What failed, and what needs fixing?',
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Huỷ'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () {
@@ -136,7 +136,7 @@ class _AcceptanceChecklistPageState extends State<AcceptanceChecklistPage> {
               if (text.isEmpty) return;
               Navigator.pop(context, text);
             },
-            child: const Text('Gửi'),
+            child: const Text('Send'),
           ),
         ],
       ),
@@ -145,7 +145,7 @@ class _AcceptanceChecklistPageState extends State<AcceptanceChecklistPage> {
 
   String _readableError(Object e) {
     final raw = e.toString().replaceFirst('Exception: ', '');
-    return raw.isEmpty ? 'Không thể chấm nghiệm thu. Vui lòng thử lại.' : raw;
+    return raw.isEmpty ? 'Could not record the acceptance result. Please try again.' : raw;
   }
 
   @override
@@ -156,7 +156,7 @@ class _AcceptanceChecklistPageState extends State<AcceptanceChecklistPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          'Nghiệm thu',
+          'Acceptance',
           style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
       ),
@@ -180,7 +180,7 @@ class _AcceptanceChecklistPageState extends State<AcceptanceChecklistPage> {
           Icon(Icons.error_outline, size: 40, color: Colors.red.shade400),
           const SizedBox(height: 12),
           Text(
-            'Không tải được checklist.',
+            'Could not load the checklist.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(fontWeight: FontWeight.w600),
           ),
@@ -192,7 +192,7 @@ class _AcceptanceChecklistPageState extends State<AcceptanceChecklistPage> {
           ),
           const SizedBox(height: 16),
           Center(
-            child: FilledButton(onPressed: _load, child: const Text('Thử lại')),
+            child: FilledButton(onPressed: _load, child: const Text('Try again')),
           ),
         ],
       );
@@ -212,7 +212,7 @@ class _AcceptanceChecklistPageState extends State<AcceptanceChecklistPage> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 40),
             child: Text(
-              'Nhà cung cấp chưa lập checklist nghiệm thu cho hạng mục này.',
+              'The provider has not created an acceptance checklist for this milestone.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(color: Colors.black54),
             ),
@@ -249,18 +249,18 @@ class _GateBanner extends StatelessWidget {
       bg = Colors.grey.shade100;
       fg = Colors.black87;
       icon = Icons.info_outline;
-      message = 'Không có mục bắt buộc — nghiệm thu không bị chặn.';
+      message = 'No required items — acceptance is not blocked.';
     } else if (progress.isSatisfied) {
       bg = Colors.green.shade50;
       fg = Colors.green.shade800;
       icon = Icons.check_circle_outline;
-      message = 'Mọi mục bắt buộc đã đạt — hạng mục này có thể đóng.';
+      message = 'All required items passed — this milestone can be closed.';
     } else {
       bg = Colors.amber.shade50;
       fg = Colors.amber.shade900;
       icon = Icons.pending_actions;
       message =
-          'Còn ${progress.blockingCount} mục bắt buộc chưa xong — chưa đóng được hạng mục.';
+          '${progress.blockingCount} required items outstanding — the milestone cannot be closed yet.';
     }
 
     return Container(
@@ -290,7 +290,7 @@ class _GateBanner extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
-                      '${progress.requiredPassed}/${progress.requiredTotal} mục bắt buộc đã đạt',
+                      '${progress.requiredPassed}/${progress.requiredTotal} required items passed',
                       style: GoogleFonts.inter(fontSize: 12, color: fg),
                     ),
                   ),
@@ -369,7 +369,7 @@ class _ChecklistTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    'Bắt buộc',
+                    'Required',
                     style: GoogleFonts.inter(fontSize: 10),
                   ),
                 ),
@@ -405,13 +405,13 @@ class _ChecklistTile extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: item.isPassed ? null : onPass,
                   icon: const Icon(Icons.check, size: 16),
-                  label: const Text('Đạt'),
+                  label: const Text('Passed'),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: item.isFailed ? null : onFail,
                   icon: const Icon(Icons.close, size: 16),
-                  label: const Text('Chưa đạt'),
+                  label: const Text('Not passed'),
                 ),
               ],
             ],

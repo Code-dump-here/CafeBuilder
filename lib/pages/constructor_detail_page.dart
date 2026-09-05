@@ -181,7 +181,7 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
           // Brand, licences and past work — the part of a provider's pitch
           // that is theirs to publish rather than ours to summarise.
           IconButton(
-            tooltip: 'Hồ sơ năng lực',
+            tooltip: 'Company profile',
             icon: const Icon(Icons.workspace_premium_outlined,
                 color: AppColors.espresso),
             onPressed: () => Navigator.push(

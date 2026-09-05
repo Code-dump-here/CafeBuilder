@@ -96,24 +96,24 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(
-          'Duyệt khoản phát sinh?',
+          'Approve this change order?',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: Text(
           '${order.title}\n\n'
-          '${formatVnd(order.amount)} sẽ được cộng vào tổng cam kết '
-          'của hợp tác này. Duyệt rồi thì không sửa lại được.',
+          '${formatVnd(order.amount)} will be added to the committed total '
+          'for this engagement. Once approved it cannot be changed.',
           style: GoogleFonts.inter(fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Huỷ'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.espresso),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Duyệt'),
+            child: const Text('Approve'),
           ),
         ],
       ),
@@ -123,7 +123,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
     setState(() => _busy.add(order.id));
     try {
       await ChangeOrderService.accept(order.id);
-      _toast('Đã duyệt khoản phát sinh.');
+      _toast('Change order approved.');
       await _load();
     } catch (e) {
       _toast(_cleanError(e), error: true);
@@ -141,7 +141,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(
-          'Từ chối khoản phát sinh',
+          'Reject change order',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: Column(
@@ -149,7 +149,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Nhà cung cấp chỉ nhận được lý do này, nên hãy nói rõ vì sao.',
+              'This reason is all the provider receives, so be specific.',
               style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
             ),
             const SizedBox(height: 12),
@@ -159,7 +159,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
               maxLines: 3,
               style: GoogleFonts.inter(fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Vì sao không chấp nhận…',
+                hintText: 'Why are you turning this down?',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -170,7 +170,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Huỷ'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
@@ -179,7 +179,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
               if (text.isEmpty) return;
               Navigator.pop(ctx, text);
             },
-            child: const Text('Từ chối'),
+            child: const Text('Reject'),
           ),
         ],
       ),
@@ -189,7 +189,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
     setState(() => _busy.add(order.id));
     try {
       await ChangeOrderService.reject(order.id, rejectReason: reason);
-      _toast('Đã từ chối khoản phát sinh.');
+      _toast('Change order rejected.');
       await _load();
     } catch (e) {
       _toast(_cleanError(e), error: true);
@@ -203,22 +203,22 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(
-          'Rút lại khoản này?',
+          'Withdraw this change order?',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: Text(
-          'Nó biến mất hoàn toàn. Chỉ khoản còn chờ duyệt mới rút được.',
+          'It disappears entirely. Only change orders still awaiting approval can be withdrawn.',
           style: GoogleFonts.inter(fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Huỷ'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Rút lại'),
+            child: const Text('Withdraw'),
           ),
         ],
       ),
@@ -228,7 +228,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
     setState(() => _busy.add(order.id));
     try {
       await ChangeOrderService.withdraw(order.id);
-      _toast('Đã rút lại khoản phát sinh.');
+      _toast('Change order withdrawn.');
       await _load();
     } catch (e) {
       _toast(_cleanError(e), error: true);
@@ -246,7 +246,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'Khoản phát sinh',
+          'Change orders',
           style: GoogleFonts.playfairDisplay(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -269,8 +269,8 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
         padding: const EdgeInsets.all(24),
         children: [
           Text(
-            'Dự án này chưa có nhà cung cấp nào nhận việc, nên chưa có khoản '
-            'phát sinh nào để duyệt.',
+            'No provider has taken work on this project yet, so there are no '
+            'change orders to approve.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
           ),
@@ -324,7 +324,7 @@ class _ChangeOrdersPageState extends State<ChangeOrdersPage> {
                 border: Border.all(color: AppColors.outlineVariant),
               ),
               child: Text(
-                'Chưa có khoản phát sinh nào.',
+                'No change orders yet.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(fontSize: 13, color: Colors.black45),
               ),
@@ -353,7 +353,7 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String vnd(double? value) =>
-        value == null ? 'Chưa ký hợp đồng' : formatVnd(value);
+        value == null ? 'No signed contract' : formatVnd(value);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -369,15 +369,15 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _Metric(
-                  label: 'Giá trị hợp đồng',
+                  label: 'Contract value',
                   value: vnd(summary.contractValue),
                 ),
               ),
               Expanded(
                 child: _Metric(
-                  label: 'Phát sinh đã duyệt',
+                  label: 'Approved change orders',
                   value: formatVnd(summary.acceptedAmount),
-                  hint: '${summary.acceptedCount} khoản',
+                  hint: '${summary.acceptedCount} items',
                 ),
               ),
             ],
@@ -387,17 +387,17 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _Metric(
-                  label: 'Đang chờ bạn duyệt',
+                  label: 'Waiting on your approval',
                   value: formatVnd(summary.pendingAmount),
-                  hint: '${summary.pendingCount} khoản',
+                  hint: '${summary.pendingCount} items',
                   highlight: summary.pendingCount > 0,
                 ),
               ),
               Expanded(
                 child: _Metric(
-                  label: 'Tổng cam kết',
+                  label: 'Committed total',
                   value: vnd(summary.totalCommitted),
-                  hint: 'Hợp đồng + đã duyệt',
+                  hint: 'Contract + approved',
                   emphasis: true,
                 ),
               ),
@@ -408,16 +408,16 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _Metric(
-                  label: 'Đã ra đợt thu',
+                  label: 'Batches raised',
                   value: formatVnd(summary.billedAmount),
-                  hint: 'Có đợt để bạn trả',
+                  hint: 'There are batches for you to pay',
                 ),
               ),
               Expanded(
                 child: _Metric(
-                  label: 'Đã thanh toán',
+                  label: 'Paid',
                   value: formatVnd(summary.paidAmount),
-                  hint: 'Nhà cung cấp đã xác nhận',
+                  hint: 'Confirmed by the provider',
                 ),
               ),
             ],
@@ -425,8 +425,8 @@ class _SummaryCard extends StatelessWidget {
           if (summary.acceptedRevisionFee > 0) ...[
             const SizedBox(height: 10),
             Text(
-              'Trong đó ${formatVnd(summary.acceptedRevisionFee)} là phí '
-              'sửa thiết kế vượt hạn mức.',
+              'Of that, ${formatVnd(summary.acceptedRevisionFee)} is for design '
+              'revisions beyond the included allowance.',
               style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
             ),
           ],
@@ -452,10 +452,10 @@ class _SummaryCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${formatVnd(summary.unbilledAmount)} đã thống nhất '
-                      'nhưng chưa có đợt thanh toán nào phủ — hoặc hợp tác chưa '
-                      'ký hợp đồng, hoặc khoản được duyệt từ trước khi hệ thống '
-                      'sinh đợt cho phát sinh.',
+                      '${formatVnd(summary.unbilledAmount)} agreed '
+                      'but not covered by any payment batch — either the engagement has '
+                      'no signed contract, or it was approved before the system began '
+                      'raising batches for change orders.',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: Colors.brown.shade800,
@@ -586,14 +586,14 @@ class _OrderCard extends StatelessWidget {
               if (order.revisionNo != null) ...[
                 const SizedBox(width: 8),
                 Text(
-                  'vòng ${order.revisionNo}',
+                  'round ${order.revisionNo}',
                   style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
                 ),
               ],
               const Spacer(),
               Text(
                 order.needsPricing
-                    ? 'Chưa báo giá'
+                    ? 'Not priced'
                     : formatVnd(order.amount),
                 style: GoogleFonts.inter(
                   fontSize: order.needsPricing ? 12 : 15,
@@ -620,7 +620,7 @@ class _OrderCard extends StatelessWidget {
           if (order.rejectReason != null && order.rejectReason!.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              'Bạn đã từ chối: ${order.rejectReason}',
+              'You rejected this: ${order.rejectReason}',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 color: Colors.red.shade700,
@@ -630,7 +630,7 @@ class _OrderCard extends StatelessWidget {
           if (!order.raisedByProvider) ...[
             const SizedBox(height: 6),
             Text(
-              'Bạn lập khoản này — nhà cung cấp là bên duyệt.',
+              'You raised this one — the provider approves it.',
               style: GoogleFonts.inter(fontSize: 11, color: Colors.black45),
             ),
           ],
@@ -656,8 +656,8 @@ class _OrderCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Đang chờ nhà cung cấp báo giá vòng sửa này. Báo giá không '
-                      'công bố đơn giá sửa, nên bạn chưa có gì để duyệt.',
+                      'Waiting for the provider to price this revision round. The quotation '
+                      'published no revision rate, so there is nothing for you to approve yet.',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: Colors.black87,
@@ -684,7 +684,7 @@ class _OrderCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     kChangeOrderBillingLabels[order.paymentBatchStatus] ??
-                        'Đã ra đợt thu',
+                        'Batches raised',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       color: Colors.black54,
@@ -696,7 +696,7 @@ class _OrderCard extends StatelessWidget {
           ] else if (order.acceptedButNotBilled) ...[
             const SizedBox(height: 6),
             Text(
-              'Đã duyệt nhưng chưa có đợt thu nào phủ khoản này.',
+              'Approved, but no payment batch covers it yet.',
               style: GoogleFonts.inter(
                 fontSize: 11,
                 color: Colors.amber.shade900,
@@ -728,7 +728,7 @@ class _OrderCard extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.red.shade700,
                       ),
-                      child: const Text('Từ chối'),
+                      child: const Text('Reject'),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -741,7 +741,7 @@ class _OrderCard extends StatelessWidget {
                       // a decision is final — so there is no button to press
                       // until the provider puts a number on it.
                       onPressed: order.needsPricing ? null : onAccept,
-                      child: const Text('Duyệt'),
+                      child: const Text('Approve'),
                     ),
                   ),
                 ],
@@ -752,7 +752,7 @@ class _OrderCard extends StatelessWidget {
                 child: TextButton.icon(
                   onPressed: onWithdraw,
                   icon: const Icon(Icons.undo, size: 16),
-                  label: const Text('Rút lại'),
+                  label: const Text('Withdraw'),
                 ),
               ),
           ],
@@ -784,7 +784,7 @@ class _ErrorView extends StatelessWidget {
               style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
           ],
         ),
       ),

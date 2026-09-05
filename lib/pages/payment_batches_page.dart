@@ -117,7 +117,7 @@ class _PaymentBatchesPageState extends State<PaymentBatchesPage> {
         transferredAt: result.transferredAt,
         note: result.note,
       );
-      _toast('Đã gửi minh chứng. Nhà cung cấp sẽ đối chiếu và xác nhận.');
+      _toast('Proof submitted. The provider will check it and confirm.');
       await _load();
     } catch (e) {
       _toast(_cleanError(e), error: true);
@@ -135,7 +135,7 @@ class _PaymentBatchesPageState extends State<PaymentBatchesPage> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'Đợt thanh toán',
+          'Payment batches',
           style: GoogleFonts.playfairDisplay(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -158,8 +158,8 @@ class _PaymentBatchesPageState extends State<PaymentBatchesPage> {
         padding: const EdgeInsets.all(24),
         children: [
           Text(
-            'Dự án này chưa có nhà cung cấp nào nhận việc, nên chưa có đợt '
-            'thanh toán nào.',
+            'No provider has taken work on this project yet, so there are no '
+            'payment batches.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
           ),
@@ -176,8 +176,8 @@ class _PaymentBatchesPageState extends State<PaymentBatchesPage> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Hệ thống không giữ tiền. Bạn chuyển khoản thẳng cho nhà cung cấp rồi '
-          'ghi nhận ở đây; họ xác nhận đã nhận thì đợt mới đóng.',
+          'The platform never holds your money. You transfer it to the provider '
+          'directly and record it here; the batch closes once they confirm receipt.',
           style: GoogleFonts.inter(
             fontSize: 12,
             color: Colors.black54,
@@ -227,8 +227,8 @@ class _PaymentBatchesPageState extends State<PaymentBatchesPage> {
                 border: Border.all(color: AppColors.outlineVariant),
               ),
               child: Text(
-                'Chưa có đợt thanh toán nào. Đợt sinh tự động từ điều kiện thanh '
-                'toán của báo giá đã duyệt, ngay khi hợp đồng được ký.',
+                'No payment batches yet. They are generated from the payment terms of '
+                'the approved quotation, as soon as the contract is signed.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   fontSize: 12,
@@ -272,15 +272,15 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _Metric(
-                  label: 'Tổng theo hợp đồng',
+                  label: 'Contract total',
                   value: formatVnd(summary.total),
                 ),
               ),
               Expanded(
                 child: _Metric(
-                  label: 'Đã được xác nhận',
+                  label: 'Confirmed',
                   value: formatVnd(summary.confirmed),
-                  hint: '${summary.confirmedCount} đợt',
+                  hint: '${summary.confirmedCount} batches',
                 ),
               ),
             ],
@@ -290,16 +290,16 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _Metric(
-                  label: 'Chờ nhà cung cấp xác nhận',
+                  label: 'Awaiting provider confirmation',
                   value: formatVnd(summary.awaitingConfirmation),
-                  hint: '${summary.awaitingCount} đợt',
+                  hint: '${summary.awaitingCount} batches',
                 ),
               ),
               Expanded(
                 child: _Metric(
-                  label: 'Còn phải trả',
+                  label: 'Still to pay',
                   value: formatVnd(summary.outstanding),
-                  hint: 'Chưa được xác nhận',
+                  hint: 'Not yet confirmed',
                   emphasis: true,
                   highlight: summary.actionableCount > 0,
                 ),
@@ -363,10 +363,10 @@ class _Metric extends StatelessWidget {
 /// written for this screen: "chưa thanh toán" is a to-do for the owner, and
 /// would be wrong phrasing on the provider's side.
 const Map<String, String> _kStatusLabels = {
-  'pending': 'Chưa thanh toán',
-  'proof_submitted': 'Chờ xác nhận',
-  'confirmed': 'Đã xác nhận',
-  'rejected': 'Minh chứng bị bác',
+  'pending': 'Unpaid',
+  'proof_submitted': 'Awaiting confirmation',
+  'confirmed': 'Confirmed',
+  'rejected': 'Proof rejected',
 };
 
 class _BatchCard extends StatelessWidget {
@@ -444,7 +444,7 @@ class _BatchCard extends StatelessWidget {
               if (batch.changeOrderId != null) ...[
                 const SizedBox(width: 8),
                 Text(
-                  'từ phát sinh',
+                  'from a change order',
                   style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
                 ),
               ],
@@ -471,7 +471,7 @@ class _BatchCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Hạng mục: ${batch.constructionItemName}',
+                    'Milestone: ${batch.constructionItemName}',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       color: Colors.black54,
@@ -484,7 +484,7 @@ class _BatchCard extends StatelessWidget {
           if (batch.dueAt != null && batch.dueAt!.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              'Hạn: ${batch.dueAt}',
+              'Due: ${batch.dueAt}',
               style: GoogleFonts.inter(fontSize: 11, color: Colors.black45),
             ),
           ],
@@ -498,7 +498,7 @@ class _BatchCard extends StatelessWidget {
                 border: Border.all(color: Colors.red.shade200),
               ),
               child: Text(
-                'Nhà cung cấp bác minh chứng: ${batch.rejectReason}',
+                'Provider rejected the proof: ${batch.rejectReason}',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: Colors.red.shade700,
@@ -510,7 +510,7 @@ class _BatchCard extends StatelessWidget {
           if (batch.proofs.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text(
-              'Minh chứng đã gửi',
+              'Proof submitted',
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -541,8 +541,8 @@ class _BatchCard extends StatelessWidget {
                     : const Icon(Icons.upload_file, size: 18),
                 label: Text(
                   batch.status == 'rejected'
-                      ? 'Gửi lại minh chứng'
-                      : 'Đánh dấu đã thanh toán',
+                      ? 'Resubmit proof'
+                      : 'Mark as paid',
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -611,7 +611,7 @@ class _ProofRow extends StatelessWidget {
                   // SubmitPaymentProofRequest. Showing 0 VND would be a lie.
                   proof.amount != null
                       ? formatVnd(proof.amount!)
-                      : 'Trọn đợt',
+                      : 'Whole batch',
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -619,7 +619,7 @@ class _ProofRow extends StatelessWidget {
                 ),
                 if (proof.transferredAt != null)
                   Text(
-                    'Chuyển ngày '
+                    'Transferred on '
                     '${DateFormat('dd/MM/yyyy HH:mm').format(proof.transferredAt!.toLocal())}',
                     style: GoogleFonts.inter(
                       fontSize: 11,
@@ -744,7 +744,7 @@ class _ProofSheetState extends State<_ProofSheet> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Đánh dấu đã thanh toán',
+                'Mark as paid',
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -758,8 +758,8 @@ class _ProofSheetState extends State<_ProofSheet> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Hệ thống không chuyển tiền hộ. Hãy ghi nhận lần chuyển khoản bạn '
-                'đã thực hiện — có ảnh chứng từ thì nhà cung cấp đối chiếu nhanh hơn.',
+                'The platform does not move money for you. Record the transfer you '
+                'have already made — a receipt photo helps the provider check it faster.',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: Colors.black54,
@@ -769,7 +769,7 @@ class _ProofSheetState extends State<_ProofSheet> {
               const SizedBox(height: 16),
 
               Text(
-                'Số tiền đã chuyển',
+                'Amount transferred',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -780,7 +780,7 @@ class _ProofSheetState extends State<_ProofSheet> {
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  hintText: 'Để trống nếu chuyển đúng giá trị đợt',
+                  hintText: 'Leave blank if you transferred the exact batch amount',
                   hintStyle: GoogleFonts.inter(
                     fontSize: 12,
                     color: AppColors.placeholder,
@@ -808,7 +808,7 @@ class _ProofSheetState extends State<_ProofSheet> {
               const SizedBox(height: 14),
 
               Text(
-                'Ngày chuyển khoản',
+                'Transfer date',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -848,7 +848,7 @@ class _ProofSheetState extends State<_ProofSheet> {
               const SizedBox(height: 14),
 
               Text(
-                'Ảnh chứng từ',
+                'Receipt photo',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -882,7 +882,7 @@ class _ProofSheetState extends State<_ProofSheet> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          _fileName ?? 'Chọn ảnh chuyển khoản (không bắt buộc)',
+                          _fileName ?? 'Choose a transfer screenshot (optional)',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
@@ -900,7 +900,7 @@ class _ProofSheetState extends State<_ProofSheet> {
               const SizedBox(height: 14),
 
               Text(
-                'Ghi chú',
+                'Note',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -911,7 +911,7 @@ class _ProofSheetState extends State<_ProofSheet> {
                 controller: _noteController,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: 'Số tham chiếu, ngân hàng… giúp đối chiếu nhanh hơn',
+                  hintText: 'Reference number, bank… helps them check it faster',
                   hintStyle: GoogleFonts.inter(
                     fontSize: 12,
                     color: AppColors.placeholder,
@@ -943,7 +943,7 @@ class _ProofSheetState extends State<_ProofSheet> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Huỷ'),
+                      child: const Text('Cancel'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -969,7 +969,7 @@ class _ProofSheetState extends State<_ProofSheet> {
                         );
                       },
                       child: Text(
-                        'Gửi minh chứng',
+                        'Submit proof',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -1009,7 +1009,7 @@ class _ErrorView extends StatelessWidget {
               style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
           ],
         ),
       ),

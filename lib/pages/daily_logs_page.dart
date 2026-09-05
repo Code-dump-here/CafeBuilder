@@ -117,7 +117,7 @@ class _DailyLogsPageState extends State<DailyLogsPage> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'Nhật ký thi công',
+          'Site log',
           style: GoogleFonts.playfairDisplay(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -127,8 +127,8 @@ class _DailyLogsPageState extends State<DailyLogsPage> {
       ),
       body: widget.projectWorkings.isEmpty
           ? _EmptyView(
-              message: 'Dự án này chưa có nhà cung cấp nào nhận việc, nên chưa '
-                  'có nhật ký thi công nào.',
+              message: 'No provider has taken work on this project yet, so there are no '
+                  'site log entries.',
             )
           : Column(
               children: [
@@ -222,7 +222,7 @@ class _DailyLogsPageState extends State<DailyLogsPage> {
                         Expanded(
                           child: Text(
                             _range == null
-                                ? 'Tất cả các ngày'
+                                ? 'All dates'
                                 : '${_dayFormat.format(_range!.start)} – '
                                     '${_dayFormat.format(_range!.end)}',
                             style: GoogleFonts.inter(fontSize: 12),
@@ -241,7 +241,7 @@ class _DailyLogsPageState extends State<DailyLogsPage> {
                     _load();
                   },
                   child: Text(
-                    'Xoá lọc',
+                    'Clear filter',
                     style: GoogleFonts.inter(fontSize: 12),
                   ),
                 ),
@@ -260,8 +260,8 @@ class _DailyLogsPageState extends State<DailyLogsPage> {
         children: [
           Text(
             _range == null
-                ? 'Nhà cung cấp chưa ghi nhật ký thi công nào.'
-                : 'Không có nhật ký nào trong khoảng ngày đã chọn.',
+                ? 'The provider has not written any site log entries yet.'
+                : 'No entries in the selected date range.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
           ),
@@ -324,7 +324,7 @@ class _LogCard extends StatelessWidget {
                 const Icon(Icons.groups_outlined, size: 14, color: Colors.black45),
                 const SizedBox(width: 4),
                 Text(
-                  '${log.workerCount} thợ',
+                  '${log.workerCount} workers',
                   style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
                 ),
               ],
@@ -415,7 +415,7 @@ class _LogCard extends StatelessWidget {
               if (log.createdByName != null)
                 Expanded(
                   child: Text(
-                    'Ghi bởi ${log.createdByName}',
+                    'Logged by ${log.createdByName}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
@@ -486,7 +486,7 @@ class _MediaThumb extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              media.mediaType == 'video' ? 'Video' : 'Ảnh',
+              media.mediaType == 'video' ? 'Video' : 'Photos',
               style: GoogleFonts.inter(fontSize: 10, color: AppColors.espresso),
             ),
           ],
@@ -569,7 +569,7 @@ class _ErrorView extends StatelessWidget {
               style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
           ],
         ),
       ),

@@ -1758,7 +1758,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     MaterialPageRoute(
                       builder: (context) => PaymentBatchesPage(
                         projectWorkings: _projectWorkings,
-                        projectName: _project?.name ?? 'Dự án',
+                        projectName: _project?.name ?? 'Project',
                       ),
                     ),
                   ).then((_) => _loadProject());
@@ -1782,7 +1782,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     MaterialPageRoute(
                       builder: (context) => SiteProfilePage(
                         projectShopOwnerId: widget.projectId,
-                        projectName: _project?.name ?? 'Dự án',
+                        projectName: _project?.name ?? 'Project',
                       ),
                     ),
                   );
@@ -1801,7 +1801,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     MaterialPageRoute(
                       builder: (context) => ChangeOrdersPage(
                         projectWorkings: _projectWorkings,
-                        projectName: _project?.name ?? 'Dự án',
+                        projectName: _project?.name ?? 'Project',
                       ),
                     ),
                   ).then((_) => _loadProject());
@@ -1819,7 +1819,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     MaterialPageRoute(
                       builder: (context) => DailyLogsPage(
                         projectWorkings: _projectWorkings,
-                        projectName: _project?.name ?? 'Dự án',
+                        projectName: _project?.name ?? 'Project',
                       ),
                     ),
                   );
@@ -1973,14 +1973,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
     if (conMo.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Còn ${conMo.length} hợp tác chưa đóng, hãy nghiệm thu hoặc huỷ trước.')),
+        SnackBar(content: Text('${conMo.length} engagements are still open — accept or cancel them first.')),
       );
       return;
     }
 
     if (daNghiemThu.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cần ít nhất một hợp tác đã nghiệm thu để đóng dự án.')),
+        const SnackBar(content: Text('At least one engagement must be accepted before the project can be closed.')),
       );
       return;
     }
@@ -1988,14 +1988,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Đóng dự án'),
-        content: const Text('Bạn có chắc chắn muốn đóng dự án này?'),
+        title: const Text('Close project'),
+        content: const Text('Are you sure you want to close this project?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Không')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.espresso),
-            child: const Text('Đóng dự án', style: TextStyle(color: Colors.white)),
+            child: const Text('Close project', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -2072,7 +2072,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             child: ElevatedButton.icon(
               onPressed: _completeProject,
               icon: const Icon(Icons.verified, size: 20, color: Colors.white),
-              label: const Text('Đóng dự án'),
+              label: const Text('Close project'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.espresso,
                 foregroundColor: Colors.white,
