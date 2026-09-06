@@ -51,7 +51,7 @@ class StyleDetailPage extends StatelessWidget {
         height: 100,
         padding: const EdgeInsets.fromLTRB(16, 40, 16, 0),
         decoration: BoxDecoration(
-          color: AppColors.background.withOpacity(0.8),
+          color: AppColors.background.withValues(alpha: 0.8),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -60,7 +60,7 @@ class StyleDetailPage extends StatelessWidget {
               icon: const Icon(Icons.arrow_back, color: AppColors.primary),
               onPressed: () => Navigator.pop(context),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.white.withOpacity(0.5),
+                backgroundColor: AppColors.white.withValues(alpha: 0.5),
               ),
             ),
             Text(
@@ -80,7 +80,7 @@ class StyleDetailPage extends StatelessWidget {
               tooltip: 'Copy link to this style',
               onPressed: () => _copyLink(context),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.white.withOpacity(0.5),
+                backgroundColor: AppColors.white.withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -122,7 +122,7 @@ class StyleDetailPage extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.6),
+                    Colors.black.withValues(alpha: 0.6),
                   ],
                   stops: const [0.6, 1.0],
                 ),
@@ -210,7 +210,7 @@ class StyleDetailPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF6F3F2),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.1)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -533,7 +533,7 @@ class StyleDetailPage extends StatelessWidget {
             end: Alignment.topCenter,
             colors: [
               AppColors.background,
-              AppColors.background.withOpacity(0.95),
+              AppColors.background.withValues(alpha: 0.95),
               Colors.transparent,
             ],
             stops: const [0.0, 0.7, 1.0],
@@ -551,7 +551,7 @@ class StyleDetailPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.espresso.withOpacity(0.2),
+                      color: AppColors.espresso.withValues(alpha: 0.2),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),

@@ -237,7 +237,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           elevation: 2,
-                          shadowColor: AppColors.espresso.withOpacity(0.2),
+                          shadowColor: AppColors.espresso.withValues(alpha: 0.2),
                         ),
                         onPressed: _agreedToTerms && !_isSubmitting
                             ? _register
@@ -329,7 +329,7 @@ class _RegisterPageState extends State<RegisterPage> {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: GoogleFonts.inter(
-          color: AppColors.outline.withOpacity(0.5),
+          color: AppColors.outline.withValues(alpha: 0.5),
           fontSize: 16,
         ),
         filled: true,
@@ -362,7 +362,7 @@ class _RegisterPageState extends State<RegisterPage> {
       decoration: InputDecoration(
         hintText: '••••••••',
         hintStyle: GoogleFonts.inter(
-          color: AppColors.outline.withOpacity(0.5),
+          color: AppColors.outline.withValues(alpha: 0.5),
           fontSize: 16,
         ),
         filled: true,

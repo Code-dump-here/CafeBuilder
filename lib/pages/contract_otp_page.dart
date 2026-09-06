@@ -113,7 +113,7 @@ class _ContractOtpPageState extends State<ContractOtpPage> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+                  border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +178,7 @@ class _ContractOtpPageState extends State<ContractOtpPage> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 16),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+                    borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),

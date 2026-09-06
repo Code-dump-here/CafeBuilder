@@ -336,7 +336,7 @@ class _AiAdvicePageState extends State<AiAdvicePage> {
       ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
-        child: Container(color: AppColors.outlineVariant.withOpacity(0.3), height: 1),
+        child: Container(color: AppColors.outlineVariant.withValues(alpha: 0.3), height: 1),
       ),
     );
   }
@@ -519,7 +519,7 @@ class _AiAdvicePageState extends State<AiAdvicePage> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFFD9EAA3).withOpacity(0.5),
+        color: const Color(0xFFD9EAA3).withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(10),
       ),
       child: const Icon(Icons.psychology_outlined, color: Color(0xFF33210D), size: 24),
@@ -530,7 +530,7 @@ class _AiAdvicePageState extends State<AiAdvicePage> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: const Icon(Icons.person_outline, color: AppColors.primary, size: 24),
@@ -546,14 +546,14 @@ class _AiAdvicePageState extends State<AiAdvicePage> {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.outlineVariant.withOpacity(0.3))),
+        border: Border(top: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.3))),
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
         ),
         child: Row(
           children: [

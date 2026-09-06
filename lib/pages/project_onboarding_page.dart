@@ -330,7 +330,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: (_currentStep + 1) / _totalSteps,
-                      backgroundColor: AppColors.outlineVariant.withOpacity(0.3),
+                      backgroundColor: AppColors.outlineVariant.withValues(alpha: 0.3),
                       valueColor: const AlwaysStoppedAnimation<Color>(AppColors.espresso),
                       minHeight: 6,
                     ),
@@ -447,7 +447,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           color: isSel ? AppColors.espresso : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSel ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.6),
+            color: isSel ? AppColors.espresso : AppColors.outlineVariant.withValues(alpha: 0.6),
           ),
         ),
         child: Row(
@@ -495,7 +495,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.4),
+              color: selected ? AppColors.espresso : AppColors.outlineVariant.withValues(alpha: 0.4),
               width: selected ? 1.5 : 1,
             ),
           ),
@@ -614,7 +614,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                   fontSize: 12,
                 ),
                 side: BorderSide(
-                  color: selected ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.6),
+                  color: selected ? AppColors.espresso : AppColors.outlineVariant.withValues(alpha: 0.6),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
@@ -691,7 +691,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selected ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.4),
+              color: selected ? AppColors.espresso : AppColors.outlineVariant.withValues(alpha: 0.4),
               width: selected ? 2 : 1,
             ),
           ),
@@ -801,13 +801,13 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              _buildBudgetLevelCard('Economy', 'Essential quality', '500Tr - 1 Tỷ', 700000000),
+              _buildBudgetLevelCard('Economy', 'Essential quality', '500M - 1B', 700000000),
               const SizedBox(width: 12),
-              _buildBudgetLevelCard('Standard', 'Good quality balance', '1 Tỷ - 2 Tỷ', 1500000000),
+              _buildBudgetLevelCard('Standard', 'Good quality balance', '1B - 2B', 1500000000),
               const SizedBox(width: 12),
-              _buildBudgetLevelCard('Premium', 'High-end materials', '2 Tỷ - 5 Tỷ', 3500000000),
+              _buildBudgetLevelCard('Premium', 'High-end materials', '2B - 5B', 3500000000),
               const SizedBox(width: 12),
-              _buildBudgetLevelCard('Luxury', 'Bespoke everything', '5 Tỷ+', 6000000000),
+              _buildBudgetLevelCard('Luxury', 'Bespoke everything', '5B+', 6000000000),
             ],
           ),
         ),
@@ -921,10 +921,10 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         width: 150,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSel ? Colors.white : Colors.white.withOpacity(0.5),
+          color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSel ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.5),
+            color: isSel ? AppColors.espresso : AppColors.outlineVariant.withValues(alpha: 0.5),
             width: isSel ? 2 : 1,
           ),
         ),
@@ -980,9 +980,9 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: AppColors.espresso,
-            inactiveTrackColor: AppColors.outlineVariant.withOpacity(0.4),
+            inactiveTrackColor: AppColors.outlineVariant.withValues(alpha: 0.4),
             thumbColor: AppColors.espresso,
-            overlayColor: AppColors.espresso.withOpacity(0.2),
+            overlayColor: AppColors.espresso.withValues(alpha: 0.2),
             trackHeight: 4,
           ),
           child: Slider(
@@ -1043,7 +1043,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSel ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.4),
+              color: isSel ? AppColors.espresso : AppColors.outlineVariant.withValues(alpha: 0.4),
               width: isSel ? 2 : 1,
             ),
           ),
@@ -1161,7 +1161,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSel ? const Color(0xFF56642B) : AppColors.outlineVariant.withOpacity(0.4),
+              color: isSel ? const Color(0xFF56642B) : AppColors.outlineVariant.withValues(alpha: 0.4),
               width: isSel ? 2 : 1,
             ),
           ),
@@ -1203,7 +1203,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppColors.outlineVariant.withOpacity(0.3),
+                                  color: AppColors.outlineVariant.withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -1290,7 +1290,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.outlineVariant.withOpacity(0.4)),
+            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1315,7 +1315,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFD9EAA3).withOpacity(0.3),
+            color: const Color(0xFFD9EAA3).withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -1361,7 +1361,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.4),
+              color: selected ? AppColors.espresso : AppColors.outlineVariant.withValues(alpha: 0.4),
               width: selected ? 2 : 1,
             ),
           ),
@@ -1459,7 +1459,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.outlineVariant.withOpacity(0.4)),
+                border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1536,7 +1536,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF6F3F1),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AppColors.outlineVariant.withOpacity(0.6)),
+                                border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.6)),
                               ),
                               child: Text(
                                 floor.area.toStringAsFixed(1),
@@ -1625,7 +1625,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
           decoration: BoxDecoration(
             color: const Color(0xFFF6F3F1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.outlineVariant.withOpacity(0.6)),
+            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.6)),
           ),
           child: Text(
             value,
@@ -1661,7 +1661,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.6)),
+        borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.6)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -1675,7 +1675,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.outlineVariant.withOpacity(0.3))),
+        border: Border(top: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.3))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

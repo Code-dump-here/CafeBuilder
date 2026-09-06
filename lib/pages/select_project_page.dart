@@ -323,7 +323,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                       contentPadding: const EdgeInsets.all(12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+                        borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                       ),
                     ),
                   ),
@@ -337,7 +337,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
             decoration: BoxDecoration(
               color: const Color(0xFFFBF8F6),
               border: Border(
-                top: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+                top: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
               ),
             ),
             child: Column(
@@ -375,7 +375,9 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                           // may have been filled while this page sat open.
                           _slotConflict.remove(projectId);
                           await _checkSlot(projectId);
-                          if (!mounted) return;
+                          // `context` here is the builder's, not the State's,
+                          // so check the element that actually owns it.
+                          if (!context.mounted) return;
                           final conflict = _slotConflict[projectId];
                           if (conflict != null) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -405,7 +407,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                                   : message,
                             );
 
-                            if (mounted) {
+                            if (context.mounted) {
                               Navigator.pop(context); // hide loading
                               if (widget.isConstructor) {
                                 Navigator.push(
@@ -429,7 +431,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                               }
                             }
                           } catch (e) {
-                             if (mounted) {
+                             if (context.mounted) {
                                Navigator.pop(context);
                                String errorMessage = e.toString();
                                if (errorMessage.contains('409')) {
@@ -483,13 +485,13 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.5),
+            color: isSelected ? AppColors.espresso : AppColors.outlineVariant.withValues(alpha: 0.5),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
             if (isSelected)
               BoxShadow(
-                color: AppColors.espresso.withOpacity(0.1),
+                color: AppColors.espresso.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -561,7 +563,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: highlighted
-                              ? const Color(0xFFD9EAA3).withOpacity(0.5)
+                              ? const Color(0xFFD9EAA3).withValues(alpha: 0.5)
                               : const Color(0xFFEBEBEB),
                           borderRadius: BorderRadius.circular(12),
                         ),

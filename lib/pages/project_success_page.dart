@@ -389,7 +389,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -571,7 +571,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+                    border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                   ),
                   child: Row(
                     children: [
@@ -593,7 +593,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFD9EAA3).withOpacity(0.4),
+                                color: const Color(0xFFD9EAA3).withValues(alpha: 0.4),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -800,7 +800,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isChecked ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.5),
+              color: isChecked ? AppColors.espresso : AppColors.outlineVariant.withValues(alpha: 0.5),
               width: isChecked ? 2 : 1,
             ),
           ),
@@ -985,7 +985,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+              border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
             ),
             child: Row(
               children: [
@@ -1007,7 +1007,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD9EAA3).withOpacity(0.4),
+                          color: const Color(0xFFD9EAA3).withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -1095,7 +1095,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.3)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1103,7 +1103,7 @@ class _ProjectSuccessPageState extends State<ProjectSuccessPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFD9EAA3).withOpacity(0.3),
+              color: const Color(0xFFD9EAA3).withValues(alpha: 0.3),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: const Color(0xFF56642B), size: 18),

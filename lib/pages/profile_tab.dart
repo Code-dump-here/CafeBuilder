@@ -96,7 +96,7 @@ class _ProfileTabState extends State<ProfileTab> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFEBEE),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFC62828).withOpacity(0.2)),
+        border: Border.all(color: const Color(0xFFC62828).withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -126,7 +126,7 @@ class _ProfileTabState extends State<ProfileTab> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -189,7 +189,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFD9EAA3).withOpacity(0.5),
+              color: const Color(0xFFD9EAA3).withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -324,7 +324,7 @@ class _ProfileTabState extends State<ProfileTab> {
       width: double.infinity,
       height: 56,
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFBA1A1A).withOpacity(0.2)),
+        border: Border.all(color: const Color(0xFFBA1A1A).withValues(alpha: 0.2)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(

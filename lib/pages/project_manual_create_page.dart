@@ -119,7 +119,7 @@ class _ProjectManualCreatePageState extends State<ProjectManualCreatePage> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+        borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

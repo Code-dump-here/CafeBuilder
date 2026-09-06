@@ -344,7 +344,7 @@ class DashboardTabState extends State<DashboardTab> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary.withOpacity(0.8),
+                    color: AppColors.textSecondary.withValues(alpha: 0.8),
                     letterSpacing: 2.0,
                   ),
                 ),
@@ -558,14 +558,14 @@ class DashboardTabState extends State<DashboardTab> {
             Row(
               children: [
                 Icon(Icons.cloud_off_rounded,
-                    size: 16, color: AppColors.primaryFixed.withOpacity(0.8)),
+                    size: 16, color: AppColors.primaryFixed.withValues(alpha: 0.8)),
                 const SizedBox(width: 8),
                 Text(
                   "COULDN'T LOAD YOUR PROJECTS",
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primaryFixed.withOpacity(0.8),
+                    color: AppColors.primaryFixed.withValues(alpha: 0.8),
                     letterSpacing: 1.5,
                   ),
                 ),
@@ -576,7 +576,7 @@ class DashboardTabState extends State<DashboardTab> {
               _error!,
               style: GoogleFonts.inter(
                 fontSize: 13,
-                color: AppColors.primaryFixedDim.withOpacity(0.9),
+                color: AppColors.primaryFixedDim.withValues(alpha: 0.9),
                 height: 1.4,
               ),
             ),
@@ -625,7 +625,7 @@ class DashboardTabState extends State<DashboardTab> {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primaryFixed.withOpacity(0.6),
+                  color: AppColors.primaryFixed.withValues(alpha: 0.6),
                   letterSpacing: 2.0,
                 ),
               ),
@@ -643,7 +643,7 @@ class DashboardTabState extends State<DashboardTab> {
                 'Create a brief to begin your cafe build journey.',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: AppColors.primaryFixedDim.withOpacity(0.8),
+                  color: AppColors.primaryFixedDim.withValues(alpha: 0.8),
                 ),
               ),
               const SizedBox(height: 20),
@@ -679,7 +679,7 @@ class DashboardTabState extends State<DashboardTab> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.espresso.withOpacity(0.3),
+            color: AppColors.espresso.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -695,7 +695,7 @@ class DashboardTabState extends State<DashboardTab> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: const Color(0xFF4B3621).withOpacity(0.3),
+                color: const Color(0xFF4B3621).withValues(alpha: 0.3),
                 shape: BoxShape.circle,
               ),
             ),
@@ -716,7 +716,7 @@ class DashboardTabState extends State<DashboardTab> {
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primaryFixed.withOpacity(0.6),
+                            color: AppColors.primaryFixed.withValues(alpha: 0.6),
                             letterSpacing: 2.0,
                           ),
                         ),
@@ -733,7 +733,7 @@ class DashboardTabState extends State<DashboardTab> {
                           _phaseLabel(project.status),
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: AppColors.primaryFixedDim.withOpacity(0.8),
+                            color: AppColors.primaryFixedDim.withValues(alpha: 0.8),
                           ),
                         ),
                       ],
@@ -741,9 +741,9 @@ class DashboardTabState extends State<DashboardTab> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4B3621).withOpacity(0.5),
+                        color: const Color(0xFF4B3621).withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.primaryFixed.withOpacity(0.2)),
+                        border: Border.all(color: AppColors.primaryFixed.withValues(alpha: 0.2)),
                       ),
                       child: Text(
                         '$percent%',
@@ -919,10 +919,10 @@ class DashboardTabState extends State<DashboardTab> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.3)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -933,7 +933,7 @@ class DashboardTabState extends State<DashboardTab> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF4B3621).withOpacity(0.1),
+              color: const Color(0xFF4B3621).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: AppColors.espresso, size: 24),
@@ -1040,7 +1040,7 @@ class DashboardTabState extends State<DashboardTab> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -1058,7 +1058,7 @@ class DashboardTabState extends State<DashboardTab> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryFixed.withOpacity(0.9),
+                        color: AppColors.primaryFixed.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -1143,7 +1143,7 @@ class DashboardTabState extends State<DashboardTab> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.outlineVariant.withOpacity(0.2)),
+              border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.2)),
             ),
             child: Column(
               children: [
@@ -1176,9 +1176,9 @@ class DashboardTabState extends State<DashboardTab> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFFD9EAA3).withOpacity(0.5),
+          color: const Color(0xFFD9EAA3).withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF56642B).withOpacity(0.1)),
+          border: Border.all(color: const Color(0xFF56642B).withValues(alpha: 0.1)),
         ),
         child: Row(
           children: [
@@ -1223,17 +1223,17 @@ class DashboardTabState extends State<DashboardTab> {
   Widget _buildDocumentItem(_DocItem doc) {
     final isConstruction = doc.source == 'Construction';
     final iconBg = isConstruction
-        ? const Color(0xFF1A4DC7).withOpacity(0.08)
-        : const Color(0xFF4B3621).withOpacity(0.08);
+        ? const Color(0xFF1A4DC7).withValues(alpha: 0.08)
+        : const Color(0xFF4B3621).withValues(alpha: 0.08);
     final iconBorder = isConstruction
-        ? const Color(0xFF1A4DC7).withOpacity(0.18)
-        : const Color(0xFF4B3621).withOpacity(0.18);
+        ? const Color(0xFF1A4DC7).withValues(alpha: 0.18)
+        : const Color(0xFF4B3621).withValues(alpha: 0.18);
     final iconColor = isConstruction
         ? const Color(0xFF1A4DC7)
         : AppColors.espresso;
     final badgeBg = isConstruction
         ? const Color(0xFFDDE8FF)
-        : const Color(0xFFD9EAA3).withOpacity(0.6);
+        : const Color(0xFFD9EAA3).withValues(alpha: 0.6);
     final badgeText = isConstruction
         ? const Color(0xFF1A4DC7)
         : const Color(0xFF56642B);
@@ -1252,10 +1252,10 @@ class DashboardTabState extends State<DashboardTab> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.outlineVariant.withOpacity(0.2)),
+          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 5,
               offset: const Offset(0, 2),
             ),

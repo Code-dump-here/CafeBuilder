@@ -487,7 +487,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
           ),
         ),
         padding: const EdgeInsets.all(20),
@@ -498,7 +498,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF56642B).withOpacity(0.8),
+                color: const Color(0xFF56642B).withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -527,7 +527,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             Container(
               height: 4,
               width: double.infinity,
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
                 widthFactor: progress,
@@ -547,7 +547,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -576,7 +576,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       child: CircularProgressIndicator(
                         value: 1.0,
                         strokeWidth: 12,
-                        backgroundColor: AppColors.outlineVariant.withOpacity(0.5),
+                        backgroundColor: AppColors.outlineVariant.withValues(alpha: 0.5),
                         valueColor: const AlwaysStoppedAnimation<Color>(AppColors.espresso),
                       ),
                     ),
@@ -647,7 +647,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         children: [
           Text(
             'NEXT MILESTONE',
-            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white.withOpacity(0.5)),
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white.withValues(alpha: 0.5)),
           ),
           const SizedBox(height: 16),
           Text(
@@ -657,13 +657,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.calendar_today_outlined, size: 14, color: Colors.white.withOpacity(0.7)),
+              Icon(Icons.calendar_today_outlined, size: 14, color: Colors.white.withValues(alpha: 0.7)),
               const SizedBox(width: 8),
               Text(
                 _nextMilestone?.estimateAt != null
                     ? '${_nextMilestone!.estimateAt!.day}/${_nextMilestone!.estimateAt!.month}/${_nextMilestone!.estimateAt!.year}'
                     : 'Scheduled once construction is planned',
-                style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withOpacity(0.7)),
+                style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
               ),
             ],
           ),
@@ -679,7 +679,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         Column(
           children: [
             Container(width: 8, height: 8, margin: const EdgeInsets.only(top: 4, bottom: 4), decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
-            if (hasLine) Container(width: 1, height: 32, color: AppColors.outlineVariant.withOpacity(0.5)),
+            if (hasLine) Container(width: 1, height: 32, color: AppColors.outlineVariant.withValues(alpha: 0.5)),
           ],
         ),
         const SizedBox(width: 12),
@@ -704,7 +704,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         children: [
@@ -756,7 +756,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -848,7 +848,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -944,7 +944,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1696,7 +1696,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       }
 
       if (matchedWorking == null) {
-        if (mounted) {
+        // `context` is a parameter here, so the State's `mounted` says nothing
+        // about whether *this* context is still usable.
+        if (context.mounted) {
           Navigator.pop(context); // close dialog
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('No active collaboration found for this project yet.')),
@@ -1705,7 +1707,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         return;
       }
 
-      if (mounted) {
+      if (context.mounted) {
         final workingId = matchedWorking.id;
         Navigator.pop(context); // close dialog
         Navigator.push(
@@ -1716,7 +1718,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         ).then((_) => _loadProject());
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         Navigator.pop(context); // close dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Could not open workspace: $e')),
@@ -1758,7 +1760,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     MaterialPageRoute(
                       builder: (context) => PaymentBatchesPage(
                         projectWorkings: _projectWorkings,
-                        projectName: _project?.name ?? 'Dự án',
+                        projectName: _project?.name ?? 'Project',
                       ),
                     ),
                   ).then((_) => _loadProject());
@@ -1782,7 +1784,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     MaterialPageRoute(
                       builder: (context) => SiteProfilePage(
                         projectShopOwnerId: widget.projectId,
-                        projectName: _project?.name ?? 'Dự án',
+                        projectName: _project?.name ?? 'Project',
                       ),
                     ),
                   );
@@ -1801,7 +1803,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     MaterialPageRoute(
                       builder: (context) => ChangeOrdersPage(
                         projectWorkings: _projectWorkings,
-                        projectName: _project?.name ?? 'Dự án',
+                        projectName: _project?.name ?? 'Project',
                       ),
                     ),
                   ).then((_) => _loadProject());
@@ -1819,7 +1821,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     MaterialPageRoute(
                       builder: (context) => DailyLogsPage(
                         projectWorkings: _projectWorkings,
-                        projectName: _project?.name ?? 'Dự án',
+                        projectName: _project?.name ?? 'Project',
                       ),
                     ),
                   );
@@ -1873,7 +1875,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         allContracts.addAll(ContractService.ownerVisible(res.items));
       }
 
-      if (mounted) {
+      if (context.mounted) {
         Navigator.pop(context); // close loading
         if (allContracts.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No active contracts for this project.')));
@@ -1934,7 +1936,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         }
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         Navigator.pop(context); // close loading
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
@@ -1951,7 +1953,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.outlineVariant.withOpacity(0.3)),
+          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
@@ -1973,14 +1975,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
     if (conMo.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Còn ${conMo.length} hợp tác chưa đóng, hãy nghiệm thu hoặc huỷ trước.')),
+        SnackBar(content: Text('${conMo.length} engagements are still open — accept or cancel them first.')),
       );
       return;
     }
 
     if (daNghiemThu.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cần ít nhất một hợp tác đã nghiệm thu để đóng dự án.')),
+        const SnackBar(content: Text('At least one engagement must be accepted before the project can be closed.')),
       );
       return;
     }
@@ -1988,14 +1990,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Đóng dự án'),
-        content: const Text('Bạn có chắc chắn muốn đóng dự án này?'),
+        title: const Text('Close project'),
+        content: const Text('Are you sure you want to close this project?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Không')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.espresso),
-            child: const Text('Đóng dự án', style: TextStyle(color: Colors.white)),
+            child: const Text('Close project', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -2072,7 +2074,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             child: ElevatedButton.icon(
               onPressed: _completeProject,
               icon: const Icon(Icons.verified, size: 20, color: Colors.white),
-              label: const Text('Đóng dự án'),
+              label: const Text('Close project'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.espresso,
                 foregroundColor: Colors.white,
@@ -2211,7 +2213,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.espresso, width: 1.5),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2369,8 +2371,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Center(
         child: Column(

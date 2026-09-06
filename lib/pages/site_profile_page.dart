@@ -105,22 +105,22 @@ class _SiteProfilePageState extends State<SiteProfilePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Duyệt số đo vào dự án?'),
+        title: const Text('Apply these measurements to the project?'),
         content: Text(
-          'Diện tích dự án sẽ đổi từ '
-          '${_MeasurementsCard._m2(profile.projectAreaM2)} thành '
+          'The project area will change from '
+          '${_MeasurementsCard._m2(profile.projectAreaM2)} to '
           '${_MeasurementsCard._m2(profile.totalFloorAreaM2)}.\n\n'
-          'Con số này hiển thị trên mọi màn hình dự án. Bản thiết kế AI đã sinh '
-          'trước đó KHÔNG tự chạy lại theo số mới.',
+          'This figure appears on every project screen. AI designs generated '
+          'earlier will NOT re-run against the new number.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Huỷ'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Duyệt'),
+            child: const Text('Apply'),
           ),
         ],
       ),
@@ -130,7 +130,7 @@ class _SiteProfilePageState extends State<SiteProfilePage> {
 
     await _run(
       () => SiteProfileService.approveMeasurements(profile.id),
-      'Đã đồng bộ diện tích sang dự án.',
+      'Area synced to the project.',
     );
   }
 
@@ -143,7 +143,7 @@ class _SiteProfilePageState extends State<SiteProfilePage> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'Hồ sơ mặt bằng',
+          'Site profile',
           style: GoogleFonts.playfairDisplay(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -194,12 +194,12 @@ class _SiteProfilePageState extends State<SiteProfilePage> {
           onAdd: () => _openFloor(null),
           onEdit: _openFloor,
           onRemove: (floor) => _confirmRemove(
-            title: 'Xoá ${floor.label}?',
+            title: 'Delete ${floor.label}?',
             body:
-                'Các ô cửa gắn vào tầng này vẫn còn nhưng sẽ mất thông tin tầng.',
+                'Openings attached to this floor remain, but lose their floor assignment.',
             onConfirm: () => _run(
               () => SiteProfileService.removeFloor(floor.id),
-              'Đã xoá tầng.',
+              'Floor deleted.',
             ),
           ),
         ),
@@ -209,11 +209,11 @@ class _SiteProfilePageState extends State<SiteProfilePage> {
           onAdd: () => _openOpening(null),
           onEdit: _openOpening,
           onRemove: (opening) => _confirmRemove(
-            title: 'Xoá ô cửa này?',
-            body: 'Nó biến mất khỏi hồ sơ mặt bằng.',
+            title: 'Delete this opening?',
+            body: 'It disappears from the site profile.',
             onConfirm: () => _run(
               () => SiteProfileService.removeOpening(opening.id),
-              'Đã xoá ô cửa.',
+              'Opening deleted.',
             ),
           ),
         ),
@@ -234,12 +234,12 @@ class _SiteProfilePageState extends State<SiteProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Huỷ'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Xoá'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -292,7 +292,7 @@ class _SiteProfilePageState extends State<SiteProfilePage> {
           );
         }
       },
-      profile == null ? 'Đã lưu thông số mặt bằng.' : 'Đã cập nhật thông số.',
+      profile == null ? 'Site measurements saved.' : 'Measurements updated.',
     );
   }
 
@@ -333,7 +333,7 @@ class _SiteProfilePageState extends State<SiteProfilePage> {
           );
         }
       },
-      floor == null ? 'Đã thêm tầng.' : 'Đã cập nhật tầng.',
+      floor == null ? 'Floor added.' : 'Floor updated.',
     );
   }
 
@@ -379,7 +379,7 @@ class _SiteProfilePageState extends State<SiteProfilePage> {
           );
         }
       },
-      opening == null ? 'Đã thêm ô cửa.' : 'Đã cập nhật ô cửa.',
+      opening == null ? 'Opening added.' : 'Opening updated.',
     );
   }
 }
@@ -405,13 +405,13 @@ class _EmptyState extends StatelessWidget {
           const Icon(Icons.straighten, size: 40, color: AppColors.espresso),
           const SizedBox(height: 12),
           Text(
-            'Chưa ai đo mặt bằng này',
+            'Nobody has measured this site yet',
             style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
-            'Ghi lại số đo thật để nhà thiết kế bám theo hiện trạng chứ không '
-            'phải phỏng đoán. Đo tới đâu điền tới đó — không ô nào bắt buộc.',
+            'Record real measurements so the designer works from what is there, not '
+            'from guesswork. Fill in what you have measured — no field is required.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
           ),
@@ -420,7 +420,7 @@ class _EmptyState extends StatelessWidget {
             style: FilledButton.styleFrom(backgroundColor: AppColors.espresso),
             onPressed: onCreate,
             icon: const Icon(Icons.add),
-            label: const Text('Khai số đo mặt bằng'),
+            label: const Text('Record site measurements'),
           ),
         ],
       ),
@@ -512,10 +512,10 @@ class _MeasurementsCard extends StatelessWidget {
   const _MeasurementsCard({required this.profile, required this.onEdit});
 
   static String _m(double? value) =>
-      value == null ? 'Chưa đo' : '${_trim(value)} m';
+      value == null ? 'Not measured' : '${_trim(value)} m';
 
   static String _m2(double? value) =>
-      value == null ? 'Chưa đo' : '${_trim(value)} m²';
+      value == null ? 'Not measured' : '${_trim(value)} m²';
 
   /// 5.0 → "5", 4.75 → "4.75". Trailing zeros on a tape measurement read as
   /// false precision.
@@ -528,9 +528,9 @@ class _MeasurementsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SectionCard(
       icon: Icons.straighten,
-      title: 'Kích thước và hướng',
-      subtitle: 'Đo tới đâu điền tới đó.',
-      actionLabel: 'Sửa',
+      title: 'Dimensions and orientation',
+      subtitle: 'Fill in what you have measured.',
+      actionLabel: 'Edit',
       onAction: onEdit,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -539,50 +539,50 @@ class _MeasurementsCard extends StatelessWidget {
             spacing: 24,
             runSpacing: 14,
             children: [
-              _Fact(label: 'Chiều sâu', value: _m(profile.lengthM)),
-              _Fact(label: 'Chiều ngang', value: _m(profile.widthM)),
-              _Fact(label: 'Mặt tiền', value: _m(profile.frontageWidthM)),
-              _Fact(label: 'Thông thuỷ', value: _m(profile.ceilingHeightM)),
-              _Fact(label: 'Đường trước nhà', value: _m(profile.roadWidthM)),
+              _Fact(label: 'Depth', value: _m(profile.lengthM)),
+              _Fact(label: 'Width', value: _m(profile.widthM)),
+              _Fact(label: 'Frontage', value: _m(profile.frontageWidthM)),
+              _Fact(label: 'Clear height', value: _m(profile.ceilingHeightM)),
+              _Fact(label: 'Road width', value: _m(profile.roadWidthM)),
               _Fact(
-                label: 'Hướng mặt tiền',
+                label: 'Facing direction',
                 value: profile.orientation == null
-                    ? 'Chưa xác định'
+                    ? 'Not set'
                     : (kOrientationLabels[profile.orientation] ??
                         profile.orientation!),
               ),
               _Fact(
-                label: 'Số tầng',
+                label: 'Floors',
                 value: profile.floorCount == null
-                    ? 'Chưa đo'
-                    : '${profile.floorCount} tầng',
+                    ? 'Not measured'
+                    : '${profile.floorCount} floors',
               ),
               _Fact(
-                label: 'Gác lửng',
-                value: profile.hasMezzanine ? 'Có' : 'Không',
+                label: 'Mezzanine',
+                value: profile.hasMezzanine ? 'Yes' : 'No',
               ),
               _Fact(
-                label: 'Diện tích lô',
+                label: 'Plot area',
                 value: _m2(profile.derivedFootprintM2),
-                hint: 'Sâu × ngang',
+                hint: 'Depth × width',
               ),
               _Fact(
-                label: 'Tổng sàn',
+                label: 'Total floor area',
                 value: _m2(profile.totalFloorAreaM2),
-                hint: 'Cộng các tầng',
+                hint: 'Sum of floors',
               ),
             ],
           ),
           if (profile.structureNote != null &&
               profile.structureNote!.isNotEmpty) ...[
             const SizedBox(height: 14),
-            _NoteBlock(label: 'Kết cấu', text: profile.structureNote!),
+            _NoteBlock(label: 'Structure', text: profile.structureNote!),
           ],
           if (profile.existingConditionNote != null &&
               profile.existingConditionNote!.isNotEmpty) ...[
             const SizedBox(height: 10),
             _NoteBlock(
-              label: 'Hiện trạng bàn giao',
+              label: 'Handover condition',
               text: profile.existingConditionNote!,
             ),
           ],
@@ -641,8 +641,8 @@ class _AreaSyncCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   synced
-                      ? 'Dự án đang dùng số đo khảo sát'
-                      : 'Số đo khảo sát chưa được duyệt',
+                      ? 'The project is using the surveyed measurements'
+                      : 'Surveyed measurements not yet applied',
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -655,9 +655,9 @@ class _AreaSyncCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             synced
-                ? 'Tổng sàn $surveyed đã là diện tích chính thức của dự án.'
-                : 'Tổng sàn đo được là $surveyed, nhưng dự án vẫn đang dùng '
-                      '$inForce. Duyệt để cập nhật.',
+                ? 'A total floor area of $surveyed is now the project official area.'
+                : 'The measured total floor area is $surveyed, but the project still uses '
+                      '$inForce. Apply it to update.',
             style: GoogleFonts.inter(
               fontSize: 12,
               height: 1.45,
@@ -671,7 +671,7 @@ class _AreaSyncCard extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onApprove,
                 icon: const Icon(Icons.done_all, size: 18),
-                label: const Text('Duyệt số đo vào dự án'),
+                label: const Text('Apply measurements to the project'),
               ),
             ),
           ],
@@ -755,12 +755,12 @@ class _FloorsCard extends StatelessWidget {
 
     return _SectionCard(
       icon: Icons.layers_outlined,
-      title: 'Các tầng',
-      subtitle: 'Mỗi tầng một diện tích riêng.',
-      actionLabel: 'Thêm',
+      title: 'Floors',
+      subtitle: 'Each floor has its own area.',
+      actionLabel: 'Add',
       onAction: onAdd,
       child: floors.isEmpty
-          ? _EmptyRow(text: 'Chưa khai tầng nào.')
+          ? _EmptyRow(text: 'No floors recorded yet.')
           : Column(
               children: floors
                   .map(
@@ -771,7 +771,7 @@ class _FloorsCard extends StatelessWidget {
                         if (floor.areaM2 != null)
                           '${_MeasurementsCard._trim(floor.areaM2!)} m²',
                         if (floor.ceilingHeightM != null)
-                          'thông thuỷ ${_MeasurementsCard._trim(floor.ceilingHeightM!)} m',
+                          '${_MeasurementsCard._trim(floor.ceilingHeightM!)} m clear',
                         if (floor.purpose != null && floor.purpose!.isNotEmpty)
                           floor.purpose!,
                       ].join(' · '),
@@ -801,11 +801,11 @@ class _OpeningsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String floorLabel(String? siteFloorId) {
-      if (siteFloorId == null) return 'chưa gán tầng';
+      if (siteFloorId == null) return 'no floor assigned';
       for (final floor in profile.floors) {
         if (floor.id == siteFloorId) return floor.label;
       }
-      return 'chưa gán tầng';
+      return 'no floor assigned';
     }
 
     final openings = [...profile.openings]
@@ -813,12 +813,12 @@ class _OpeningsCard extends StatelessWidget {
 
     return _SectionCard(
       icon: Icons.sensor_door_outlined,
-      title: 'Cửa, cửa sổ và ban công',
-      subtitle: 'Nơi ánh sáng và khách đi vào.',
-      actionLabel: 'Thêm',
+      title: 'Doors, windows and balconies',
+      subtitle: 'Where the light and the customers come in.',
+      actionLabel: 'Add',
       onAction: onAdd,
       child: openings.isEmpty
-          ? _EmptyRow(text: 'Chưa khai ô cửa nào.')
+          ? _EmptyRow(text: 'No openings recorded yet.')
           : Column(
               children: openings
                   .map(
@@ -958,7 +958,7 @@ class _ErrorView extends StatelessWidget {
               style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
           ],
         ),
       ),
@@ -1070,8 +1070,8 @@ class _MeasurementsSheetState extends State<_MeasurementsSheet> {
   @override
   Widget build(BuildContext context) {
     return _SheetShell(
-      title: widget.initial == null ? 'Khai số đo mặt bằng' : 'Sửa số đo',
-      subtitle: 'Chưa đo được gì thì cứ để trống.',
+      title: widget.initial == null ? 'Record site measurements' : 'Edit measurements',
+      subtitle: 'Leave anything you have not measured blank.',
       onSave: () => Navigator.pop(
         context,
         _MeasurementValues(
@@ -1090,25 +1090,25 @@ class _MeasurementsSheetState extends State<_MeasurementsSheet> {
         ),
       ),
       children: [
-        _NumberField(label: 'Chiều sâu (m)', controller: _length),
-        _NumberField(label: 'Chiều ngang (m)', controller: _width),
+        _NumberField(label: 'Depth (m)', controller: _length),
+        _NumberField(label: 'Width (m)', controller: _width),
         _NumberField(
-          label: 'Bề rộng mặt tiền (m)',
+          label: 'Frontage width (m)',
           controller: _frontage,
-          hint: 'Thường bằng chiều ngang, trừ lô góc hoặc nhà lùi vào trong.',
+          hint: 'Usually the same as the width, except on corner plots or set-back buildings.',
         ),
-        _NumberField(label: 'Chiều cao thông thuỷ (m)', controller: _ceiling),
-        _NumberField(label: 'Bề rộng đường trước nhà (m)', controller: _road),
+        _NumberField(label: 'Clear ceiling height (m)', controller: _ceiling),
+        _NumberField(label: 'Width of the road outside (m)', controller: _road),
         _NumberField(
-          label: 'Số tầng sử dụng',
+          label: 'Floors in use',
           controller: _floorCount,
           decimal: false,
         ),
         _DropdownField(
-          label: 'Hướng mặt tiền',
+          label: 'Facing direction',
           value: _orientation,
           items: kOrientationLabels,
-          placeholder: 'Chưa xác định',
+          placeholder: 'Not set',
           onChanged: (value) => setState(() => _orientation = value),
         ),
         SwitchListTile(
@@ -1117,20 +1117,20 @@ class _MeasurementsSheetState extends State<_MeasurementsSheet> {
           value: _hasMezzanine,
           onChanged: (value) => setState(() => _hasMezzanine = value),
           title: Text(
-            'Có gác lửng',
+            'Has a mezzanine',
             style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
           ),
         ),
         _TextField(
-          label: 'Kết cấu',
+          label: 'Structure',
           controller: _structure,
-          hint: 'Nhà phố, shophouse, nhà cấp 4, mặt bằng thô…',
+          hint: 'Townhouse, shophouse, single-storey, bare shell…',
           maxLines: 2,
         ),
         _TextField(
-          label: 'Hiện trạng bàn giao',
+          label: 'Handover condition',
           controller: _condition,
-          hint: 'Đã có sẵn những gì, phải đập bỏ những gì.',
+          hint: 'What is already there, and what has to come out.',
           maxLines: 2,
         ),
       ],
@@ -1194,8 +1194,8 @@ class _FloorSheetState extends State<_FloorSheet> {
   @override
   Widget build(BuildContext context) {
     return _SheetShell(
-      title: widget.initial == null ? 'Thêm tầng' : 'Sửa tầng',
-      subtitle: '1 là trệt, 0 là gác lửng, số âm là hầm.',
+      title: widget.initial == null ? 'Add floor' : 'Edit floor',
+      subtitle: '1 is ground, 0 is the mezzanine, negative numbers are basements.',
       onSave: () {
         final no = _toInt(_floorNo.text);
         if (no == null) return;
@@ -1212,22 +1212,22 @@ class _FloorSheetState extends State<_FloorSheet> {
       },
       children: [
         _NumberField(
-          label: 'Số tầng',
+          label: 'Floors',
           controller: _floorNo,
           decimal: false,
-          hint: 'Không trùng trong cùng mặt bằng.',
+          hint: 'Must be unique within the site.',
         ),
         _TextField(
-          label: 'Tên',
+          label: 'Name',
           controller: _name,
-          hint: 'Trệt, Lầu 1, Gác lửng, Sân thượng…',
+          hint: 'Ground, First floor, Mezzanine, Terrace…',
         ),
-        _NumberField(label: 'Diện tích sàn (m²)', controller: _area),
-        _NumberField(label: 'Chiều cao thông thuỷ (m)', controller: _ceiling),
+        _NumberField(label: 'Floor area (m²)', controller: _area),
+        _NumberField(label: 'Clear ceiling height (m)', controller: _ceiling),
         _TextField(
-          label: 'Công năng dự kiến',
+          label: 'Intended use',
           controller: _purpose,
-          hint: 'Quầy pha chế, chỗ ngồi, kho, WC…',
+          hint: 'Bar, seating, storage, WC…',
         ),
       ],
     );
@@ -1298,8 +1298,8 @@ class _OpeningSheetState extends State<_OpeningSheet> {
   @override
   Widget build(BuildContext context) {
     return _SheetShell(
-      title: widget.initial == null ? 'Thêm ô cửa' : 'Sửa ô cửa',
-      subtitle: 'Các ô giống nhau gộp một dòng rồi điền số lượng.',
+      title: widget.initial == null ? 'Add opening' : 'Edit opening',
+      subtitle: 'Group identical openings into one row and set the quantity.',
       onSave: () => Navigator.pop(
         context,
         _OpeningValues(
@@ -1314,27 +1314,27 @@ class _OpeningSheetState extends State<_OpeningSheet> {
       ),
       children: [
         _DropdownField(
-          label: 'Loại',
+          label: 'Type',
           value: _type,
           items: kSiteOpeningLabels,
           onChanged: (value) => setState(() => _type = value ?? 'main_door'),
         ),
         _DropdownField(
-          label: 'Tầng',
+          label: 'Floor',
           value: _siteFloorId,
           items: {for (final f in widget.floors) f.id: f.label},
-          placeholder: 'Chưa gán tầng',
+          placeholder: 'No floor assigned',
           onChanged: (value) => setState(() => _siteFloorId = value),
         ),
-        _NumberField(label: 'Rộng (m)', controller: _width),
+        _NumberField(label: 'Width (m)', controller: _width),
         _NumberField(label: 'Cao (m)', controller: _height),
         _NumberField(
-          label: 'Số lượng',
+          label: 'Quantity',
           controller: _quantity,
           decimal: false,
-          hint: 'Bốn cửa sổ cùng quy cách là một dòng, số lượng 4.',
+          hint: 'Four identical windows are one row with a quantity of 4.',
         ),
-        _TextField(label: 'Ghi chú', controller: _note),
+        _TextField(label: 'Note', controller: _note),
       ],
     );
   }
@@ -1412,7 +1412,7 @@ class _SheetShell extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Huỷ'),
+                      child: const Text('Cancel'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1422,7 +1422,7 @@ class _SheetShell extends StatelessWidget {
                         backgroundColor: AppColors.espresso,
                       ),
                       onPressed: onSave,
-                      child: const Text('Lưu'),
+                      child: const Text('Save'),
                     ),
                   ),
                 ],

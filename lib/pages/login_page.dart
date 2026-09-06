@@ -93,7 +93,7 @@ class _LoginPageState extends State<LoginPage> {
                       'Enter your credentials to access your studio.',
                       style: GoogleFonts.inter(
                         fontSize: 16,
-                        color: AppColors.textSecondary.withOpacity(0.8),
+                        color: AppColors.textSecondary.withValues(alpha: 0.8),
                       ),
                     ),
                     const SizedBox(height: 56),
@@ -159,7 +159,7 @@ class _LoginPageState extends State<LoginPage> {
                         text: TextSpan(
                           style: GoogleFonts.inter(
                             fontSize: 15,
-                            color: AppColors.textSecondary.withOpacity(0.7),
+                            color: AppColors.textSecondary.withValues(alpha: 0.7),
                           ),
                           children: [
                             const TextSpan(text: 'New here? '),
@@ -173,7 +173,7 @@ class _LoginPageState extends State<LoginPage> {
                                     fontWeight: FontWeight.w500,
                                     decoration: TextDecoration.underline,
                                     decorationThickness: 1,
-                                    decorationColor: AppColors.espresso.withOpacity(0.3),
+                                    decorationColor: AppColors.espresso.withValues(alpha: 0.3),
                                   ),
                                 ),
                               ),
@@ -189,7 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                         '© ${DateTime.now().year} CAFEBUILDER',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: AppColors.outline.withOpacity(0.4),
+                          color: AppColors.outline.withValues(alpha: 0.4),
                           letterSpacing: 2.0,
                         ),
                       ),
@@ -257,7 +257,7 @@ class _LoginPageState extends State<LoginPage> {
         suffixIcon: IconButton(
           icon: Icon(
             _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-            color: AppColors.outline.withOpacity(0.6),
+            color: AppColors.outline.withValues(alpha: 0.6),
             size: 20,
           ),
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),

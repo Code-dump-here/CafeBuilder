@@ -92,7 +92,7 @@ class _MaterialCostSheetState extends State<MaterialCostSheet> {
           Icon(Icons.error_outline, size: 36, color: Colors.red.shade400),
           const SizedBox(height: 10),
           Text(
-            'Không tải được chi phí vật tư.',
+            'Could not load material costs.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(fontWeight: FontWeight.w600),
           ),
@@ -123,7 +123,7 @@ class _MaterialCostSheetState extends State<MaterialCostSheet> {
         ),
         const SizedBox(height: 14),
         Text(
-          'Vật tư & chi phí',
+          'Materials & cost',
           style: GoogleFonts.playfairDisplay(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -136,16 +136,16 @@ class _MaterialCostSheetState extends State<MaterialCostSheet> {
         ),
         const SizedBox(height: 16),
 
-        _CostRow(label: 'Riêng hạng mục', value: _vnd(cost.ownEstimatedCost)),
-        _CostRow(label: 'Từ các task', value: _vnd(cost.tasksEstimatedCost)),
+        _CostRow(label: 'This milestone only', value: _vnd(cost.ownEstimatedCost)),
+        _CostRow(label: 'From tasks', value: _vnd(cost.tasksEstimatedCost)),
         const Divider(height: 20),
         _CostRow(
-          label: 'Chi phí dự tính',
+          label: 'Estimated cost',
           value: _vnd(cost.totalEstimatedCost),
           emphasis: true,
         ),
         _CostRow(
-          label: 'Chi phí thực tế',
+          label: 'Actual cost',
           value: _vnd(cost.totalActualCost),
           emphasis: true,
         ),
@@ -160,8 +160,8 @@ class _MaterialCostSheetState extends State<MaterialCostSheet> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Còn ${cost.missingActualCount} dòng chưa có khối lượng thực tế — '
-                    'tổng thực tế chỉ hiện khi đã ghi đủ.',
+                    '${cost.missingActualCount} lines still have no actual quantity — '
+                    'the actual total only appears once they are all recorded.',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       color: Colors.amber.shade900,
@@ -174,7 +174,7 @@ class _MaterialCostSheetState extends State<MaterialCostSheet> {
 
         const SizedBox(height: 20),
         Text(
-          'Chi tiết',
+          'Details',
           style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
@@ -183,7 +183,7 @@ class _MaterialCostSheetState extends State<MaterialCostSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
-              'Chưa có vật tư nào được khai cho hạng mục này.',
+              'No materials have been recorded for this milestone.',
               style: GoogleFonts.inter(fontSize: 13, color: Colors.black54),
             ),
           )
@@ -271,8 +271,8 @@ class _LineTile extends StatelessWidget {
           ),
           const SizedBox(height: 3),
           Text(
-            'Dự tính ${line.estimatedQuantity} ${line.unit}'
-            '${line.actualQuantity != null ? '  ·  thực tế ${line.actualQuantity} ${line.unit}' : '  ·  chưa có thực tế'}'
+            'Estimated ${line.estimatedQuantity} ${line.unit}'
+            '${line.actualQuantity != null ? '  ·  actual ${line.actualQuantity} ${line.unit}' : '  ·  no actual yet'}'
             '  ·  ${vnd(line.unitPrice)}/${line.unit}',
             style: GoogleFonts.inter(
               fontSize: 11,

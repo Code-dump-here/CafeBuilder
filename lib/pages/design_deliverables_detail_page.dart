@@ -267,8 +267,8 @@ class _DesignDeliverablesDetailPageState
                               horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
                             color: _selectedFilter == _filters[i]
-                                ? Colors.white.withOpacity(0.3)
-                                : AppColors.espresso.withOpacity(0.12),
+                                ? Colors.white.withValues(alpha: 0.3)
+                                : AppColors.espresso.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -297,7 +297,7 @@ class _DesignDeliverablesDetailPageState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.palette_outlined,
-                      size: 56, color: AppColors.placeholder.withOpacity(0.4)),
+                      size: 56, color: AppColors.placeholder.withValues(alpha: 0.4)),
                   const SizedBox(height: 16),
                   Text(
                     _selectedFilter == 'All'
@@ -379,7 +379,7 @@ class _DesignDeliverablesDetailPageState
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -417,7 +417,7 @@ class _DesignDeliverablesDetailPageState
                     decoration: BoxDecoration(
                       color: statusBg,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: statusColor.withOpacity(0.4)),
+                      border: Border.all(color: statusColor.withValues(alpha: 0.4)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -444,7 +444,7 @@ class _DesignDeliverablesDetailPageState
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.55),
+                        color: Colors.black.withValues(alpha: 0.55),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -520,7 +520,7 @@ class _DesignDeliverablesDetailPageState
                       color: const Color(0xFFFFEBEE),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                          color: const Color(0xFFC62828).withOpacity(0.2)),
+                          color: const Color(0xFFC62828).withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -629,7 +629,7 @@ class _DesignDeliverablesDetailPageState
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                   color:
-                                      AppColors.outlineVariant.withOpacity(0.4)),
+                                      AppColors.outlineVariant.withValues(alpha: 0.4)),
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(7),
@@ -716,7 +716,7 @@ class _DesignDeliverablesDetailPageState
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

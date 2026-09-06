@@ -22,7 +22,7 @@ class SuccessPage extends StatelessWidget {
                 height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.splashBackground.withOpacity(0.5),
+                  color: AppColors.splashBackground.withValues(alpha: 0.5),
                 ),
                 child: Center(
                   child: Container(

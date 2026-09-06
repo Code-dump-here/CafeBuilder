@@ -106,7 +106,7 @@ class _ElementDetailsPageState extends State<ElementDetailsPage> {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.zoom_in, color: Colors.white, size: 20),
@@ -166,7 +166,7 @@ class _ElementDetailsPageState extends State<ElementDetailsPage> {
                             ),
                             Container(
                               height: 100,
-                              color: Colors.white.withOpacity(0.6), // faded effect
+                              color: Colors.white.withValues(alpha: 0.6), // faded effect
                             ),
                             Positioned(
                               bottom: 8,

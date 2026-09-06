@@ -332,17 +332,17 @@ class ProviderPortfolioResponse {
 }
 
 const Map<String, String> kPortfolioRoleLabels = {
-  'design': 'Thiết kế',
-  'construction': 'Thi công',
-  'both': 'Thiết kế và thi công',
+  'design': 'Design',
+  'construction': 'Construction',
+  'both': 'Design and construction',
 };
 
 const Map<String, String> kCertificateKindLabels = {
-  'license': 'Giấy phép',
-  'certificate': 'Chứng chỉ',
-  'award': 'Giải thưởng',
-  'membership': 'Hội viên',
-  'other': 'Khác',
+  'license': 'Licence',
+  'certificate': 'Certificate',
+  'award': 'Award',
+  'membership': 'Membership',
+  'other': 'Other',
 };
 
 const Map<String, String> kSocialPlatformLabels = {
@@ -353,5 +353,5 @@ const Map<String, String> kSocialPlatformLabels = {
   'linkedin': 'LinkedIn',
   'zalo': 'Zalo',
   'website': 'Website',
-  'other': 'Khác',
+  'other': 'Other',
 };

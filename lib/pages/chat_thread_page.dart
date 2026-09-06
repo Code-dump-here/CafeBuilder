@@ -123,12 +123,18 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
         type: FileType.any,
         withData: true,
       );
+      // The picker is a separate OS surface and the user can leave this screen
+      // while it is open, so nothing after the await may assume the State is
+      // still mounted. Every other async method here already guards; this one
+      // did not, and reached both `setState` and `context` unguarded.
+      if (!mounted) return;
       if (result != null) {
         setState(() {
           _selectedFiles.addAll(result.files);
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Error picking file')));
@@ -374,7 +380,7 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
                 boxShadow: [
                   if (!isMine)
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 5,
                       offset: const Offset(0, 2),
                     ),
@@ -406,7 +412,7 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
                           ),
                           decoration: BoxDecoration(
                             color: isMine
-                                ? Colors.white.withOpacity(0.2)
+                                ? Colors.white.withValues(alpha: 0.2)
                                 : const Color(0xFFF6F3F1),
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -511,7 +517,7 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

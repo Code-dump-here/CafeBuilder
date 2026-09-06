@@ -120,7 +120,7 @@ class _FindBothProvidersPageState extends State<FindBothProvidersPage> {
             contentPadding: const EdgeInsets.symmetric(vertical: 0),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(24),
-              borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+              borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(24),
@@ -203,7 +203,7 @@ class _FindBothProvidersPageState extends State<FindBothProvidersPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

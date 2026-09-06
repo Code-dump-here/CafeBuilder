@@ -127,7 +127,7 @@ class ServicesTab extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black.withOpacity(0.06)),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -221,7 +221,7 @@ class ServicesTab extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF56642B).withOpacity(0.5),
+                    color: const Color(0xFF56642B).withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -247,7 +247,7 @@ class ServicesTab extends StatelessWidget {
                   'Ready to build? Start your design brief and receive quotes from the most suitable experts in our network.',
                   style: GoogleFonts.inter(
                     fontSize: 15,
-                    color: AppColors.primaryFixed.withOpacity(0.8),
+                    color: AppColors.primaryFixed.withValues(alpha: 0.8),
                     height: 1.6,
                   ),
                 ),

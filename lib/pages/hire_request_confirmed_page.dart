@@ -39,10 +39,10 @@ class HireRequestConfirmedPage extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+                border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 20,
                     offset: const Offset(0, 4),
                   ),
@@ -94,7 +94,7 @@ class HireRequestConfirmedPage extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+                border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
               ),
               child: Row(
                 children: [
@@ -127,7 +127,7 @@ class HireRequestConfirmedPage extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+                border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
               ),
               child: Row(
                 children: [

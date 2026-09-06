@@ -177,7 +177,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+                  borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -194,7 +194,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD9EAA3).withOpacity(0.5),
+                    color: const Color(0xFFD9EAA3).withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -243,7 +243,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -279,7 +279,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -298,7 +298,7 @@ class _FindConstructorsPageState extends State<FindConstructorsPage> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD9EAA3).withOpacity(0.5),
+                    color: const Color(0xFFD9EAA3).withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -652,7 +652,7 @@ class _FilterConstructorsSheetState extends State<FilterConstructorsSheet> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+                      border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -668,7 +668,7 @@ class _FilterConstructorsSheetState extends State<FilterConstructorsSheet> {
                         Switch(
                           value: verifiedPartner,
                           onChanged: (v) => setState(() => verifiedPartner = v),
-                          activeColor: const Color(0xFF56642B),
+                          activeThumbColor: const Color(0xFF56642B),
                         ),
                       ],
                     ),
@@ -721,7 +721,7 @@ class _FilterConstructorsSheetState extends State<FilterConstructorsSheet> {
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+                    side: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: Text('Clear All', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.espresso)),
@@ -760,7 +760,7 @@ class _FilterConstructorsSheetState extends State<FilterConstructorsSheet> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -781,7 +781,7 @@ class _FilterConstructorsSheetState extends State<FilterConstructorsSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.espresso : Colors.white,
-          border: Border.all(color: isSelected ? AppColors.espresso : AppColors.outlineVariant.withOpacity(0.5)),
+          border: Border.all(color: isSelected ? AppColors.espresso : AppColors.outlineVariant.withValues(alpha: 0.5)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
