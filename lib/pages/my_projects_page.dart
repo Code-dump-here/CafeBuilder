@@ -690,7 +690,7 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
                   Text(
                     project.address,
                     style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),

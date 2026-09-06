@@ -1297,7 +1297,7 @@ class DashboardTabState extends State<DashboardTab> {
                 const SizedBox(height: 4),
                 Text(
                   doc.title,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
                     fontSize: 14,
@@ -1320,7 +1320,7 @@ class DashboardTabState extends State<DashboardTab> {
                     Expanded(
                       child: Text(
                         doc.subtitle,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
                           fontSize: 11,

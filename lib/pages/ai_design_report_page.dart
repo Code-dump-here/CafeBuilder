@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'project_detail_page.dart';
 import 'project_success_page.dart';
 import '../services/ai_recommendation_service.dart';
+import '../services/subscription_service.dart';
 import '../models/responses/api_responses.dart';
 import '../models/marketplace_state.dart';
 import '../utils/money.dart';
@@ -759,77 +761,221 @@ class AiDesignReportPage extends StatelessWidget {
     final url = _imageUrl();
     final hasRealImage = report?.imageArtifactUrl?.isNotEmpty == true;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return ValueListenableBuilder<bool>(
+      valueListenable: SubscriptionService.isSubscribedNotifier,
+      builder: (context, isSubscribed, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.blur_on_outlined, size: 20, color: AppColors.espresso),
-            const SizedBox(width: 8),
-            Text(
-              '3D Layout Visualization',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.espresso,
-              ),
-            ),
-            const Spacer(),
-            if (hasRealImage)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD9EAA3).withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text('AI RENDERED',
-                    style: GoogleFonts.inter(
-                        fontSize: 8, fontWeight: FontWeight.bold, color: const Color(0xFF56642B))),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Image.network(
-              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-              url,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, _, __) => Container(
-                height: 200,
-                color: Colors.grey[100],
-                child: const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.image_not_supported_outlined, color: Colors.grey, size: 40),
-                      SizedBox(height: 8),
-                      Text('Image not available', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    ],
+            Row(
+              children: [
+                const Icon(Icons.blur_on_outlined, size: 20, color: AppColors.espresso),
+                const SizedBox(width: 8),
+                // Expanded, not Spacer: the subscription badge next to this
+                // title is wide ("MIỄN PHÍ (ĐÃ KHÓA)"), so on a phone the two
+                // together are wider than the row. Bounding the title lets it
+                // wrap instead of pushing the badge off screen.
+                Expanded(
+                  child: Text(
+                    '3D Layout Visualization',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.espresso,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
+                if (isSubscribed)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.verified_rounded, size: 12, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(
+                          'PRO SUBSCRIBER',
+                          style: GoogleFonts.inter(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/subscription-checkout');
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.amber[800],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.lock_rounded, size: 12, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Text(
+                            'MIỄN PHÍ (ĐÃ KHÓA)',
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // The 3D Image (Blurred if not subscribed)
+                    ImageFiltered(
+                      imageFilter: ImageFilter.blur(
+                        sigmaX: isSubscribed ? 0 : 12,
+                        sigmaY: isSubscribed ? 0 : 12,
+                      ),
+                      child: Image.network(
+                        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+                        url,
+                        width: double.infinity,
+                        height: 280,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, _, __) => Container(
+                          height: 240,
+                          color: Colors.grey[100],
+                          child: const Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.image_not_supported_outlined, color: Colors.grey, size: 40),
+                                SizedBox(height: 8),
+                                Text('Image not available', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Overlay card for non-subscribed users
+                    if (!isSubscribed)
+                      Container(
+                        width: double.infinity,
+                        height: 280,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.45),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white38, width: 1.5),
+                              ),
+                              child: const Icon(
+                                Icons.lock_rounded,
+                                color: Color(0xFFFFD700),
+                                size: 32,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              '3D Layout Visualization Đã Bị Mờ',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Đăng ký Subscription để mở khóa hình ảnh 3D sắc nét và xem chi tiết dự án.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/subscription-checkout');
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFD700),
+                                foregroundColor: AppColors.espresso,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                                elevation: 4,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.workspace_premium, size: 18),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Nâng Cấp Subscription (Chỉ 199k)',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ),
-        if (report?.imageView != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'View type: ${report!.imageView}',
-            style: GoogleFonts.inter(fontSize: 11, color: AppColors.placeholder),
-          ),
-        ],
-      ],
+            if (report?.imageView != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'View type: ${report!.imageView}',
+                style: GoogleFonts.inter(fontSize: 11, color: AppColors.placeholder),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -873,7 +1019,7 @@ class AiDesignReportPage extends StatelessWidget {
                           Flexible(
                             child: Text(
                               z.label,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
                                   fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),

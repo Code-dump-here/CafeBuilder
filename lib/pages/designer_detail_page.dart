@@ -693,7 +693,7 @@ class _DesignerDetailPageState extends State<DesignerDetailPage> {
                 children: [
                   Text(
                     project.projectName,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso),
                   ),

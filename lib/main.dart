@@ -15,8 +15,12 @@ import 'pages/package_details_page.dart';
 import 'pages/element_details_page.dart';
 import 'pages/chat_page.dart';
 import 'pages/collaboration_workspace_page.dart';
+import 'pages/subscription_checkout_page.dart';
+import 'pages/subscription_return_page.dart';
+import 'pages/subscription_cancel_page.dart';
 import 'services/api_client.dart';
 import 'services/ai_chat_service.dart';
+import 'services/subscription_service.dart';
 
 /// Bypass SSL certificate verification in debug builds.
 /// Remove or gate behind !kReleaseMode before publishing to production.
@@ -32,16 +36,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _DevHttpOverrides();
 
-  // Paint the first frame before touching Firebase.
-  //
-  // This used to `await AiChatService.init()` here. That call reaches out to
-  // Firebase and, on web, to the reCAPTCHA endpoint for App Check — so any
-  // stall in that handshake left `runApp` unreached and the app on a blank
-  // white page indefinitely, with nothing logged to explain it. A try/catch
-  // doesn't help: a hang isn't a failure.
-  //
-  // The assistant is optional and already reports its own readiness through
-  // `AiChatService.isAvailable`, so it can finish arriving after the UI is up.
+  await SubscriptionService.init();
+
   runApp(const CafeBuilderApp());
   unawaited(AiChatService.init());
 }
@@ -76,7 +72,11 @@ class CafeBuilderApp extends StatelessWidget {
         '/element-details': (context) => const ElementDetailsPage(),
         '/chat': (context) => const ChatPage(),
         '/collab-workspace': (context) => const CollaborationWorkspacePage(),
+        '/subscription-checkout': (context) => const SubscriptionCheckoutPage(),
+        '/subscription-return': (context) => const SubscriptionReturnPage(),
+        '/subscription-cancel': (context) => const SubscriptionCancelPage(),
       },
     );
   }
 }
+

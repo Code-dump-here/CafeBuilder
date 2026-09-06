@@ -183,11 +183,21 @@ class _QuotationDetailsPageState extends State<QuotationDetailsPage> {
             Text(q.note!, style: GoogleFonts.inter(color: AppColors.textSecondary)),
           ],
           const SizedBox(height: 16),
+          // A billion-đồng total at 20px no longer collides with its label on
+          // a narrow phone: the label keeps its width, the amount wraps under
+          // it if it has to.
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text('Total Amount:', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600)),
-              Text(formatVnd(q.totalAmount), style: GoogleFonts.inter(fontSize: 20, color: Colors.green[700], fontWeight: FontWeight.bold)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  formatVnd(q.totalAmount),
+                  textAlign: TextAlign.right,
+                  style: GoogleFonts.inter(fontSize: 20, color: Colors.green[700], fontWeight: FontWeight.bold),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),

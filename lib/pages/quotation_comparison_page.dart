@@ -360,42 +360,54 @@ class _QuotationCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: status.background,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    status.label,
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: status.foreground,
-                    ),
+                // The badges live in a Wrap so a long status label plus the
+                // "lowest price" flag spill onto a second line on a narrow
+                // phone instead of pushing the total off the card.
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: status.background,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          status.label,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: status.foreground,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'v${quotation.version}',
+                        style: GoogleFonts.inter(
+                            fontSize: 11, color: Colors.black54),
+                      ),
+                      if (isCheapest)
+                        Text(
+                          'lowest price',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'v${quotation.version}',
-                  style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
-                ),
-                if (isCheapest) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    'lowest price',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.green.shade700,
-                    ),
-                  ),
-                ],
-                const Spacer(),
-                Text(
                   formatVnd(quotation.totalAmount),
+                  textAlign: TextAlign.right,
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -429,8 +441,9 @@ class _QuotationCard extends StatelessWidget {
                           Flexible(
                             child: Text(
                               quotation.providerName ?? 'Provider',
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
+                              softWrap: true,
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -466,11 +479,13 @@ class _QuotationCard extends StatelessWidget {
                             const SizedBox(width: 10),
                           ],
                           if (quotation.providerYearsExperience != null)
-                            Text(
-                              '${quotation.providerYearsExperience} years experience',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: Colors.black54,
+                            Flexible(
+                              child: Text(
+                                '${quotation.providerYearsExperience} years experience',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: Colors.black54,
+                                ),
                               ),
                             ),
                         ],
