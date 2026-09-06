@@ -283,7 +283,7 @@ class _MessagesPageState extends State<MessagesPage> {
                   children: [
                     Text(
                       name,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
                         fontSize: 15,
@@ -292,7 +292,12 @@ class _MessagesPageState extends State<MessagesPage> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
+                    // Wrap: on a narrow phone the status label moves under the
+                    // role chip rather than being clipped next to it.
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -312,16 +317,11 @@ class _MessagesPageState extends State<MessagesPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            _statusLabel(working.status),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: _statusColor(working.status),
-                            ),
+                        Text(
+                          _statusLabel(working.status),
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: _statusColor(working.status),
                           ),
                         ),
                       ],

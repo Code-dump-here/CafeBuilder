@@ -797,7 +797,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
         ),
         const SizedBox(height: 24),
         SizedBox(
-          height: 100,
+          height: 124,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
@@ -944,7 +944,7 @@ class _ProjectOnboardingPageState extends State<ProjectOnboardingPage> {
             Text(
               desc,
               style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 6),

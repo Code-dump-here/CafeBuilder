@@ -413,44 +413,54 @@ class _BatchCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Status, share and origin are badges in a Wrap: together with the
+          // amount they are wider than a phone, so they take a second line
+          // rather than pushing the amount off the card.
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusBg,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _kStatusLabels[batch.status] ?? batch.status,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: statusFg,
-                  ),
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: statusBg,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        _kStatusLabels[batch.status] ?? batch.status,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: statusFg,
+                        ),
+                      ),
+                    ),
+                    if (batch.percentage != null)
+                      Text(
+                        '${formatPercent(batch.percentage!)}%',
+                        style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
+                      ),
+                    // An instalment created by a change order is not part of the
+                    // price originally agreed — saying so stops it reading as a
+                    // batch that appeared from nowhere.
+                    if (batch.changeOrderId != null)
+                      Text(
+                        'from a change order',
+                        style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
+                      ),
+                  ],
                 ),
               ),
-              if (batch.percentage != null) ...[
-                const SizedBox(width: 8),
-                Text(
-                  '${formatPercent(batch.percentage!)}%',
-                  style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
-                ),
-              ],
-              // An instalment created by a change order is not part of the
-              // price originally agreed — saying so stops it reading as a
-              // batch that appeared from nowhere.
-              if (batch.changeOrderId != null) ...[
-                const SizedBox(width: 8),
-                Text(
-                  'from a change order',
-                  style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
-                ),
-              ],
-              const Spacer(),
+              const SizedBox(width: 8),
               Text(
                 formatVnd(batch.amount),
+                textAlign: TextAlign.right,
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -883,7 +893,7 @@ class _ProofSheetState extends State<_ProofSheet> {
                       Expanded(
                         child: Text(
                           _fileName ?? 'Choose a transfer screenshot (optional)',
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
                             fontSize: 13,

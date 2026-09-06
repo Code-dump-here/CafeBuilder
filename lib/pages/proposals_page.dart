@@ -490,10 +490,14 @@ class _ProposalsPageState extends State<ProposalsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // The post title is owner-typed and often longer than the
+                // space left beside the Compare button, so it wraps onto a
+                // second line instead of being cut off mid-word.
                 Text(
                   'Quotations for "${post.title}"',
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                  softWrap: true,
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -598,26 +602,31 @@ class _ProposalsPageState extends State<ProposalsPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // Provider names are free text and can be long;
+                                // two lines beat an ellipsis that hides who the
+                                // applicant actually is.
                                 Text(
                                   apply.providerDisplayName,
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
                                   style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.espresso),
                                 ),
                                 const SizedBox(height: 2),
-                                Row(
+                                // A Wrap, not a Row: on a narrow phone the
+                                // count and the "View Bio" link no longer have
+                                // to share one line — the link drops underneath
+                                // instead of squeezing the count into "1 comp…".
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 4,
+                                  runSpacing: 2,
                                   children: [
-                                    Flexible(
-                                      child: Text(
-                                        '${_completedProjectsCount[apply.serviceProviderProfileId] ?? 0} completed projects',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
-                                      ),
+                                    Text(
+                                      '${_completedProjectsCount[apply.serviceProviderProfileId] ?? 0} completed projects',
+                                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
                                     ),
-                                    const SizedBox(width: 4),
                                     const Text('•', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-                                    const SizedBox(width: 4),
                                     // No InkWell of its own — it sits inside the
                                     // one above and would lead to the same page,
                                     // so nesting them only buys two overlapping
@@ -706,16 +715,20 @@ class _ProposalsPageState extends State<ProposalsPage> {
               const SizedBox(width: 6),
               // Duration is optional on the wire; say so rather than printing
               // a zero the provider never claimed.
-              Text(
-                apply.estimatedDurationDays != null
-                    ? 'Est. Duration: ${apply.estimatedDurationDays} days'
-                    : 'Est. Duration: not stated',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: apply.estimatedDurationDays != null
-                      ? AppColors.espresso
-                      : AppColors.placeholder,
+              // Expanded so the label wraps within the card instead of running
+              // past the right edge on a narrow phone.
+              Expanded(
+                child: Text(
+                  apply.estimatedDurationDays != null
+                      ? 'Est. Duration: ${apply.estimatedDurationDays} days'
+                      : 'Est. Duration: not stated',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: apply.estimatedDurationDays != null
+                        ? AppColors.espresso
+                        : AppColors.placeholder,
+                  ),
                 ),
               ),
             ],

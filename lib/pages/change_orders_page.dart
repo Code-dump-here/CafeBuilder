@@ -560,63 +560,68 @@ class _OrderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Four badges and a price never fit one phone-width line once the
+          // construction item carries a real name, so the badges run in a Wrap
+          // and spill onto extra lines instead of being clipped.
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusBg,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  kChangeOrderStatusLabels[order.status] ?? order.status,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: statusFg,
-                  ),
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: statusBg,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        kChangeOrderStatusLabels[order.status] ?? order.status,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: statusFg,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      kChangeOrderKindLabels[order.kind] ?? order.kind,
+                      style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
+                    ),
+                    if (order.constructionItemName != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          order.constructionItemName!,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: Colors.blueGrey.shade800,
+                          ),
+                        ),
+                      ),
+                    if (order.revisionNo != null)
+                      Text(
+                        'round ${order.revisionNo}',
+                        style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
               Text(
-                kChangeOrderKindLabels[order.kind] ?? order.kind,
-                style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
-              ),
-              if (order.constructionItemName != null) ...[
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.blueGrey.shade50,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      order.constructionItemName!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: Colors.blueGrey.shade800,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              if (order.revisionNo != null) ...[
-                const SizedBox(width: 8),
-                Text(
-                  'round ${order.revisionNo}',
-                  style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
-                ),
-              ],
-              const Spacer(),
-              Text(
                 order.needsPricing
                     ? 'Not priced'
                     : formatVnd(order.amount),
+                textAlign: TextAlign.right,
                 style: GoogleFonts.inter(
                   fontSize: order.needsPricing ? 12 : 15,
                   fontWeight: FontWeight.w700,

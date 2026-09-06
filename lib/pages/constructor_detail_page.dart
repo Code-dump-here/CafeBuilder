@@ -616,7 +616,7 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
                   children: [
                     Text(
                       name,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.espresso),
                     ),
@@ -683,7 +683,7 @@ class _ConstructorDetailPageState extends State<ConstructorDetailPage> {
                 children: [
                   Text(
                     project.projectName,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.espresso),
                   ),

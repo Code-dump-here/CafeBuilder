@@ -406,9 +406,13 @@ class _LogCard extends StatelessWidget {
               if (log.weatherNote != null && log.weatherNote!.isNotEmpty) ...[
                 const Icon(Icons.cloud_outlined, size: 13, color: Colors.black38),
                 const SizedBox(width: 4),
-                Text(
-                  log.weatherNote!,
-                  style: GoogleFonts.inter(fontSize: 11, color: Colors.black45),
+                // The weather note is free text the provider types, so it needs
+                // a bound of its own or it runs off the card.
+                Flexible(
+                  child: Text(
+                    log.weatherNote!,
+                    style: GoogleFonts.inter(fontSize: 11, color: Colors.black45),
+                  ),
                 ),
                 const SizedBox(width: 12),
               ],
@@ -416,7 +420,7 @@ class _LogCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Logged by ${log.createdByName}',
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 11,

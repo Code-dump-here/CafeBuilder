@@ -766,15 +766,17 @@ class AiDesignReportPage extends StatelessWidget {
           children: [
             const Icon(Icons.blur_on_outlined, size: 20, color: AppColors.espresso),
             const SizedBox(width: 8),
-            Text(
-              '3D Layout Visualization',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.espresso,
+            Expanded(
+              child: Text(
+                '3D Layout Visualization',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.espresso,
+                ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             if (hasRealImage)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -873,7 +875,7 @@ class AiDesignReportPage extends StatelessWidget {
                           Flexible(
                             child: Text(
                               z.label,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
                                   fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
