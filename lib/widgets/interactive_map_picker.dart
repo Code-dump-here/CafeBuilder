@@ -46,15 +46,41 @@ class InteractiveMapPicker extends StatefulWidget {
   /// to be dragged onto.
   final ValueChanged<MapPoi>? onPoiTapped;
 
-  /// Asks the parent for a batch of places around a point, because the current
-  /// one has been dragged off the screen.
+  /// Asks the parent for the places around a point, because the pin has moved
+  /// far enough that the ones it was given no longer describe where it is.
   ///
   /// The widget raises this rather than the parent guessing a distance,
-  /// because "have we run out of dots" is a question about the viewport: it
-  /// depends on the zoom and on the size of the box, both of which live here.
-  /// Fires during the drag, so a long drag refills as it goes instead of
-  /// leaving a blank map until the finger comes up.
+  /// because "have the dots stopped answering the pin" is a question about the
+  /// viewport: it depends on the zoom and on the size of the box, both of
+  /// which live here. Fires during the drag, so a long drag refills as it goes
+  /// instead of leaving a stale map until the finger comes up.
+  ///
+  /// Fires *often* — several times a second on a fast drag. The parent is
+  /// expected to answer most of them from a cache and to decide for itself
+  /// which ones are worth a request; see `PoiCache`.
   final void Function(double latitude, double longitude)? onPoisNeeded;
+
+  /// Jumps the pin to wherever the device says it is.
+  ///
+  /// The button is only drawn when this is supplied. Taking the fix — and
+  /// deciding what to say when the answer is "no" — is the parent's job: it
+  /// needs permissions, a settings link and a snack bar, none of which belong
+  /// to a widget whose whole responsibility is drawing tiles.
+  final VoidCallback? onLocateMe;
+
+  /// True while that fix is being taken, which turns the button into a
+  /// spinner. A cold GPS start is slow enough that a button which just sat
+  /// there would read as broken.
+  final bool locating;
+
+  /// The zoom the map is now at, reported on open and after every step.
+  ///
+  /// The parent needs it for the same reason this widget does: distances it
+  /// works in — how close a POI has to be to latch, how far out to look for
+  /// places worth drawing — are only meaningful against the ground currently on
+  /// screen. Without it the parent has to guess, and a guess of 17 is wrong by
+  /// a factor of sixteen at zoom 13.
+  final ValueChanged<int>? onZoomChanged;
 
   const InteractiveMapPicker({
     super.key,
@@ -66,6 +92,9 @@ class InteractiveMapPicker extends StatefulWidget {
     this.latched,
     this.onPoiTapped,
     this.onPoisNeeded,
+    this.onLocateMe,
+    this.locating = false,
+    this.onZoomChanged,
   });
 
   @override
@@ -116,25 +145,73 @@ class _InteractiveMapPickerState extends State<InteractiveMapPicker> {
   /// asked about. Out at Bình Chánh the same ten span 180-506m, and 50m barely
   /// changes which is closest. Scaling the threshold by the batch's own reach
   /// is what makes one rule fit both.
-  static const double _coverageFraction = 0.8;
+  ///
+  /// Every number in this block was loosened once the parent started answering
+  /// from a cache. They used to be sized to ration requests, because an ask
+  /// was a request; now an ask is a lookup over places already fetched and
+  /// only a genuine gap reaches the network, so the question they answer has
+  /// changed from "can we afford to ask" to "has the pin moved far enough for
+  /// the answer to differ". That is a much shorter distance.
+  static const double _coverageFraction = 0.55;
 
-  /// Bounds on that threshold. The floor keeps a dense city block from asking
-  /// every few metres; the ceiling keeps a sparse edge-of-town batch from
-  /// being carried halfway across the province.
-  static const double _minRefreshMetres = 40;
-  static const double _maxRefreshMetres = 400;
+  /// Bounds on that threshold, as a share of the ground currently on screen.
+  ///
+  /// Density decides inside the band; the band itself moves with the zoom.
+  /// Fixed metre bounds could not do this job, because the same distance means
+  /// completely different things at different zooms: the old 18m floor is a
+  /// third of the screen at zoom 19 and two pixels at zoom 13, so it asked far
+  /// too rarely at one end and on every frame at the other. Expressed against
+  /// the viewport, both edges say something that stays true — never refresh
+  /// more often than the map has visibly moved, never let it go more than half
+  /// a screen stale.
+  ///
+  /// At the zoom the picker opens at these work out to 17m and 70m, so the
+  /// behaviour downtown is what it was before; it is the zooms either side that
+  /// change.
+  static const double _minViewportFraction = 0.12;
+  static const double _maxViewportFraction = 0.5;
 
-  /// Used when the batch came back empty, so there is no reach to scale from.
-  /// Deliberately long: nothing was found here, and asking again forty metres
-  /// later is unlikely to change that.
-  static const double _emptyBatchRefreshMetres = 200;
+  /// A floor under the floor, in metres, for the far end of the zoom range.
+  ///
+  /// At zoom 19 twelve percent of the screen is 4m, and the cache vouches for
+  /// at least 45m around every point it has answered — so asking every 4m
+  /// cannot produce a request, it only re-samples the same disc more finely.
+  /// Twelve metres still gives three refreshes per screen crossed at that
+  /// zoom, which is more than enough to read as tracking.
+  static const double _minRefreshMetres = 12;
 
-  /// Floor on the gap between refills. A fling across the city should cost a
-  /// few requests, not one per frame.
-  static const Duration _minRefillInterval = Duration(milliseconds: 600);
+  /// Floor on the gap between asks. Short, because an ask is now local work
+  /// and the point is to keep up with the drag; long enough that a fling
+  /// re-ranks a few times a second rather than on every frame.
+  static const Duration _minRefillInterval = Duration(milliseconds: 100);
 
-  /// Floor on the spread used to normalise distances. See [_rankPois].
-  static const double _minSpanMetres = 60;
+  /// Nothing is asked twice from within this many *pixels* of the last ask,
+  /// whatever else says it should be.
+  ///
+  /// Pixels rather than metres because what it guards against is a pixel
+  /// phenomenon. As a fixed 8 metres it was a third of the screen at zoom 19 —
+  /// a brake so harsh it hid the drag — and 0.85 of a pixel at zoom 13, where
+  /// it was no brake at all.
+  ///
+  /// This is really the brake on the *empty-box* trigger, which by design has
+  /// no distance gate: a zoom step moves the pin nowhere and must still be able
+  /// to refill a box it has just emptied. Without a guard here that trigger
+  /// runs at the throttle's limit for as long as the box stays bare, which at
+  /// zoom 19 — where the box shows 35m and the nearest place is often outside
+  /// it — is most of a drag. Sized just under the ~29px the distance floor
+  /// works out to at every zoom, so it never gets in the way of the other
+  /// trigger.
+  static const double _minAskPixels = 24;
+
+  /// Floor on the spread used to normalise distances, as a share of the ground
+  /// on screen. See [_rankPois].
+  ///
+  /// A little under half the visible ground: differences smaller than that are
+  /// not worth drawing a gradient over. Viewport-relative for the same reason
+  /// as the band above — as a fixed 60m it was the whole world at zoom 19,
+  /// where the box only shows 35m and every dot came out equally prominent
+  /// however much nearer one of them was.
+  static const double _minSpanFraction = 0.45;
 
   /// How far the furthest dot shrinks and fades relative to the nearest.
   static const double _minDotScale = 0.62;
@@ -229,7 +306,7 @@ class _InteractiveMapPickerState extends State<InteractiveMapPicker> {
     // and normalising both to 0..1 would tell it as though it were. Under the
     // floor the dots stay bunched near full prominence, which is the truth —
     // they are all equally close.
-    final span = math.max(furthest - nearest, _minSpanMetres);
+    final span = math.max(furthest - nearest, _viewportMetres * _minSpanFraction);
 
     final ranked = [
       for (var i = 0; i < pois.length; i++)
@@ -261,12 +338,26 @@ class _InteractiveMapPickerState extends State<InteractiveMapPicker> {
     _maybeAskForPois();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    // After the first frame rather than during it, because the parent will
+    // setState on this and cannot do that while it is still building.
+    final report = widget.onZoomChanged;
+    if (report != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) report(_zoom);
+      });
+    }
+  }
+
   void _stepZoom(int by) {
     final next = (_zoom + by).clamp(_minZoom, _maxZoom);
     if (next == _zoom) return;
-    // Zooming keeps the centre fixed, so the coordinate is unchanged and the
-    // parent needs no notification — only the tiles differ.
+    // Zooming keeps the centre fixed, so the coordinate is unchanged — but the
+    // scale it should be read at is not, and the parent measures in metres.
     setState(() => _zoom = next);
+    widget.onZoomChanged?.call(_zoom);
     // Zooming in can empty the box just as effectively as dragging out of it.
     _maybeAskForPois();
   }
@@ -277,14 +368,33 @@ class _InteractiveMapPickerState extends State<InteractiveMapPicker> {
   double get _metresSinceBatch =>
       PlacesService.metresBetween(_batchLat, _batchLng, _lat, _lng);
 
+  /// The ground the map is showing across its shorter side, in metres.
+  ///
+  /// The shorter side rather than the wider one because a drag can go any
+  /// direction, and the shorter side is the one it crosses first.
+  double get _viewportMetres =>
+      math.min(_boxWidth, widget.height) *
+      PlacesService.metresPerPixel(_zoom, _lat);
+
   /// How far the pin may travel before the batch is worth replacing.
   ///
-  /// Scaled by how far this particular batch actually reaches: the distance
-  /// from where it was queried to the furthest place it came back with. See
-  /// [_coverageFraction] for why one fixed number cannot serve both a city
-  /// block and the edge of the province.
+  /// Two questions, answered together. *Is this still the right set of places?*
+  /// is a density question, scaled by how far this particular batch reaches —
+  /// see [_coverageFraction]. *Has the map visibly moved?* is a viewport
+  /// question, and the band from [_minViewportFraction] to
+  /// [_maxViewportFraction] is where it enters.
+  ///
+  /// An empty batch takes the ceiling: with nothing to measure a reach from,
+  /// half a screen is the only honest answer. That branch used to be
+  /// unreachable — the empty-box trigger in [_maybeAskForPois] short-circuited
+  /// on the same list and asked regardless of distance — so a drag through a
+  /// neighbourhood with no places in it ran at the throttle's limit.
   double get _refreshDistanceMetres {
-    if (widget.pois.isEmpty) return _emptyBatchRefreshMetres;
+    final viewport = _viewportMetres;
+    final floor =
+        math.max(viewport * _minViewportFraction, _minRefreshMetres);
+    final ceiling = math.max(viewport * _maxViewportFraction, floor);
+    if (widget.pois.isEmpty) return ceiling;
 
     var reach = 0.0;
     for (final poi in widget.pois) {
@@ -292,7 +402,7 @@ class _InteractiveMapPickerState extends State<InteractiveMapPicker> {
           _batchLat, _batchLng, poi.latitude, poi.longitude);
       if (d > reach) reach = d;
     }
-    return (reach * _coverageFraction).clamp(_minRefreshMetres, _maxRefreshMetres);
+    return (reach * _coverageFraction).clamp(floor, ceiling);
   }
 
   /// Dots currently inside the box.
@@ -319,28 +429,44 @@ class _InteractiveMapPickerState extends State<InteractiveMapPicker> {
   /// what travel cannot: zooming in moves the pin nowhere at all and can still
   /// leave the box without a single dot in it.
   ///
-  /// Two brakes sit in front of both triggers. Nothing is asked twice inside
-  /// [_minRefillInterval], so a fling costs a handful of requests rather than
-  /// one per frame; and nothing is asked twice from within [_minRefreshMetres]
-  /// of the last ask, so a genuinely empty neighbourhood — where no batch will
-  /// ever fill the box — is not asked the same question from the same spot.
+  /// This is deliberately eager, and it is the parent that decides what an ask
+  /// costs. Over ground already in the cache the answer is a lookup, and the
+  /// reward for asking is the dots re-ranking against places the last reply
+  /// never contained; over new ground the parent spends a request, at roughly
+  /// the rate this used to ask at directly.
+  ///
+  /// Two brakes still sit in front of both triggers. Nothing is asked twice
+  /// inside [_minRefillInterval], so a fling re-ranks a few times a second
+  /// rather than on every frame; and nothing is asked twice from within
+  /// [_minAskMetres] of the last ask, so a genuinely empty neighbourhood —
+  /// where no batch will ever fill the box — is not asked the same question
+  /// from the same spot.
   void _maybeAskForPois() {
     final ask = widget.onPoisNeeded;
     if (ask == null || _boxWidth <= 0) return;
 
-    if (_metresSinceBatch < _refreshDistanceMetres && _visiblePoiCount > 0) {
-      return;
-    }
+    final stale = _metresSinceBatch >= _refreshDistanceMetres;
+
+    // The second trigger catches what travel cannot: zooming in moves the pin
+    // nowhere at all and can still push every dot out of the box. Written as
+    // "had dots and lost them" rather than "has no dots", because a batch that
+    // was empty to begin with satisfies the latter forever — which is what made
+    // the distance rule unreachable for empty ground.
+    final emptied = widget.pois.isNotEmpty && _visiblePoiCount == 0;
+
+    if (!stale && !emptied) return;
 
     final now = DateTime.now();
     if (now.difference(_askedAt) < _minRefillInterval) return;
 
+    final minAskMetres =
+        _minAskPixels * PlacesService.metresPerPixel(_zoom, _lat);
     final askedLat = _askedLat;
     final askedLng = _askedLng;
     if (askedLat != null &&
         askedLng != null &&
         PlacesService.metresBetween(askedLat, askedLng, _lat, _lng) <
-            _minRefreshMetres) {
+            minAskMetres) {
       return;
     }
 
@@ -348,6 +474,19 @@ class _InteractiveMapPickerState extends State<InteractiveMapPicker> {
     _askedLng = _lng;
     _askedAt = now;
     _askPending = true;
+
+    // Re-anchored here, not only when a different set of places comes back.
+    //
+    // The parent recomputes what to draw around this exact point on every ask,
+    // whether or not the membership changes — and when it does not change it
+    // skips the rebuild, so the batch identity stays the same and
+    // didUpdateWidget never fires. Anchoring there alone meant that the moment
+    // the served set settled, the anchor froze, [_metresSinceBatch] grew
+    // without bound, and the threshold stopped gating anything: every frame
+    // asked, held back only by the throttle above.
+    _batchLat = _lat;
+    _batchLng = _lng;
+
     ask(_lat, _lng);
   }
 
@@ -405,7 +544,7 @@ class _InteractiveMapPickerState extends State<InteractiveMapPicker> {
                   // dot it is sitting on top of.
                   ..._buildPoiDots(width),
                   _buildCentrePin(),
-                  _buildZoomButtons(),
+                  _buildMapButtons(),
                   _buildHint(),
                   _buildAttribution(),
                 ],
@@ -666,21 +805,39 @@ class _InteractiveMapPickerState extends State<InteractiveMapPicker> {
     );
   }
 
-  Widget _buildZoomButtons() {
+  Widget _buildMapButtons() {
     return Positioned(
       right: 8,
       top: 8,
       child: Column(
         children: [
-          _zoomButton(Icons.add, 'Zoom in', () => _stepZoom(1), _zoom < _maxZoom),
+          _mapButton(Icons.add, 'Zoom in', () => _stepZoom(1), _zoom < _maxZoom),
           const SizedBox(height: 6),
-          _zoomButton(Icons.remove, 'Zoom out', () => _stepZoom(-1), _zoom > _minZoom),
+          _mapButton(Icons.remove, 'Zoom out', () => _stepZoom(-1), _zoom > _minZoom),
+          if (widget.onLocateMe != null) ...[
+            // A wider gap than the one holding the zoom pair together, so this
+            // reads as a different control rather than a third zoom step.
+            const SizedBox(height: 14),
+            _mapButton(
+              Icons.my_location,
+              'Move the pin to where I am',
+              widget.onLocateMe!,
+              !widget.locating,
+              busy: widget.locating,
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _zoomButton(IconData icon, String tooltip, VoidCallback onTap, bool enabled) {
+  Widget _mapButton(
+    IconData icon,
+    String tooltip,
+    VoidCallback onTap,
+    bool enabled, {
+    bool busy = false,
+  }) {
     return Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -693,11 +850,25 @@ class _InteractiveMapPickerState extends State<InteractiveMapPicker> {
           child: SizedBox(
             width: 32,
             height: 32,
-            child: Icon(
-              icon,
-              size: 18,
-              color: enabled ? AppColors.espresso : AppColors.outlineVariant,
-            ),
+            // The spinner replaces the icon in the same 32px box, so the
+            // button neither resizes nor shifts the ones above it while a fix
+            // is being taken — which can be a slow twelve seconds indoors.
+            child: busy
+                ? const Center(
+                    child: SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.espresso,
+                      ),
+                    ),
+                  )
+                : Icon(
+                    icon,
+                    size: 18,
+                    color: enabled ? AppColors.espresso : AppColors.outlineVariant,
+                  ),
           ),
         ),
       ),

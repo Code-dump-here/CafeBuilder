@@ -14,6 +14,11 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<!-- Shown verbatim in the iOS permission prompt, so it says what the app
+	     wants it for rather than that it wants it. Only used while the picker
+	     is open; there is no background location in this app. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Used to drop the map pin on where you are, so you can pick your cafe's address without typing it.</string>
 	<key>CFBundleName</key>
 	<string>cafe_builder</string>
 	<key>CFBundlePackageType</key>

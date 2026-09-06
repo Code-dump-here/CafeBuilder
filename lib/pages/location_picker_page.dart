@@ -5,7 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/place_location.dart';
+import '../services/device_location.dart';
+import '../services/address_cache.dart';
+import '../services/local_store.dart';
 import '../services/places_service.dart';
+import '../services/poi_cache.dart';
+import '../services/poi_tiles.dart';
 import '../theme/app_colors.dart';
 import '../widgets/interactive_map_picker.dart';
 import '../widgets/map_tile_preview.dart';
@@ -65,10 +70,25 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
   bool _reversing = false;
 
   /// Named places near the current map centre, drawn as latch targets.
+  ///
+  /// The nearest few of everything [PoiCache] has ever seen, not the contents
+  /// of the last reply — so they keep up with the pin over ground already
+  /// covered instead of waiting on a round trip. See [_refreshPois].
   List<MapPoi> _pois = const [];
 
   /// The POI the pin has latched onto, if any.
   MapPoi? _latched;
+
+  /// A fix is being taken for the "move the pin to where I am" button.
+  bool _locating = false;
+
+  /// A fix good only to this many metres is worth warning about.
+  ///
+  /// Anything from a real GPS lock is a few metres. Numbers like this come
+  /// from a cell tower or a browser guessing from the network, which can be a
+  /// suburb out — and the pin would sit there looking exactly as confident as
+  /// a good one. The user is about to save it as their cafe's address.
+  static const double _roughFixMetres = 200;
 
   /// Where the user last pressed Undo. Latching is skipped while the pin is
   /// still at that exact point, so it cannot snap straight back onto the POI
@@ -96,10 +116,34 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
     // Load latch targets for wherever the map opens, so the dots are there
     // before the first drag rather than appearing a beat afterwards.
     final start = widget.initial;
-    _refreshPois(
-      start?.latitude ?? PlacesService.defaultProximityLat,
-      start?.longitude ?? PlacesService.defaultProximityLng,
+    final startLat = start?.latitude ?? PlacesService.defaultProximityLat;
+    final startLng = start?.longitude ?? PlacesService.defaultProximityLng;
+
+    // Seeded straight from the cache rather than through [_refreshPois],
+    // because that path calls setState and this runs inside the first build.
+    // Reopening the picker on a neighbourhood already looked at now starts
+    // with its dots up instead of blank until a round trip lands.
+    _poiAnchorLat = startLat;
+    _poiAnchorLng = startLng;
+    _pois = PoiCache.instance.around(
+      startLat,
+      startLng,
+      limit: _poiDrawCount,
+      withinMetres: _serveRadiusMetres,
     );
+    _refreshPois(startLat, startLng);
+
+    // Bring back what earlier sessions learned, then redraw with it. Both are
+    // fire-and-forget and idempotent: the dots come from whatever is in hand
+    // each time the map asks, so a cache landing a few milliseconds later just
+    // shows up on the next ask. Doing it here rather than in main() keeps app
+    // startup out of it entirely.
+    unawaited(
+      PoiCache.instance.restore(const SharedPreferencesStore()).then((_) {
+        if (mounted) _drawPoisNear(_poiAnchorLat ?? startLat, _poiAnchorLng ?? startLng);
+      }),
+    );
+    unawaited(AddressCache.instance.restore(const SharedPreferencesStore()));
   }
 
   @override
@@ -179,12 +223,109 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
     _refreshPois(suggestion.latitude, suggestion.longitude);
   }
 
+  /// Jump the pin to where the device says it is.
+  ///
+  /// Treated as a hand-placed pin once it lands, because that is what it is:
+  /// a point the user pointed at, not a search result whose text has to keep
+  /// matching. The address is then filled in by exactly the lookup a drag
+  /// uses — so a fix that lands on a shop latches onto it and takes its name,
+  /// which is usually a better answer than the street the coordinates alone
+  /// would resolve to.
+  Future<void> _useMyLocation() async {
+    if (_locating) return;
+    setState(() => _locating = true);
+
+    final result = await DeviceLocation.current();
+    if (!mounted) return;
+    setState(() => _locating = false);
+
+    switch (result) {
+      case DeviceLocationFailed(:final reason):
+        _reportLocationFailure(reason);
+
+      case DeviceLocationFound(
+          :final latitude,
+          :final longitude,
+          :final accuracyMetres
+        ):
+        // Whatever was resolving belongs to the pin we are about to replace.
+        _settle.cancel();
+        FocusScope.of(context).unfocus();
+
+        setState(() {
+          _pinFromMap = true;
+          // The map has to be live for the new pin to be adjustable, and a
+          // fix is worth adjusting far more often than a searched address is.
+          _adjusting = true;
+          _suggestions = const [];
+          _suppressLatchAt = null;
+          // The old latch belonged to somewhere else entirely.
+          _latched = null;
+          _selected = PickedLocation(
+            // Held until the lookup below replaces it, so the panel does not
+            // flash empty — the same thing a drag does.
+            address: _selected?.address ?? '',
+            latitude: latitude,
+            longitude: longitude,
+          );
+        });
+
+        if (accuracyMetres > _roughFixMetres) {
+          _say('Rough fix — good to about ${accuracyMetres.round()}m. Drag the '
+              'map to put the pin exactly.');
+        }
+
+        await _reverseGeocodePin(latitude, longitude);
+    }
+  }
+
+  /// Say what went wrong in terms of what to do about it.
+  ///
+  /// Every one of these ends by pointing back at the map, because none of them
+  /// is a dead end: placing the pin by hand was the original way in and is
+  /// still there. A location button that fails silently, or that fails and
+  /// leaves the user with nothing, is worse than no button.
+  void _reportLocationFailure(LocationFailure reason) {
+    switch (reason) {
+      case LocationFailure.serviceDisabled:
+        _say('Location is switched off on this device. Turn it on, or drag the '
+            'map to place the pin.');
+      case LocationFailure.permissionDenied:
+        _say('Without location permission the pin has to go on by hand. Tap the '
+            'button again to be asked once more.');
+      case LocationFailure.permissionDeniedForever:
+        _say(
+          'Location is blocked for this app. Drag the map to place the pin, or '
+          'allow it in settings.',
+          action: SnackBarAction(
+            label: 'Settings',
+            onPressed: () {
+              DeviceLocation.openSettings();
+            },
+          ),
+        );
+      case LocationFailure.timedOut:
+        _say('No fix yet — that usually means indoors. Try again, or drag the '
+            'map to place the pin.');
+      case LocationFailure.unavailable:
+        _say('This device cannot report its location. Drag the map to place the '
+            'pin.');
+    }
+  }
+
+  void _say(String message, {SnackBarAction? action}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message), action: action));
+  }
+
   /// Fires continuously while the map is dragged.
   ///
   /// The coordinates are committed immediately — they are what the user is
   /// looking at, and confirming mid-lookup should still save the right point.
   /// Only the address lookup waits for the drag to settle.
   void _onPinMoved(double latitude, double longitude) {
+    _trackMotion(latitude, longitude);
     setState(() {
       _pinFromMap = true;
       // Any real movement re-enables latching.
@@ -219,13 +360,16 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
   MapPoi? _latchTarget(double latitude, double longitude) {
     if (_pois.isEmpty) return null;
 
-    const zoom = 17; // The zoom the picker opens at; the radius is tuned to it.
-    final centre = PlacesService.worldPixel(latitude, longitude, zoom);
+    // The zoom the map is actually at, not the one it opened at. Projecting at
+    // a fixed 17 while the user was looking at 13 made the radius sixteen times
+    // too generous in ground terms — the pin would snap onto a shop most of a
+    // kilometre away, and the address it saved would be that shop's.
+    final centre = PlacesService.worldPixel(latitude, longitude, _mapZoom);
 
     MapPoi? best;
     var bestDistance = double.infinity;
     for (final poi in _pois) {
-      final p = PlacesService.worldPixel(poi.latitude, poi.longitude, zoom);
+      final p = PlacesService.worldPixel(poi.latitude, poi.longitude, _mapZoom);
       final dx = p.x - centre.x;
       final dy = p.y - centre.y;
       final distance = math.sqrt(dx * dx + dy * dy);
@@ -251,7 +395,49 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
       _latched = poi;
       _reversing = false;
       _selected = poi.toLocation();
-      _searchCtrl.text = poi.address;
+      // The name straight away — it is what the user aimed at, and it is
+      // already known. The street address follows a moment later.
+      _searchCtrl.text = poi.name;
+    });
+    unawaited(_resolveLatchedAddress(poi));
+  }
+
+  /// Fill in the street address of a place the pin has snapped to.
+  ///
+  /// The map tiles carry a place's name and its kind but not "123 Lê Lợi, Bến
+  /// Nghé, Quận 1", so this is the one geocoding request the tile path still
+  /// spends. It is spent at the moment the user has actually chosen something,
+  /// rather than fourteen times a kilometre on the way there — and it goes
+  /// through [AddressCache], so snapping back to the same shop is free.
+  ///
+  /// Failure leaves the name in place, which is still true and still useful.
+  Future<void> _resolveLatchedAddress(MapPoi poi) async {
+    var line =
+        AddressCache.instance.lookup(poi.latitude, poi.longitude)?.address;
+
+    if (line == null) {
+      final resolved =
+          await PlacesService.reverseGeocode(poi.latitude, poi.longitude);
+      if (resolved == null) return;
+      AddressCache.instance.record(
+          poi.latitude, poi.longitude, resolved.address);
+      line = resolved.address;
+    }
+
+    // The user may have latched onto something else while this was in flight.
+    if (!mounted || _latched?.id != poi.id) return;
+
+    // The geocoder's line usually already opens with the place itself; when it
+    // does not, the name goes in front, because the name is what was aimed at.
+    final full = line.startsWith(poi.name) ? line : '${poi.name}, $line';
+    setState(() {
+      _selected = PickedLocation(
+        address: full,
+        latitude: poi.latitude,
+        longitude: poi.longitude,
+        poiName: poi.name,
+      );
+      _searchCtrl.text = full;
     });
   }
 
@@ -272,56 +458,282 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
     );
   }
 
-  /// Counts every batch asked for, so a slow reply cannot overwrite a fast one
-  /// that was asked for later.
+  /// How many dots the map is given at once.
   ///
-  /// This matters now that the map refills during a drag: several requests can
-  /// be in flight at once, they do not necessarily come back in order, and the
-  /// map showing places from a point the pin has long since left is worse than
-  /// showing none.
-  int _poiRequests = 0;
+  /// Close to the ten a single reply used to carry, because the sizing and
+  /// fading were tuned against a batch that size and twenty dots is a crowd,
+  /// not a gradient. The difference is that these are the nearest twelve of
+  /// everything seen so far rather than the ten one query happened to return.
+  static const int _poiDrawCount = 12;
 
-  /// The point the most recent batch was asked for, and that request while it
-  /// is still in the air.
-  double? _poiFetchLat;
-  double? _poiFetchLng;
+  /// The map's height, shared by the widget that draws it and the sums below
+  /// that reason about how much ground it shows.
+  static const double _mapHeight = 240;
+
+  /// The zoom the map is at, reported by the picker.
+  ///
+  /// Starts at the zoom the picker opens on and is corrected before the first
+  /// frame is interacted with, so nothing here is ever reasoning about a scale
+  /// the user is not looking at.
+  int _mapZoom = 17;
+
+  /// How far out to look for places worth drawing.
+  ///
+  /// Three screens' worth, so the dots are already in hand when the map moves
+  /// rather than arriving after it. As a fixed 2km this was far too tight below
+  /// about zoom 13, where a single swipe crosses 3.4km: the pin left the served
+  /// disc in one gesture, the map went bare, and the empty-box trigger then ran
+  /// at the throttle's limit over ground nothing had been asked about.
+  ///
+  /// The floor matters at the other end — at zoom 19 three screens is barely a
+  /// hundred metres, which is too few places to rank a gradient over.
+  double get _serveRadiusMetres {
+    final onScreen =
+        _mapHeight * PlacesService.metresPerPixel(_mapZoom, _poiAnchorLat ?? 0);
+    return math.max(500.0, onScreen * 3);
+  }
+
+  /// The point the dots were last drawn around — where the picker believes the
+  /// pin is. A reply landing after the pin has moved on is redrawn against
+  /// this rather than against where it was asked from.
+  double? _poiAnchorLat;
+  double? _poiAnchorLng;
+
+  /// The one request allowed to be in the air at a time.
+  ///
+  /// **This is the rate limiter, not a tidiness measure.** Do not remove it to
+  /// simplify something. It is worth several times more than any of the
+  /// distance thresholds:
+  ///
+  ///   * It caps the request rate at one per round trip — three to five a
+  ///     second — however fast the map asks. During a hard drag it, rather
+  ///     than any distance rule, is the binding constraint.
+  ///   * It *drops* rather than queues, and the reply already in the air
+  ///     almost always ends up vouching for the points that were dropped, so
+  ///     the drops cost no coverage.
+  ///   * It serialises the [PoiCache.covers] decisions. Coverage is only
+  ///     learned when a reply is filed, so parallel requests are blind to each
+  ///     other: three in flight at once would record three overlapping discs
+  ///     where one would have done. Without this slot the ask rate becomes the
+  ///     request rate, roughly tripling sustained cost over new ground.
+  ///
+  /// It has a second job as a rendezvous for the settle — see the `wait`
+  /// parameter on [_refreshPois]. The settle fires 500ms after the last
+  /// movement and a refill was usually asked for under 100ms before the finger
+  /// lifted, so that request is typically still in the air; waiting on it
+  /// rather than starting another saves about one request per settle, which
+  /// over a session is more than the entire refresh cadence is worth.
   Future<void>? _poiFetchInFlight;
 
-  /// Close enough to count as the same query. The map moves in fractions of a
-  /// metre per frame, and the geocoder cannot tell two points this close apart.
-  static const double _poiFetchSameSpotMetres = 5;
+  /// How long that one slot may be held.
+  ///
+  /// Only matters because the slot is exclusive: before, a wedged connection
+  /// held up nothing, since the next point simply started its own request.
+  /// Now it would hold up every one of them, and the dots would quietly stop
+  /// learning anything new for the rest of the session.
+  static const Duration _poiFetchTimeout = Duration(seconds: 8);
 
-  Future<void> _refreshPois(double latitude, double longitude) async {
-    final lastLat = _poiFetchLat;
-    final lastLng = _poiFetchLng;
-    if (lastLat != null &&
-        lastLng != null &&
-        PlacesService.metresBetween(lastLat, lastLng, latitude, longitude) <
-            _poiFetchSameSpotMetres) {
-      // This spot has already been asked about. Wait on that answer instead of
-      // paying for the same one twice: the settle always lands on the point the
-      // drag's last refill just covered, so this is every drag, not an edge
-      // case. Awaiting rather than returning matters — the caller reads _pois
-      // straight afterwards to decide what to latch onto.
+  /// Draw what is already known about a point, and go to the network only if
+  /// that is nothing.
+  ///
+  /// The first half is synchronous and is the whole reason the cache exists:
+  /// over ground the picker has already covered, the dots re-rank in the same
+  /// frame the map moved, with nothing in flight.
+  ///
+  /// [wait] insists on an answer for this exact point, queueing behind
+  /// anything already in the air. The settle passes it, because its reply
+  /// decides what the pin latches onto; a mid-drag refill does not, because a
+  /// dot arriving one refill late is invisible and a queued request is not
+  /// free.
+  Future<void> _refreshPois(
+    double latitude,
+    double longitude, {
+    bool wait = false,
+  }) async {
+    _poiAnchorLat = latitude;
+    _poiAnchorLng = longitude;
+    _drawPoisNear(latitude, longitude);
+
+    if (_poiFetchInFlight != null) {
+      if (!wait) return;
       await _poiFetchInFlight;
-      return;
+      if (!mounted) return;
+      // That reply may well have covered this point; if it did, there is
+      // nothing left to ask.
+      if (_poiFetchInFlight != null) return;
     }
 
-    _poiFetchLat = latitude;
-    _poiFetchLng = longitude;
+    final wanted = _tilesWanted(latitude, longitude);
+    if (wanted.isEmpty) return;
 
-    final token = ++_poiRequests;
-    final request = PlacesService.nearbyPois(latitude, longitude);
+    // One at a time, nearest first; the next ask picks up the next one. That
+    // serialisation is the rate limit — see [_poiFetchInFlight].
+    final request = _fetchTile(wanted.first);
     _poiFetchInFlight = request;
-    final found = await request;
-    if (!mounted || token != _poiRequests) return;
-    setState(() => _pois = found);
+    await request;
+  }
+
+  /// The tiles this pin wants that are not already held, nearest first.
+  ///
+  /// Usually none, because a tile is 2.4km across and placing one pin rarely
+  /// leaves it. Occasionally two, when the pin sits near a boundary and the
+  /// side the user is dragging towards would otherwise be bare.
+  List<TileKey> _tilesWanted(double latitude, double longitude) {
+    final cache = PoiCache.instance;
+    final wanted = [
+      for (final key
+          in PoiTiles.tilesNear(latitude, longitude, _serveRadiusMetres))
+        if (!cache.covers(key)) key,
+    ];
+
+    // Prefetch, at the end of the queue. This does not add a request — it aims
+    // one. A tile the drag is heading into is a tile that will be asked for a
+    // second later anyway; fetching it now is the difference between the dots
+    // being there when the pin arrives and appearing after it.
+    final ahead = _headingTowards();
+    if (ahead != null) {
+      final key = PoiTiles.tileFor(ahead.latitude, ahead.longitude);
+      if (!cache.covers(key) && !wanted.contains(key)) wanted.add(key);
+    }
+    return wanted;
+  }
+
+  /// Fetch one tile and file it.
+  ///
+  /// The tile is filed against its own rectangle rather than against the pin,
+  /// which is what retired the request-token bookkeeping this used to need: a
+  /// slow reply arriving after a faster one cannot show places from somewhere
+  /// the pin has left, because what gets drawn is always recomputed around the
+  /// pin afterwards.
+  Future<void> _fetchTile(TileKey key) async {
+    try {
+      final places = await PoiTiles.fetch(key).timeout(_poiFetchTimeout);
+      // Null means the tile could not be had. Filing that as an empty tile
+      // would claim a 2.4km rectangle nobody has seen — and now that the cache
+      // survives restarts, it would keep claiming it tomorrow.
+      if (places != null) PoiCache.instance.recordTile(key, places);
+    } on TimeoutException {
+      // Deliberately not recorded, for the same reason. Releasing the slot is
+      // enough; the next ask tries again.
+    } finally {
+      // Cleared in the same turn the tile was filed, so anyone waiting on this
+      // request wakes to a cache that already holds it and a slot that is
+      // genuinely free.
+      _poiFetchInFlight = null;
+    }
+
+    if (!mounted) return;
+    final centre = PoiTiles.centreOf(key);
+    _drawPoisNear(
+      _poiAnchorLat ?? centre.latitude,
+      _poiAnchorLng ?? centre.longitude,
+    );
+  }
+
+  // ── Where the drag is going ─────────────────────────────────────────────
+
+  double? _lastMoveLat;
+  double? _lastMoveLng;
+  DateTime? _lastMoveAt;
+
+  /// Smoothed pin velocity, in degrees per second.
+  double _velocityLat = 0;
+  double _velocityLng = 0;
+
+  /// How far ahead of the pin to look when choosing which tile to spend the
+  /// next request on. About the length of a deliberate swipe.
+  static const double _lookaheadSeconds = 1.5;
+
+  /// Below this the drag is not going anywhere worth anticipating — and a tile
+  /// is 2.4km across, so a short nudge cannot leave the one already held.
+  static const double _minLookaheadMetres = 300;
+
+  /// And above this a fling would project across the province.
+  static const double _maxLookaheadMetres = 3000;
+
+  /// A gap longer than this is a new gesture, not a continuation of one.
+  static const double _motionGapSeconds = 0.25;
+
+  void _trackMotion(double latitude, double longitude) {
+    final at = DateTime.now();
+    final previousLat = _lastMoveLat;
+    final previousLng = _lastMoveLng;
+    final previousAt = _lastMoveAt;
+
+    if (previousLat != null && previousLng != null && previousAt != null) {
+      final seconds = at.difference(previousAt).inMicroseconds / 1000000;
+      if (seconds > 0 && seconds < _motionGapSeconds) {
+        // Smoothed, because one frame's delta is noisy enough to point the
+        // prefetch at the wrong neighbour.
+        const smoothing = 0.35;
+        _velocityLat = _velocityLat * (1 - smoothing) +
+            ((latitude - previousLat) / seconds) * smoothing;
+        _velocityLng = _velocityLng * (1 - smoothing) +
+            ((longitude - previousLng) / seconds) * smoothing;
+      } else {
+        _stopTracking();
+      }
+    }
+
+    _lastMoveLat = latitude;
+    _lastMoveLng = longitude;
+    _lastMoveAt = at;
+  }
+
+  void _stopTracking() {
+    _velocityLat = 0;
+    _velocityLng = 0;
+  }
+
+  /// Where the pin will be shortly, if it is going anywhere in particular.
+  ({double latitude, double longitude})? _headingTowards() {
+    if (_velocityLat == 0 && _velocityLng == 0) return null;
+    final fromLat = _lastMoveLat;
+    final fromLng = _lastMoveLng;
+    if (fromLat == null || fromLng == null) return null;
+
+    var toLat = fromLat + _velocityLat * _lookaheadSeconds;
+    var toLng = fromLng + _velocityLng * _lookaheadSeconds;
+
+    final metres =
+        PlacesService.metresBetween(fromLat, fromLng, toLat, toLng);
+    if (metres < _minLookaheadMetres) return null;
+    if (metres > _maxLookaheadMetres) {
+      final scale = _maxLookaheadMetres / metres;
+      toLat = fromLat + (toLat - fromLat) * scale;
+      toLng = fromLng + (toLng - fromLng) * scale;
+    }
+    return (latitude: toLat, longitude: toLng);
+  }
+
+  void _drawPoisNear(double latitude, double longitude) {
+    final next = PoiCache.instance.around(
+      latitude,
+      longitude,
+      limit: _poiDrawCount,
+      withinMetres: _serveRadiusMetres,
+    );
+    // Membership only. The map re-ranks against the live pin on every frame,
+    // so the same places in a different order is not a reason to rebuild the
+    // page — and during a drag that order changes constantly.
+    if (_samePlaces(next, _pois)) return;
+    setState(() => _pois = next);
+  }
+
+  static bool _samePlaces(List<MapPoi> a, List<MapPoi> b) {
+    if (a.length != b.length) return false;
+    final ids = {for (final place in b) place.id};
+    return a.every((place) => ids.contains(place.id));
   }
 
   Future<void> _reverseGeocodePin(double latitude, double longitude) async {
+    // The finger is off the map; there is no direction to anticipate any more.
+    _stopTracking();
     // Refresh the latch targets for wherever the map now sits, then check
-    // whether the pin came to rest on one of them.
-    await _refreshPois(latitude, longitude);
+    // whether the pin came to rest on one of them. This one waits: what it
+    // finds decides what the pin snaps to, and latching against a half-filled
+    // cache would miss the shop the user aimed at.
+    await _refreshPois(latitude, longitude, wait: true);
     if (!mounted) return;
 
     final suppressed = _suppressLatchAt;
@@ -337,9 +749,29 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
 
     setState(() => _latched = null);
 
+    // Somewhere already asked about answers instantly and costs nothing. This
+    // is the common case rather than an edge one: adjusting a pin means
+    // nudging it and dragging it back, and every pause on the way is a settle
+    // that used to spend its own request.
+    final known = AddressCache.instance.lookup(latitude, longitude);
+    if (known != null) {
+      setState(() {
+        _reversing = false;
+        _selected = known;
+        _searchCtrl.text = known.address;
+      });
+      return;
+    }
+
     setState(() => _reversing = true);
     final resolved = await PlacesService.reverseGeocode(latitude, longitude);
     if (!mounted) return;
+
+    // Only a real answer is filed. reverseGeocode returns null both when it
+    // fails and when nothing matched, and neither is worth remembering.
+    if (resolved != null) {
+      AddressCache.instance.record(latitude, longitude, resolved.address);
+    }
 
     // Another drag started while this was in flight — its own lookup will
     // land, and applying this one would overwrite a newer pin's address.
@@ -654,8 +1086,15 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
             InteractiveMapPicker(
               initialLatitude: lat,
               initialLongitude: lng,
-              height: 240,
+              height: _mapHeight,
               onChanged: _onPinMoved,
+              // Everything this page measures in metres — the latch radius, how
+              // far out to look for places — only means something against the
+              // scale the map is actually drawn at.
+              onZoomChanged: (zoom) {
+                if (zoom == _mapZoom) return;
+                setState(() => _mapZoom = zoom);
+              },
               pois: _pois,
               latched: _latched,
               onPoiTapped: _latchOnto,
@@ -663,6 +1102,8 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
               // more than a screen or so runs off the end of the batch and the
               // map goes bare until the finger comes up.
               onPoisNeeded: _refreshPois,
+              onLocateMe: _useMyLocation,
+              locating: _locating,
             )
           else
             // Width comes from the layout rather than a guess: the tile grid is

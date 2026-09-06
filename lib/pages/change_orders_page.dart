@@ -583,6 +583,28 @@ class _OrderCard extends StatelessWidget {
                 kChangeOrderKindLabels[order.kind] ?? order.kind,
                 style: GoogleFonts.inter(fontSize: 11, color: Colors.black54),
               ),
+              if (order.constructionItemName != null) ...[
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.blueGrey.shade50,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      order.constructionItemName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: Colors.blueGrey.shade800,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               if (order.revisionNo != null) ...[
                 const SizedBox(width: 8),
                 Text(
