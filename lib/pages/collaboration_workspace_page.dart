@@ -405,7 +405,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       decoration: BoxDecoration(
         color: const Color(0xFFFFF3E0),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE65100).withOpacity(0.35)),
+        border: Border.all(color: const Color(0xFFE65100).withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -886,7 +886,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -918,7 +918,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                            color: AppColors.primaryFixed.withOpacity(0.4),
+                            color: AppColors.primaryFixed.withValues(alpha: 0.4),
                             borderRadius: BorderRadius.circular(6)),
                         child: Text(
                             '${ordered.length} ${ordered.length == 1 ? 'Survey' : 'Surveys'}',
@@ -964,7 +964,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1089,10 +1089,10 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.4)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1123,7 +1123,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                       decoration: BoxDecoration(
                         color: statusBg,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: statusColor.withOpacity(0.3)),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         statusLabel,
@@ -1148,7 +1148,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                   decoration: BoxDecoration(
                     color: statusBg,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: statusColor.withOpacity(0.3)),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     statusLabel,
@@ -1255,7 +1255,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1355,7 +1355,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       decoration: BoxDecoration(
         color: const Color(0xFFFBF8F6),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.4)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1371,7 +1371,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                 child: Text(
                   item.status.toUpperCase(),
                   style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: statusColor),
@@ -1456,7 +1456,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isCompleted ? const Color(0xFFA5D6A7) : AppColors.outlineVariant.withOpacity(0.5),
+          color: isCompleted ? const Color(0xFFA5D6A7) : AppColors.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Column(
@@ -1552,7 +1552,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -1647,7 +1647,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

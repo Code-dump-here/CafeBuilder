@@ -100,10 +100,10 @@ class _HomePageState extends State<HomePage> {
       height: 72,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.outlineVariant.withOpacity(0.3))),
+        border: Border(top: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.3))),
         boxShadow: [
           BoxShadow(
-            color: AppColors.espresso.withOpacity(0.07),
+            color: AppColors.espresso.withValues(alpha: 0.07),
             blurRadius: 24,
             offset: const Offset(0, -6),
           ),

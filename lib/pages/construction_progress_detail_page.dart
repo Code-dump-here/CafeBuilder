@@ -144,7 +144,7 @@ class _ConstructionProgressDetailPageState
                       children: [
                         Icon(Icons.construction_outlined,
                             size: 56,
-                            color: AppColors.placeholder.withOpacity(0.4)),
+                            color: AppColors.placeholder.withValues(alpha: 0.4)),
                         const SizedBox(height: 16),
                         Text(
                           _selectedFilter == 'All'
@@ -197,7 +197,7 @@ class _ConstructionProgressDetailPageState
                 style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                     letterSpacing: 0.5),
               ),
               Text(
@@ -215,7 +215,7 @@ class _ConstructionProgressDetailPageState
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: _overallProgress,
-              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
               valueColor:
                   const AlwaysStoppedAnimation<Color>(Color(0xFFD9EAA3)),
               minHeight: 8,
@@ -240,7 +240,7 @@ class _ConstructionProgressDetailPageState
               _buildStatChip(
                 label: 'Pending',
                 count: _pendingCount,
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
               ),
             ],
           ),
@@ -257,7 +257,7 @@ class _ConstructionProgressDetailPageState
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -274,7 +274,7 @@ class _ConstructionProgressDetailPageState
               label,
               style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.6)),
+                  color: Colors.white.withValues(alpha: 0.6)),
             ),
           ],
         ),
@@ -392,7 +392,7 @@ class _ConstructionProgressDetailPageState
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -805,7 +805,7 @@ class _ConstructionProgressDetailPageState
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     borderRadius: const BorderRadius.vertical(
                         bottom: Radius.circular(12)),
                   ),

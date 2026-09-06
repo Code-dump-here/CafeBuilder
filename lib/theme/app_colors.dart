@@ -10,7 +10,7 @@ class AppColors {
   static const Color textSecondary = Color(0xFF4E453D); // onSurfaceVariant
   // Muted text (hints, field labels, meta). Was 0xFF80756C, which sits at
   // 4.28:1 on `background` and fails WCAG AA for normal text (needs 4.5:1).
-  // 0xFF6E645B measures 5.5:1, leaving headroom for the .withOpacity() calls
+  // 0xFF6E645B measures 5.5:1, leaving headroom for the .withValues(alpha:) calls
   // these are often wrapped in.
   static const Color placeholder = Color(0xFF6E645B);
   static const Color outline = Color(0xFF6E645B);

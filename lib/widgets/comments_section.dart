@@ -163,7 +163,7 @@ class _CommentsSectionState extends State<CommentsSection> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: mine ? AppColors.primaryFixed.withOpacity(0.25) : const Color(0xFFF6F3F2),
+        color: mine ? AppColors.primaryFixed.withValues(alpha: 0.25) : const Color(0xFFF6F3F2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -216,11 +216,11 @@ class _CommentsSectionState extends State<CommentsSection> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.6)),
+                borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.6)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.6)),
+                borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.6)),
               ),
             ),
           ),

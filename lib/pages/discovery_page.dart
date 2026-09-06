@@ -93,7 +93,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
               color: const Color(0xFFF6F3F2),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.outlineVariant.withOpacity(0.4),
+                color: AppColors.outlineVariant.withValues(alpha: 0.4),
               ),
             ),
             child: TextField(
@@ -102,11 +102,11 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
               decoration: InputDecoration(
                 icon: Icon(
                   Icons.search,
-                  color: AppColors.outline.withOpacity(0.6),
+                  color: AppColors.outline.withValues(alpha: 0.6),
                 ),
                 hintText: 'Search styles, materials, or moods...',
                 hintStyle: GoogleFonts.inter(
-                  color: AppColors.outline.withOpacity(0.6),
+                  color: AppColors.outline.withValues(alpha: 0.6),
                   fontSize: 14,
                 ),
                 border: InputBorder.none,
@@ -142,7 +142,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
                 border: isSelected
                     ? null
                     : Border.all(
-                        color: AppColors.outlineVariant.withOpacity(0.4),
+                        color: AppColors.outlineVariant.withValues(alpha: 0.4),
                       ),
               ),
               child: Text(
@@ -208,7 +208,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.03),
+                  color: AppColors.primary.withValues(alpha: 0.03),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),

@@ -78,7 +78,7 @@ class _ChatPageState extends State<ChatPage> {
                     margin: const EdgeInsets.symmetric(vertical: 16),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.outlineVariant.withOpacity(0.3),
+                      color: AppColors.outlineVariant.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Text('Today, October 24', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
@@ -110,7 +110,7 @@ class _ChatPageState extends State<ChatPage> {
               color: AppColors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   offset: const Offset(0, -2),
                   blurRadius: 10,
                 )

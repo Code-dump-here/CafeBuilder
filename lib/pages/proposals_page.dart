@@ -472,7 +472,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -553,9 +553,9 @@ class _ProposalsPageState extends State<ProposalsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -646,7 +646,7 @@ class _ProposalsPageState extends State<ProposalsPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isPending ? const Color(0xFFD9EAA3).withOpacity(0.8) : const Color(0xFFF6F3F2),
+                  color: isPending ? const Color(0xFFD9EAA3).withValues(alpha: 0.8) : const Color(0xFFF6F3F2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

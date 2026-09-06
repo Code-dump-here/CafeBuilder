@@ -235,7 +235,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.espresso.withOpacity(0.10),
+                        color: AppColors.espresso.withValues(alpha: 0.10),
                         blurRadius: 24,
                         offset: const Offset(0, 8),
                       ),
@@ -252,7 +252,7 @@ class _DesignSynthesisLoadingPageState extends State<DesignSynthesisLoadingPage>
                             value: _progress,
                             strokeWidth: 5,
                             valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF56642B)),
-                            backgroundColor: AppColors.outlineVariant.withOpacity(0.25),
+                            backgroundColor: AppColors.outlineVariant.withValues(alpha: 0.25),
                           ),
                         ),
                         const Icon(
@@ -548,7 +548,7 @@ class AiDesignReportPage extends StatelessWidget {
                             onPressed: () => Navigator.maybePop(context),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.textSecondary,
-                              side: BorderSide(color: AppColors.outlineVariant.withOpacity(0.7)),
+                              side: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.7)),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
@@ -588,7 +588,7 @@ class AiDesignReportPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD9EAA3).withOpacity(0.4),
+                  color: const Color(0xFFD9EAA3).withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -607,8 +607,8 @@ class AiDesignReportPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: report!.isCompleted
-                        ? const Color(0xFFD9EAA3).withOpacity(0.4)
-                        : Colors.orange.withOpacity(0.15),
+                        ? const Color(0xFFD9EAA3).withValues(alpha: 0.4)
+                        : Colors.orange.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -779,7 +779,7 @@ class AiDesignReportPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD9EAA3).withOpacity(0.5),
+                  color: const Color(0xFFD9EAA3).withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text('AI RENDERED',
@@ -793,9 +793,9 @@ class AiDesignReportPage extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
           child: ClipRRect(
@@ -851,7 +851,7 @@ class AiDesignReportPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: z.isStaffOnly
                         ? const Color(0xFFF0E6D3)
-                        : const Color(0xFFD9EAA3).withOpacity(0.5),
+                        : const Color(0xFFD9EAA3).withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -884,7 +884,7 @@ class AiDesignReportPage extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.15),
+                                color: Colors.orange.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text('STAFF',
@@ -1064,7 +1064,7 @@ class AiDesignReportPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: priorityColor.withOpacity(0.1),
+                    color: priorityColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(Icons.star, size: 12, color: priorityColor),
@@ -1122,9 +1122,9 @@ class AiDesignReportPage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: levelColor.withOpacity(0.06),
+                color: levelColor.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: levelColor.withOpacity(0.2)),
+                border: Border.all(color: levelColor.withValues(alpha: 0.2)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1134,7 +1134,7 @@ class AiDesignReportPage extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: levelColor.withOpacity(0.15),
+                          color: levelColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -1188,9 +1188,9 @@ class AiDesignReportPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFD9EAA3).withOpacity(0.3),
+        color: const Color(0xFFD9EAA3).withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF56642B).withOpacity(0.2)),
+        border: Border.all(color: const Color(0xFF56642B).withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -1255,7 +1255,7 @@ class AiDesignReportPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD9EAA3).withOpacity(0.5),
+                  color: const Color(0xFFD9EAA3).withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

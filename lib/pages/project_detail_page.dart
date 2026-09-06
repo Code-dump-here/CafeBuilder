@@ -487,7 +487,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
           ),
         ),
         padding: const EdgeInsets.all(20),
@@ -498,7 +498,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF56642B).withOpacity(0.8),
+                color: const Color(0xFF56642B).withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -527,7 +527,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             Container(
               height: 4,
               width: double.infinity,
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
                 widthFactor: progress,
@@ -547,7 +547,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -576,7 +576,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       child: CircularProgressIndicator(
                         value: 1.0,
                         strokeWidth: 12,
-                        backgroundColor: AppColors.outlineVariant.withOpacity(0.5),
+                        backgroundColor: AppColors.outlineVariant.withValues(alpha: 0.5),
                         valueColor: const AlwaysStoppedAnimation<Color>(AppColors.espresso),
                       ),
                     ),
@@ -647,7 +647,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         children: [
           Text(
             'NEXT MILESTONE',
-            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white.withOpacity(0.5)),
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white.withValues(alpha: 0.5)),
           ),
           const SizedBox(height: 16),
           Text(
@@ -657,13 +657,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.calendar_today_outlined, size: 14, color: Colors.white.withOpacity(0.7)),
+              Icon(Icons.calendar_today_outlined, size: 14, color: Colors.white.withValues(alpha: 0.7)),
               const SizedBox(width: 8),
               Text(
                 _nextMilestone?.estimateAt != null
                     ? '${_nextMilestone!.estimateAt!.day}/${_nextMilestone!.estimateAt!.month}/${_nextMilestone!.estimateAt!.year}'
                     : 'Scheduled once construction is planned',
-                style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withOpacity(0.7)),
+                style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
               ),
             ],
           ),
@@ -679,7 +679,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         Column(
           children: [
             Container(width: 8, height: 8, margin: const EdgeInsets.only(top: 4, bottom: 4), decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
-            if (hasLine) Container(width: 1, height: 32, color: AppColors.outlineVariant.withOpacity(0.5)),
+            if (hasLine) Container(width: 1, height: 32, color: AppColors.outlineVariant.withValues(alpha: 0.5)),
           ],
         ),
         const SizedBox(width: 12),
@@ -704,7 +704,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         children: [
@@ -756,7 +756,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -848,7 +848,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -944,7 +944,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1953,7 +1953,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.outlineVariant.withOpacity(0.3)),
+          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
@@ -2213,7 +2213,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.espresso, width: 1.5),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2371,8 +2371,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Center(
         child: Column(
