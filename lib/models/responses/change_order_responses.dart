@@ -36,6 +36,9 @@ class ChangeOrderResponse {
   /// Set when the charge belongs to a milestone.
   final String? constructionItemId;
 
+  /// Tên hạng mục thi công khoản này neo vào — server trả kèm để khỏi tra thêm.
+  final String? constructionItemName;
+
   /// `extra_revision` | `scope_change` | `material_change` | `other`.
   final String kind;
 
@@ -78,6 +81,7 @@ class ChangeOrderResponse {
     required this.projectWorkingId,
     this.designId,
     this.constructionItemId,
+    this.constructionItemName,
     required this.kind,
     required this.title,
     required this.reason,
@@ -116,6 +120,7 @@ class ChangeOrderResponse {
         projectWorkingId: json['projectWorkingId']?.toString() ?? '',
         designId: json['designId']?.toString(),
         constructionItemId: json['constructionItemId']?.toString(),
+        constructionItemName: json['constructionItemName']?.toString(),
         kind: json['kind'] ?? 'other',
         title: json['title'] ?? '',
         reason: json['reason'] ?? '',
