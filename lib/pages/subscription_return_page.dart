@@ -148,9 +148,14 @@ class SubscriptionReturnPage extends StatelessWidget {
                   children: [
                     const Icon(Icons.visibility_rounded, size: 20),
                     const SizedBox(width: 8),
-                    Text(
-                      'Trải Nghiệm Ngay 3D Layout Visual',
-                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold),
+                    // Nhãn dài gần bằng bề ngang nút trên máy nhỏ; Flexible cho
+                    // nó xuống dòng thay vì tràn ra khỏi nút.
+                    Flexible(
+                      child: Text(
+                        'Trải Nghiệm Ngay 3D Layout Visual',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),
