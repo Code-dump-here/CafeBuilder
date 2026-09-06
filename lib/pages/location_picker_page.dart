@@ -1024,7 +1024,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
               ? null
               : Text(
                   suggestion.secondaryText,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
                 ),

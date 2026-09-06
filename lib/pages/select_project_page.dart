@@ -550,7 +550,7 @@ class _SelectProjectPageState extends State<SelectProjectPage> {
                     const SizedBox(height: 4),
                     Text(
                       project.address,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(fontSize: 11, color: AppColors.placeholder),
                     ),

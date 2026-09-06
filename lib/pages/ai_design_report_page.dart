@@ -771,15 +771,21 @@ class AiDesignReportPage extends StatelessWidget {
               children: [
                 const Icon(Icons.blur_on_outlined, size: 20, color: AppColors.espresso),
                 const SizedBox(width: 8),
-                Text(
-                  '3D Layout Visualization',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.espresso,
+                // Expanded, not Spacer: the subscription badge next to this
+                // title is wide ("MIỄN PHÍ (ĐÃ KHÓA)"), so on a phone the two
+                // together are wider than the row. Bounding the title lets it
+                // wrap instead of pushing the badge off screen.
+                Expanded(
+                  child: Text(
+                    '3D Layout Visualization',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.espresso,
+                    ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 if (isSubscribed)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1013,7 +1019,7 @@ class AiDesignReportPage extends StatelessWidget {
                           Flexible(
                             child: Text(
                               z.label,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
                                   fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),

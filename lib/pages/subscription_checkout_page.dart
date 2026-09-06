@@ -106,7 +106,11 @@ class _SubscriptionCheckoutPageState extends State<SubscriptionCheckoutPage> {
                         child: const Icon(Icons.workspace_premium, color: Color(0xFFFFD700), size: 24),
                       ),
                       const SizedBox(width: 12),
-                      Column(
+                      // Expanded: "Mở khóa 3D Layout Visual" ở 18px gần bằng
+                      // trọn chiều ngang còn lại, không có bound thì tràn ra
+                      // ngoài thẻ trên máy 360px.
+                      Expanded(
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -127,6 +131,7 @@ class _SubscriptionCheckoutPageState extends State<SubscriptionCheckoutPage> {
                             ),
                           ),
                         ],
+                        ),
                       ),
                     ],
                   ),
@@ -135,18 +140,22 @@ class _SubscriptionCheckoutPageState extends State<SubscriptionCheckoutPage> {
                     child: Divider(color: Colors.white24, height: 1),
                   ),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
                         'Tổng chi phí thanh toán:',
                         style: GoogleFonts.inter(fontSize: 13, color: Colors.white70),
                       ),
-                      Text(
-                        _amount,
-                        style: GoogleFonts.inter(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _amount,
+                          textAlign: TextAlign.right,
+                          style: GoogleFonts.inter(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFFFD700),
+                          ),
                         ),
                       ),
                     ],
@@ -180,12 +189,14 @@ class _SubscriptionCheckoutPageState extends State<SubscriptionCheckoutPage> {
                     children: [
                       const Icon(Icons.qr_code_2_rounded, color: AppColors.espresso, size: 24),
                       const SizedBox(width: 8),
-                      Text(
-                        'Quét Mã VietQR Chuyển Khoản',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.espresso,
+                      Flexible(
+                        child: Text(
+                          'Quét Mã VietQR Chuyển Khoản',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.espresso,
+                          ),
                         ),
                       ),
                     ],

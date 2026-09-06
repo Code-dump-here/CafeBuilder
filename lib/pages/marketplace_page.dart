@@ -505,29 +505,16 @@ class _MarketplacePageState extends State<MarketplacePage>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
+                // Address and style shared one line and each ended up with
+                // half a phone width. In a Wrap they take the width they need
+                // and the style drops to its own line when the address is long.
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Icon(Icons.location_on,
-                        size: 12, color: AppColors.placeholder),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(project.location,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                              fontSize: 11, color: AppColors.textSecondary)),
-                    ),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.color_lens_outlined,
-                        size: 12, color: AppColors.placeholder),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(project.style,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                              fontSize: 11, color: AppColors.textSecondary)),
-                    ),
+                    _buildIconLabel(Icons.location_on, project.location),
+                    _buildIconLabel(Icons.color_lens_outlined, project.style),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -779,6 +766,32 @@ class _MarketplacePageState extends State<MarketplacePage>
           ),
         );
       },
+    );
+  }
+
+  /// Icon + label pair sized to its text.
+  ///
+  /// `MainAxisSize.min` keeps it compact inside a `Wrap`, and the `Flexible`
+  /// lets a long address wrap onto further lines instead of running past the
+  /// card — a `Wrap` hands its children the full row width to work with.
+  Widget _buildIconLabel(IconData icon, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(icon, size: 12, color: AppColors.placeholder),
+        ),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+                fontSize: 11, color: AppColors.textSecondary),
+          ),
+        ),
+      ],
     );
   }
 

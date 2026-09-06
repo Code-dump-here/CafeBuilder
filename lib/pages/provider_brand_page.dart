@@ -403,7 +403,7 @@ class _LinkTile extends StatelessWidget {
       ),
       subtitle: Text(
         value,
-        maxLines: 1,
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: GoogleFonts.inter(fontSize: 11, color: Colors.black45),
       ),
