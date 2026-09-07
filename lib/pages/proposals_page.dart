@@ -298,6 +298,11 @@ class _ProposalsPageState extends State<ProposalsPage> {
               builder: (_) => QuotationDetailsPage(
                 quotationId: result.items.first.id,
                 initialQuotation: result.items.first,
+                // The quotation carries no scope of its own — neither the DTO
+                // nor `ApplyResponse` has one — but the post it answers does,
+                // and this screen is already holding the posts to work out
+                // which provider slot an application would fill.
+                scope: _kindFor(apply),
               ),
             ),
           );
