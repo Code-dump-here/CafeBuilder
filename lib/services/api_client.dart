@@ -17,7 +17,7 @@ class ApiClient {
   static const String _baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue:
-        'https://smartcoffeebuilder-be-295284732683.asia-southeast1.run.app/api',
+        'https://smartcoffeebuilder-be-629382907567.asia-southeast1.run.app/api',
   );
 
   /// Public access to the base URL for multipart requests in services.

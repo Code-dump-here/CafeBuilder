@@ -6,7 +6,7 @@ name: Firebase — distribute APK & deploy web
 #     App Distribution for the "testers" group.
 #   * deploy-web         — builds the Flutter web app and deploys it to
 #     Firebase Hosting, giving a browser-accessible URL
-#     (https://project-d9f1553a-255e-41c1-961.web.app).
+#     (https://project-c9eeff73-5757-418b-b6a.web.app).
 # The two jobs are independent: if one fails the other still ships.
 on:
   push:
@@ -116,7 +116,7 @@ jobs:
         run: >-
           npx --yes firebase-tools@13 deploy
           --only hosting
-          --project project-d9f1553a-255e-41c1-961
+          --project project-c9eeff73-5757-418b-b6a
           --token "$FIREBASE_TOKEN"
           --non-interactive
         env:
