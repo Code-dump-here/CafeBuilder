@@ -40,6 +40,44 @@ void main() async {
 
   runApp(const CafeBuilderApp());
   unawaited(AiChatService.init());
+  // The cached flag paints the gated screens immediately; this corrects it
+  // against `GET /payments/subscriptions/me/active` a moment later. No-ops
+  // when signed out.
+  unawaited(SubscriptionService.refreshFromServer());
+}
+
+/// The two URLs payOS redirects a mobile payer to when the transaction ends.
+///
+/// They are configured server-side (`PayOs:MobileReturnUrl` /
+/// `PayOs:MobileCancelUrl`) and point at this app's web build with the
+/// transaction appended: `/#/payment/success?orderCode=1788...`. The `routes`
+/// table cannot express that — a route name arriving with a query string
+/// matches nothing — so these are resolved here, where the query can be parsed
+/// and the order code handed to the page that reads its status.
+Route<dynamic>? _payOsRoute(RouteSettings settings) {
+  final uri = Uri.tryParse(settings.name ?? '');
+  if (uri == null) return null;
+
+  final orderCode = int.tryParse(uri.queryParameters['orderCode'] ?? '') ??
+      // The checkout screen pushes these pages directly, but a named push
+      // elsewhere can still pass the code as an argument.
+      (settings.arguments is int ? settings.arguments as int : null);
+
+  switch (uri.path) {
+    case '/payment/success':
+      return MaterialPageRoute(
+        settings: settings,
+        builder: (_) => SubscriptionReturnPage(orderCode: orderCode),
+      );
+    case '/payment/cancel':
+      return MaterialPageRoute(
+        settings: settings,
+        builder: (_) => SubscriptionCancelPage(orderCode: orderCode),
+      );
+    default:
+      // Anything else falls through to `routes`.
+      return null;
+  }
 }
 
 class CafeBuilderApp extends StatelessWidget {
@@ -76,6 +114,7 @@ class CafeBuilderApp extends StatelessWidget {
         '/subscription-return': (context) => const SubscriptionReturnPage(),
         '/subscription-cancel': (context) => const SubscriptionCancelPage(),
       },
+      onGenerateRoute: _payOsRoute,
     );
   }
 }

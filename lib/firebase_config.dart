@@ -21,18 +21,18 @@ import 'package:firebase_core/firebase_core.dart';
 class FirebaseConfig {
   const FirebaseConfig._();
 
-  static const String apiKey = 'AIzaSyCA8FqhF3ntzBYeIpy1IFOHMUggIXtW-VQ';
-  static const String appId = '1:295284732683:web:80f7a160f1d5deb7dca80e';
+  static const String apiKey = 'AIzaSyB_ywXLHQcMRYFNhWcySUAZwYP9GtG6kFI';
+  static const String appId = '1:629382907567:web:9bc61796064d8e33cb365a';
   // Project number — shared by every app in the project (from google-services.json).
-  static const String messagingSenderId = '295284732683';
-  static const String projectId = 'project-d9f1553a-255e-41c1-961';
-  static const String authDomain = 'project-d9f1553a-255e-41c1-961.firebaseapp.com';
-  static const String storageBucket = 'project-d9f1553a-255e-41c1-961.firebasestorage.app';
+  static const String messagingSenderId = '629382907567';
+  static const String projectId = 'project-c9eeff73-5757-418b-b6a';
+  static const String authDomain = 'project-c9eeff73-5757-418b-b6a.firebaseapp.com';
+  static const String storageBucket = 'project-c9eeff73-5757-418b-b6a.firebasestorage.app';
 
   /// reCAPTCHA v3 site key for App Check on web. Register the web app under
   /// Firebase console → App Check to get one. Left empty, App Check is skipped,
   /// which is fine locally but leaves the endpoint unprotected in production.
-  static const String recaptchaV3SiteKey = '6LcKzHktAAAAAJP-kQ9HhnrS8gE-_m7YHguy4MpV';
+  static const String recaptchaV3SiteKey = '';
 
   static bool get isConfigured => apiKey.isNotEmpty && appId.isNotEmpty;
 

@@ -1,3 +1,4 @@
+import '../utils/upload_constraints.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -120,7 +121,11 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
       // just a nice-to-have.
       FilePickerResult? result = await FilePicker.pickFiles(
         allowMultiple: true,
-        type: FileType.any,
+        // Was FileType.any, which offered every file on the device even though
+        // the server accepts exactly ten extensions — so a .zip or a .mov was
+        // pickable, attachable, and rejected only after upload.
+        type: FileType.custom,
+        allowedExtensions: allUploadExtensions,
         withData: true,
       );
       // The picker is a separate OS surface and the user can leave this screen
@@ -129,9 +134,25 @@ class _ChatThreadPageState extends State<ChatThreadPage> {
       // did not, and reached both `setState` and `context` unguarded.
       if (!mounted) return;
       if (result != null) {
-        setState(() {
-          _selectedFiles.addAll(result.files);
-        });
+        // The picker's filter is a hint: some platforms let the user switch to
+        // "All files", and size is never covered by it at all.
+        final rejected = <String>[];
+        final accepted = result.files.where((f) {
+          final problem = validateUpload(name: f.name, sizeBytes: f.size);
+          if (problem != null) rejected.add('${f.name}: $problem');
+          return problem == null;
+        }).toList();
+
+        if (rejected.isNotEmpty && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(rejected.join('\n'))),
+          );
+        }
+        if (accepted.isNotEmpty) {
+          setState(() {
+            _selectedFiles.addAll(accepted);
+          });
+        }
       }
     } catch (e) {
       if (!mounted) return;

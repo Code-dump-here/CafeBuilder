@@ -1,3 +1,4 @@
+import '../utils/upload_constraints.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -701,13 +702,31 @@ class _ProofSheetState extends State<_ProofSheet> {
     // browser exposes no filesystem path, so bytes are the only thing that
     // ever comes back.
     final result = await FilePicker.pickFiles(
-      type: FileType.image,
+      // Was FileType.image, which on iOS includes .heic — the format every
+      // recent iPhone photo is saved in, and one the server refuses. The user
+      // picked a receipt from their camera roll and the upload failed.
+      type: FileType.custom,
+      allowedExtensions: imageExtensions,
       withData: true,
     );
     final picked = result?.files.single;
     if (picked?.bytes == null) return;
+
+    final problem = validateUpload(
+      name: picked!.name,
+      sizeBytes: picked.size,
+      imageOnly: true,
+    );
+    if (problem != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(problem)));
+      return;
+    }
+
     setState(() {
-      _bytes = picked!.bytes;
+      _bytes = picked.bytes;
       _fileName = picked.name;
     });
   }
