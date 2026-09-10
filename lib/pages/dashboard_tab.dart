@@ -332,64 +332,66 @@ class DashboardTabState extends State<DashboardTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 24),
-                // Greeting
-                Text(
-                  '$_timeOfDayGreeting, OWNER',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary.withValues(alpha: 0.8),
-                    letterSpacing: 2.0,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 24),
+                  // Greeting
+                  _FadeSlideIn(
+                    delay: 0.0,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$_timeOfDayGreeting, OWNER',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary.withValues(alpha: 0.8),
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _loading ? 'Hello, ...' : 'Hello, $_greetingName',
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.espresso,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _loading ? 'Hello, ...' : 'Hello, $_greetingName',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.espresso,
-                  ),
-                ),
-                
-                if (_showHowItWorks) ...[
-                  const SizedBox(height: 28),
-                  _buildHowItWorks(),
-                ],
+                  
+                  if (_showHowItWorks) ...[
+                    const SizedBox(height: 28),
+                    _FadeSlideIn(delay: 0.1, child: _buildHowItWorks()),
+                  ],
 
-                const SizedBox(height: 40),
+                  const SizedBox(height: 40),
 
-                // Active Project Card
-                _buildActiveProjectCard(),
-                
-                const SizedBox(height: 40),
-                
-                // Smart AI Assistant Banner
-                _buildAiBanner(context),
+                  // Active Project Card
+                  _FadeSlideIn(delay: 0.2, child: _buildActiveProjectCard()),
+                  
+                  const SizedBox(height: 40),
+                  
+                  // Smart AI Assistant Banner
+                  _FadeSlideIn(delay: 0.3, child: _buildAiBanner(context)),
 
-                const SizedBox(height: 40),
+                  const SizedBox(height: 40),
 
-                // Quick Actions — hidden for now, these three cards
-                // (Scan floor plan / Find inspiration / Hire expert) have no
-                // onTap wiring yet. Re-enable once they're wired up.
-                // _buildQuickActions(),
-                // const SizedBox(height: 40),
-
-                // Inspiration Section
-                _buildInspirationSection(),
-                
-                const SizedBox(height: 40),
-                
-                // Recent Documents
-                _buildRecentDocuments(),
-                
-                const SizedBox(height: 100), // Space for bottom nav
+                  // Inspiration Section
+                  _FadeSlideIn(delay: 0.4, child: _buildInspirationSection()),
+                  
+                  const SizedBox(height: 40),
+                  
+                  // Recent Documents
+                  _FadeSlideIn(delay: 0.5, child: _buildRecentDocuments()),
+                  
+                  const SizedBox(height: 100), // Space for bottom nav
                 ],
               ),
             ),
@@ -757,24 +759,37 @@ class DashboardTabState extends State<DashboardTab> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                // Progress Bar
-                Container(
-                  width: double.infinity,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4B3621),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: progress,
-                    child: Container(
+                // Animated Progress Bar
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0.0, end: progress),
+                  duration: const Duration(milliseconds: 1000),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, animValue, child) {
+                    return Container(
+                      width: double.infinity,
+                      height: 5,
                       decoration: BoxDecoration(
-                        color: AppColors.primaryFixed,
-                        borderRadius: BorderRadius.circular(2),
+                        color: const Color(0xFF4B3621),
+                        borderRadius: BorderRadius.circular(2.5),
                       ),
-                    ),
-                  ),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: animValue.clamp(0.0, 1.0),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryFixed,
+                            borderRadius: BorderRadius.circular(2.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primaryFixed.withValues(alpha: 0.5),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -823,8 +838,8 @@ class DashboardTabState extends State<DashboardTab> {
                               ],
                       ),
                     ),
-                    ElevatedButton(
-                      onPressed: () {
+                    _ScaleOnTap(
+                      onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -832,19 +847,25 @@ class DashboardTabState extends State<DashboardTab> {
                           ),
                         ).then((_) => _loadDashboard());
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryFixed,
-                        foregroundColor: AppColors.espresso,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      ),
-                      child: const Row(
-                        children: [
-                          Text('Continue', style: TextStyle(fontWeight: FontWeight.w600)),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward, size: 14),
-                        ],
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryFixed,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Row(
+                          children: [
+                            Text(
+                              'Continue',
+                              style: TextStyle(
+                                color: AppColors.espresso,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward, size: 14, color: AppColors.espresso),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -1023,7 +1044,7 @@ class DashboardTabState extends State<DashboardTab> {
   }) {
     return Padding(
       padding: EdgeInsets.only(top: paddingTop),
-      child: GestureDetector(
+      child: _ScaleOnTap(
         onTap: () {
           Navigator.push(
             context,
@@ -1166,7 +1187,7 @@ class DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _buildAiBanner(BuildContext context) {
-    return GestureDetector(
+    return _ScaleOnTap(
       onTap: () {
         Navigator.push(
           context,
@@ -1178,17 +1199,33 @@ class DashboardTabState extends State<DashboardTab> {
         decoration: BoxDecoration(
           color: const Color(0xFFD9EAA3).withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF56642B).withValues(alpha: 0.1)),
+          border: Border.all(color: const Color(0xFF56642B).withValues(alpha: 0.15)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF56642B).withValues(alpha: 0.08),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF56642B),
-                borderRadius: BorderRadius.circular(12),
+            _PulsingWidget(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF56642B),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF56642B).withValues(alpha: 0.4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.psychology_outlined, color: Colors.white, size: 28),
               ),
-              child: const Icon(Icons.psychology_outlined, color: Colors.white, size: 28),
             ),
             const SizedBox(width: 20),
             Expanded(
@@ -1238,7 +1275,7 @@ class DashboardTabState extends State<DashboardTab> {
         ? const Color(0xFF1A4DC7)
         : const Color(0xFF56642B);
 
-    return GestureDetector(
+    return _ScaleOnTap(
       onTap: () {
         Navigator.push(
           context,
@@ -1336,8 +1373,111 @@ class DashboardTabState extends State<DashboardTab> {
           const Icon(Icons.chevron_right_rounded, color: AppColors.outline, size: 20),
         ],
       ),
-    ));
+    ),
+    );
   }
 
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Animation Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Micro-interaction card press scale feedback.
+class _ScaleOnTap extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+
+  const _ScaleOnTap({required this.child, this.onTap});
+
+  @override
+  State<_ScaleOnTap> createState() => _ScaleOnTapState();
+}
+
+class _ScaleOnTapState extends State<_ScaleOnTap> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Entrance animation for sections (fade in & smooth upward float).
+class _FadeSlideIn extends StatelessWidget {
+  final Widget child;
+  final double delay;
+
+  const _FadeSlideIn({required this.child, this.delay = 0.0});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: (600 + delay * 250).toInt()),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 16),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+/// Continuous pulsing glow effect for highlighted badges or icons.
+class _PulsingWidget extends StatefulWidget {
+  final Widget child;
+  const _PulsingWidget({required this.child});
+
+  @override
+  State<_PulsingWidget> createState() => _PulsingWidgetState();
+}
+
+class _PulsingWidgetState extends State<_PulsingWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.96, end: 1.05).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _animation,
+      child: widget.child,
+    );
+  }
 }
 
