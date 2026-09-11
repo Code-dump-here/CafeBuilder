@@ -8,7 +8,6 @@ import 'project_success_page.dart';
 import '../services/ai_recommendation_service.dart';
 import '../services/subscription_service.dart';
 import '../models/responses/api_responses.dart';
-import '../models/marketplace_state.dart';
 import '../utils/money.dart';
 
 // ── Loading / Synthesis page ─────────────────────────────────────────────────
@@ -757,9 +756,32 @@ class AiDesignReportPage extends StatelessWidget {
     );
   }
 
+  // TODO(i18n + pricing): this paywall is the last Vietnamese copy left in the
+  // owner app, and it quotes a price that nothing verifies.
+  //
+  // The rest of the app was normalised to English; these four strings were
+  // missed because they sit inside the locked-3D overlay, which only renders
+  // for an unsubscribed account and so never showed up in a normal pass over
+  // the screens:
+  //
+  //   'MIEN PHI (DA KHOA)'                          -> "FREE (LOCKED)"
+  //   '3D Layout Visualization Da Bi Mo'            -> "3D layout is blurred"
+  //   'Dang ky Subscription de mo khoa ...'         -> unlock blurb
+  //   'Nang Cap Subscription (Chi 199k)'            -> upgrade CTA
+  //
+  // The CTA is the part worth fixing first: "199k" is hardcoded, while the
+  // real figure arrives from the plans endpoint as `SubscriptionPlanResponse.
+  // price` (see models/responses/payment_responses.dart). The two are free to
+  // disagree, and a button that states the wrong price is worse than one that
+  // states none -- the user has already agreed to a number before the checkout
+  // screen loads the real one. Read it from the plan and format it with
+  // formatVnd() from utils/money.dart, the way every other amount in the app
+  // is rendered.
+  //
+  // Related: SubscriptionService.getPlanName() still defaults to the Vietnamese
+  // 'Goi Pro 3D Visual'.
   Widget _build3DLayoutImage(BuildContext context) {
     final url = _imageUrl();
-    final hasRealImage = report?.imageArtifactUrl?.isNotEmpty == true;
 
     return ValueListenableBuilder<bool>(
       valueListenable: SubscriptionService.isSubscribedNotifier,
