@@ -5,7 +5,6 @@ import '../theme/app_colors.dart';
 import '../services/project_service.dart';
 import '../services/service_provider_service.dart';
 import '../models/requests/project_requests.dart';
-import '../models/marketplace_state.dart';
 import '../services/api_client.dart';
 import '../models/place_location.dart';
 import '../widgets/location_field.dart';

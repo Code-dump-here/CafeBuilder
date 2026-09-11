@@ -4,6 +4,7 @@ import '../theme/app_colors.dart';
 import '../services/auth_service.dart';
 import '../services/service_provider_service.dart';
 import '../services/api_client.dart';
+import '../services/subscription_service.dart';
 import '../models/responses/api_responses.dart';
 import 'my_projects_page.dart';
 import 'account_settings_page.dart';
@@ -226,10 +227,32 @@ class _ProfileTabState extends State<ProfileTab> {
             );
           },
         ),
+        // Lối vào duy nhất tới màn mua gói trước đây là banner nâng cấp trong báo cáo thiết kế AI,
+        // nghĩa là chủ quán chưa từng dùng AI thì không có đường nào tìm ra chỗ mua. Bản thân
+        // luồng thanh toán đã chạy đủ (lấy plans → tạo link payOS → mở checkout), chỉ thiếu cửa vào.
+        _buildSubscriptionMenuItem(),
         _buildMenuItem(Icons.dashboard_customize_outlined, 'My Moodboards', onTap: () => _showComingSoon(context)),
         _buildMenuItem(Icons.person_search_outlined, 'My Application', onTap: () => _showComingSoon(context)),
         _buildMenuItem(Icons.history_rounded, 'Consultation History', onTap: () => _showComingSoon(context)),
       ],
+    );
+  }
+
+  /// Dòng "Subscription Plan" — nhãn đổi theo entitlement thật để chủ quán biết mình
+  /// đang có gói hay chưa mà không phải mở màn checkout ra xem.
+  Widget _buildSubscriptionMenuItem() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: SubscriptionService.isSubscribedNotifier,
+      builder: (context, isSubscribed, _) => _buildMenuItem(
+        Icons.workspace_premium_outlined,
+        isSubscribed ? 'Subscription Plan · Active' : 'Subscription Plan',
+        onTap: () async {
+          await Navigator.pushNamed(context, '/subscription-checkout');
+          // Quay lại từ payOS thì hỏi lại server: gói chỉ 'active' sau khi webhook về,
+          // cache trên máy không tự biết điều đó.
+          await SubscriptionService.refreshFromServer();
+        },
+      ),
     );
   }
 

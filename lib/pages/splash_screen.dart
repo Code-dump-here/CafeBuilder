@@ -44,7 +44,6 @@ class _SplashScreenState extends State<SplashScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final width = constraints.maxWidth;
-              final height = constraints.maxHeight;
               final scale = (width / _figmaSize.width).clamp(0.8, 1.2).toDouble();
               
               return Stack(

@@ -12,10 +12,16 @@ class ConstructionProgressDetailPage extends StatefulWidget {
   final List<ConstructionItemResponse> items;
   final List<ConstructionTaskResponse> allTasks;
 
+  /// Quy trình nhà thầu đã áp cho dự án (review 3: "add thêm template cho quá trình thi công").
+  /// Rỗng là hợp lệ — kế hoạch gõ tay không đi kèm quy trình nào, và dự án áp mẫu TRƯỚC ngày
+  /// hệ thống bắt đầu ghi vết nguồn cũng vậy.
+  final List<AppliedConstructionTemplateResponse> appliedTemplates;
+
   const ConstructionProgressDetailPage({
     super.key,
     required this.items,
     required this.allTasks,
+    this.appliedTemplates = const [],
   });
 
   @override
@@ -132,6 +138,9 @@ class _ConstructionProgressDetailPageState
           // Summary card
           _buildSummaryCard(),
 
+          // Quy trình nhà thầu đang chạy
+          _buildTemplateSection(),
+
           // Filter chips
           _buildFilterRow(),
 
@@ -247,6 +256,153 @@ class _ConstructionProgressDetailPageState
         ],
       ),
     );
+  }
+
+  /// Khối "Process template" — trả lời câu hỏi review 3 đặt ra: chủ quán đang được thi công theo
+  /// quy trình nào. Trước đây chỉ phía nhà thầu biết, vì áp mẫu chép hạng mục xong là quên mẫu gốc.
+  ///
+  /// Không có mẫu nào thì KHÔNG vẽ gì: một khối trống báo "chưa có" chỉ tổ chiếm chỗ ở màn mà thứ
+  /// người ta vào xem là danh sách hạng mục.
+  Widget _buildTemplateSection() {
+    if (widget.appliedTemplates.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.account_tree_outlined,
+                  size: 16, color: AppColors.espresso),
+              const SizedBox(width: 6),
+              Text(
+                widget.appliedTemplates.length == 1
+                    ? 'Process template'
+                    : 'Process templates (${widget.appliedTemplates.length})',
+                style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.espresso,
+                    letterSpacing: 0.4),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...widget.appliedTemplates.map(_buildTemplateCard),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTemplateCard(AppliedConstructionTemplateResponse template) {
+    final range = _plannedRange(template);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border:
+            Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Theme(
+        // Bỏ đường kẻ mặc định của ExpansionTile để nó không cắt ngang viền thẻ.
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+          childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+          title: Text(
+            template.name,
+            style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.espresso),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '${template.completedItemCount}/${template.appliedItemCount} milestones done'
+              '${range == null ? '' : ' · $range'}',
+              style:
+                  GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
+            ),
+          ),
+          children: [
+            if (template.description != null &&
+                template.description!.trim().isNotEmpty) ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  template.description!,
+                  style: GoogleFonts.inter(
+                      fontSize: 12,
+                      height: 1.5,
+                      color: AppColors.textSecondary),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: template.progress,
+                backgroundColor: const Color(0xFFEDE7E2),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xFF7A9A4B)),
+                minHeight: 6,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Các bước của quy trình, theo đúng thứ tự kế hoạch. Tên hạng mục đọc TỪ DỰ ÁN chứ
+            // không từ mẫu gốc: áp mẫu là copy một lần, nhà thầu đổi tên sau đó thì thứ chủ quán
+            // nhìn ở đây vẫn phải khớp với danh sách hạng mục bên dưới.
+            ...template.itemNames.asMap().entries.map(
+                  (entry) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 22,
+                          child: Text(
+                            '${entry.key + 1}.',
+                            style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.placeholder),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            entry.value,
+                            style: GoogleFonts.inter(
+                                fontSize: 12,
+                                height: 1.4,
+                                color: AppColors.espresso),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// "12/09/2026 → 30/11/2026", hoặc null khi kế hoạch chưa có mốc nào.
+  String? _plannedRange(AppliedConstructionTemplateResponse template) {
+    String fmt(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+    final start = template.plannedStartAt;
+    final finish = template.plannedFinishAt;
+    if (start == null && finish == null) return null;
+    if (start == null) return 'until ${fmt(finish!)}';
+    if (finish == null) return 'from ${fmt(start)}';
+    return '${fmt(start)} → ${fmt(finish)}';
   }
 
   Widget _buildStatChip(

@@ -1024,7 +1024,12 @@ class ConstructionItemResponse {
       ConstructionItemResponse(
         id: json['id']?.toString() ?? '',
         projectWorkingId: json['projectWorkingId']?.toString() ?? '',
-        parentId: json['parentId']?.toString() ?? '',
+        // Giữ NULL khi API không trả parentId. `?? ''` trước đây biến mọi hạng mục gốc thành
+        // chuỗi rỗng, nên bộ lọc `parentId == null` ở màn tiến độ không khớp hàng nào và màn
+        // đó luôn báo "No milestones yet" dù kế hoạch có đủ hạng mục.
+        parentId: (json['parentId']?.toString().isNotEmpty ?? false)
+            ? json['parentId'].toString()
+            : null,
         name: json['name'] ?? '',
         description: json['description'],
         category: json['category'],
@@ -1317,5 +1322,151 @@ class CommentResponse {
         updatedAt:
             DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
             DateTime.now(),
+      );
+}
+
+/// Một bản chụp (snapshot) của thiết kế tại thời điểm nộp hoặc được duyệt.
+///
+/// Server tự sinh mỗi lần submit/approve, nên đây là LỊCH SỬ đóng băng: sửa
+/// thiết kế hiện tại không làm đổi các bản đã chụp. [changeSummary] là mô tả
+/// "bản này khác bản trước chỗ nào" mà provider ghi lúc phát hành — đúng thứ
+/// chủ quán cần đọc để biết vòng sửa vừa rồi đã đổi những gì.
+class DesignVersionResponse {
+  final String id;
+  final String designId;
+
+  /// submitted | approved — lý do bản chụp này được tạo.
+  final String snapshotKind;
+
+  final double version;
+  final String? title;
+  final String type;
+  final String status;
+
+  /// Lý do owner yêu cầu chỉnh sửa ở đúng vòng đó.
+  final String? reason;
+
+  /// Mô tả thay đổi so với bản trước. null = provider chưa ghi.
+  final String? changeSummary;
+
+  final DateTime snapshottedAt;
+  final List<DesignVersionImageResponse> images;
+
+  DesignVersionResponse({
+    required this.id,
+    required this.designId,
+    required this.snapshotKind,
+    required this.version,
+    this.title,
+    required this.type,
+    required this.status,
+    this.reason,
+    this.changeSummary,
+    required this.snapshottedAt,
+    this.images = const [],
+  });
+
+  factory DesignVersionResponse.fromJson(Map<String, dynamic> json) =>
+      DesignVersionResponse(
+        id: json['id']?.toString() ?? '',
+        designId: json['designId']?.toString() ?? '',
+        snapshotKind: json['snapshotKind']?.toString() ?? '',
+        version: (json['version'] as num?)?.toDouble() ?? 0.0,
+        title: json['title'],
+        type: json['type']?.toString() ?? '',
+        status: json['status']?.toString() ?? '',
+        reason: json['reason'],
+        changeSummary: json['changeSummary'],
+        snapshottedAt: _parseDate(json['snapshottedAt']),
+        images: (json['images'] as List?)
+                ?.map((e) => DesignVersionImageResponse.fromJson(e))
+                .toList() ??
+            [],
+      );
+}
+
+/// Ảnh đính kèm một bản chụp. [viewUrl] là URL public dùng thẳng được.
+class DesignVersionImageResponse {
+  final String id;
+  final String imageUrl;
+  final String? viewUrl;
+  final String? caption;
+
+  DesignVersionImageResponse({
+    required this.id,
+    required this.imageUrl,
+    this.viewUrl,
+    this.caption,
+  });
+
+  factory DesignVersionImageResponse.fromJson(Map<String, dynamic> json) =>
+      DesignVersionImageResponse(
+        id: json['id']?.toString() ?? '',
+        imageUrl: json['imageUrl'] ?? '',
+        viewUrl: json['viewUrl'],
+        caption: json['caption'],
+      );
+}
+
+/// Một mẫu quy trình thi công mà nhà thầu đã áp vào dự án.
+///
+/// Review 3 yêu cầu chủ quán xem được nhà thầu đang chạy theo quy trình nào. Đây là bản tóm tắt
+/// nhìn từ phía dự án: tên quy trình + đúng những hạng mục nó sinh ra trong dự án này, không phải
+/// toàn bộ mẫu gốc của nhà thầu.
+class AppliedConstructionTemplateResponse {
+  final String constructionTemplateId;
+  final String projectWorkingId;
+  final String name;
+  final String? description;
+  final String serviceKind;
+
+  /// true = mẫu chuẩn của hệ thống, false = quy trình riêng của nhà thầu.
+  final bool isPublic;
+
+  final int appliedItemCount;
+  final int completedItemCount;
+  final DateTime appliedAt;
+  final DateTime? plannedStartAt;
+  final DateTime? plannedFinishAt;
+  final List<String> itemNames;
+
+  AppliedConstructionTemplateResponse({
+    required this.constructionTemplateId,
+    required this.projectWorkingId,
+    required this.name,
+    this.description,
+    required this.serviceKind,
+    this.isPublic = false,
+    this.appliedItemCount = 0,
+    this.completedItemCount = 0,
+    required this.appliedAt,
+    this.plannedStartAt,
+    this.plannedFinishAt,
+    this.itemNames = const [],
+  });
+
+  /// 0..1 — bao nhiêu phần của quy trình đã nghiệm thu xong.
+  double get progress =>
+      appliedItemCount == 0 ? 0 : completedItemCount / appliedItemCount;
+
+  factory AppliedConstructionTemplateResponse.fromJson(
+          Map<String, dynamic> json) =>
+      AppliedConstructionTemplateResponse(
+        constructionTemplateId:
+            json['constructionTemplateId']?.toString() ?? '',
+        projectWorkingId: json['projectWorkingId']?.toString() ?? '',
+        name: json['name'] ?? '',
+        description: json['description'],
+        serviceKind: json['serviceKind'] ?? '',
+        isPublic: json['isPublic'] == true,
+        appliedItemCount: (json['appliedItemCount'] as num?)?.toInt() ?? 0,
+        completedItemCount: (json['completedItemCount'] as num?)?.toInt() ?? 0,
+        appliedAt: _parseDate(json['appliedAt']),
+        plannedStartAt: DateTime.tryParse(json['plannedStartAt']?.toString() ?? ''),
+        plannedFinishAt:
+            DateTime.tryParse(json['plannedFinishAt']?.toString() ?? ''),
+        itemNames: (json['itemNames'] as List<dynamic>? ?? const [])
+            .map((e) => e.toString())
+            .toList(),
       );
 }

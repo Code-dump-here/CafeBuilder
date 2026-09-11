@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../models/responses/api_responses.dart';
 import 'api_client.dart';
 
@@ -168,5 +170,26 @@ class ConstructionService {
   static Future<void> deleteTask(String id) async {
     final response = await ApiClient.authDelete('/construction-tasks/$id');
     ApiClient.throwIfError(response);
+  }
+
+  // --- Mẫu quy trình đã áp vào dự án ---
+
+  /// Các quy trình thi công nhà thầu đã áp cho một engagement.
+  ///
+  /// Đường riêng cho phía chủ quán: `GET /api/construction-templates` là THƯ VIỆN mẫu, chỉ trả về
+  /// mẫu công khai + mẫu của chính người gọi, nên chủ quán gọi vào đó sẽ không thấy quy trình
+  /// riêng mà nhà thầu vừa áp cho mình. Endpoint này nhìn từ phía dự án nên cả hai bên đều đọc
+  /// được. Trả về mảng JSON trần, không phải bọc phân trang.
+  static Future<List<AppliedConstructionTemplateResponse>> getAppliedTemplates(
+    String projectWorkingId,
+  ) async {
+    final response =
+        await ApiClient.authGet('/construction-templates/applied/$projectWorkingId');
+    ApiClient.throwIfError(response);
+    final list = jsonDecode(response.body) as List<dynamic>;
+    return list
+        .map((e) => AppliedConstructionTemplateResponse.fromJson(
+            e as Map<String, dynamic>))
+        .toList();
   }
 }
