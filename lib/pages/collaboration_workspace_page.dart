@@ -35,6 +35,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   List<ConstructionItemResponse> _constructionItems = [];
   List<ConstructionTaskResponse> _allTasks = [];
   List<SurveyResponse> _surveys = [];
+  List<AppliedConstructionTemplateResponse> _appliedTemplates = [];
 
   // Guards against a fast double-tap firing the same request twice.
   final Set<String> _pendingDesignActionIds = {};
@@ -86,6 +87,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       List<ConstructionItemResponse> allItems = [];
       List<ConstructionTaskResponse> allTasks = [];
       List<SurveyResponse> allSurveys = [];
+      List<AppliedConstructionTemplateResponse> allTemplates = [];
 
       for (String wId in allWorkingIds) {
         final results = await Future.wait([
@@ -109,6 +111,12 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
           allSurveys.addAll(surveyRes.items);
         }
 
+        // Quy trình nhà thầu đang chạy (review 3). Lỗi ở đây không được làm hỏng cả workspace:
+        // engagement chưa ký hợp đồng thì chưa áp mẫu nào, và bản BE cũ chưa có endpoint này.
+        try {
+          allTemplates.addAll(await ConstructionService.getAppliedTemplates(wId));
+        } catch (_) {}
+
         for (final item in itemsRes.items) {
           try {
             // Without an explicit pageSize this defaulted to 10, so a milestone
@@ -129,6 +137,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
           _constructionItems = allItems;
           _allTasks = allTasks;
           _surveys = allSurveys;
+          _appliedTemplates = allTemplates;
           _loading = false;
         });
       }
@@ -1275,6 +1284,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                       builder: (context) => ConstructionProgressDetailPage(
                         items: _constructionItems,
                         allTasks: _allTasks,
+                        appliedTemplates: _appliedTemplates,
                       ),
                     ),
                   ).then((_) => _loadWorkspaceData());
@@ -1311,6 +1321,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                     builder: (context) => ConstructionProgressDetailPage(
                       items: _constructionItems,
                       allTasks: _allTasks,
+                      appliedTemplates: _appliedTemplates,
                     ),
                   ),
                 ).then((_) => _loadWorkspaceData());

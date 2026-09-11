@@ -48,9 +48,20 @@ class DesignService {
     return DesignResponse.fromJson(body);
   }
 
-  static Future<DesignResponse> requestRevision(String id, {required String reason}) async {
+  /// Owner yêu cầu chỉnh sửa một bản thiết kế.
+  ///
+  /// [acceptExtraFee] phải là true khi vòng sửa này đã vượt hạn mức miễn phí của báo giá —
+  /// nếu không server trả 409 và không ghi gì. Hạn mức đọc trước bằng
+  /// `ChangeOrderService.getRevisionQuota`, để owner thấy phí TRƯỚC khi đồng ý chứ không
+  /// phải nhận một khoản phát sinh sau lưng.
+  static Future<DesignResponse> requestRevision(
+    String id, {
+    required String reason,
+    bool acceptExtraFee = false,
+  }) async {
     final response = await ApiClient.authPost('/designs/$id/request-revision', {
       'reason': reason,
+      'acceptExtraFee': acceptExtraFee,
     });
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
@@ -121,6 +132,26 @@ class DesignService {
     ApiClient.throwIfError(response);
     final body = ApiClient.parseBody(response);
     return PaginationResponse.fromJson(body, DesignResponse.fromJson);
+  }
+
+  /// Lịch sử phiên bản của một thiết kế: mỗi lần submit/approve server chụp lại
+  /// một bản, kèm `changeSummary` mô tả bản đó khác bản trước chỗ nào.
+  ///
+  /// Đây là thứ chủ quán cần để biết vòng sửa vừa rồi đã đổi những gì — trước đây
+  /// app owner không gọi `/versions` nên toàn bộ lịch sử này chỉ nhìn được ở web
+  /// nhà cung cấp, tức đúng bên KHÔNG cần đọc nó.
+  static Future<PaginationResponse<DesignVersionResponse>> getVersions(
+    String designId, {
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await ApiClient.authGet(
+      '/designs/$designId/versions',
+      {'pageNumber': pageNumber, 'pageSize': pageSize},
+    );
+    ApiClient.throwIfError(response);
+    final body = ApiClient.parseBody(response);
+    return PaginationResponse.fromJson(body, DesignVersionResponse.fromJson);
   }
 
   /// Whether a design is the provider's business only, or something the owner

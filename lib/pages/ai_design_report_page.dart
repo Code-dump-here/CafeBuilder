@@ -8,7 +8,6 @@ import 'project_success_page.dart';
 import '../services/ai_recommendation_service.dart';
 import '../services/subscription_service.dart';
 import '../models/responses/api_responses.dart';
-import '../models/marketplace_state.dart';
 import '../utils/money.dart';
 
 // ── Loading / Synthesis page ─────────────────────────────────────────────────
@@ -759,7 +758,6 @@ class AiDesignReportPage extends StatelessWidget {
 
   Widget _build3DLayoutImage(BuildContext context) {
     final url = _imageUrl();
-    final hasRealImage = report?.imageArtifactUrl?.isNotEmpty == true;
 
     return ValueListenableBuilder<bool>(
       valueListenable: SubscriptionService.isSubscribedNotifier,

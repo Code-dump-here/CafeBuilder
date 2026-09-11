@@ -4,7 +4,6 @@ import '../theme/app_colors.dart';
 import 'discovery_page.dart';
 import 'dashboard_tab.dart';
 import 'profile_tab.dart';
-import 'ai_advice_page.dart';
 import 'services_tab.dart';
 import 'marketplace_page.dart';
 import '../models/marketplace_state.dart';

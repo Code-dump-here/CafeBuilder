@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
+import '../models/responses/change_order_responses.dart';
 import '../services/design_service.dart';
+import '../services/change_order_service.dart';
 import '../services/comment_service.dart';
+import '../utils/money.dart';
 import '../widgets/comments_section.dart';
 import '../widgets/confirm_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -116,8 +119,111 @@ class _DesignDeliverablesDetailPageState
     }
   }
 
+  /// Mở lịch sử phiên bản của một thiết kế.
+  ///
+  /// Bản chụp nào cũng mang [DesignVersionResponse.changeSummary] — mô tả "khác bản
+  /// trước chỗ nào" — nên chủ quán đọc được diễn biến qua từng vòng sửa thay vì chỉ
+  /// thấy bản mới nhất.
+  Future<void> _showVersionHistory(DesignResponse design) async {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (_, scrollController) => FutureBuilder<
+            PaginationResponse<DesignVersionResponse>>(
+          future: DesignService.getVersions(design.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                  child: Padding(
+                padding: EdgeInsets.all(40),
+                child: CircularProgressIndicator(),
+              ));
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'Could not load the version history.\n${snapshot.error}',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                        fontSize: 13, color: AppColors.placeholder),
+                  ),
+                ),
+              );
+            }
+
+            final versions = snapshot.data?.items ?? const <DesignVersionResponse>[];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Text(
+                    'Version history · ${design.title}',
+                    style: GoogleFonts.playfairDisplay(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: versions.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(
+                              'No version has been published yet. A snapshot is '
+                              'taken each time the designer submits a version or '
+                              'you approve one.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                  fontSize: 13, color: AppColors.placeholder),
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(20),
+                          itemCount: versions.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          itemBuilder: (_, i) =>
+                              _DesignVersionTile(version: versions[i]),
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _requestRevision(String designId) async {
     if (_pendingActionIds.contains(designId)) return;
+
+    // Đọc hạn mức TRƯỚC khi mở ô nhập: vòng sửa vượt hạn mức sẽ sinh một khoản phát sinh
+    // (change order kind=extra_revision), nên owner phải thấy con số trước khi gõ phản hồi.
+    // Lỗi mạng ở đây không chặn luồng — server vẫn là chốt cuối, nó trả 409 nếu thiếu đồng ý.
+    RevisionQuotaResponse? quota;
+    try {
+      quota = await ChangeOrderService.getRevisionQuota(designId);
+    } catch (_) {
+      quota = null;
+    }
+    if (!mounted) return;
+
+    final willBeCharged = quota?.nextRevisionCharged ?? false;
+    final fee = quota?.extraRevisionFee;
+
     final controller = TextEditingController();
     final reason = await showDialog<String>(
       context: context,
@@ -125,15 +231,26 @@ class _DesignDeliverablesDetailPageState
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text('Request Revision',
             style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: 'Enter feedback for designer...',
-            hintStyle:
-                GoogleFonts.inter(fontSize: 13, color: AppColors.placeholder),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (quota != null) ...[
+              _RevisionQuotaBanner(quota: quota, fee: fee),
+              const SizedBox(height: 12),
+            ],
+            TextField(
+              controller: controller,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Enter feedback for designer...',
+                hintStyle: GoogleFonts.inter(
+                    fontSize: 13, color: AppColors.placeholder),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -145,7 +262,10 @@ class _DesignDeliverablesDetailPageState
                 backgroundColor: AppColors.espresso,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8))),
-            child: const Text('Submit', style: TextStyle(color: Colors.white)),
+            child: Text(
+              willBeCharged ? 'Accept fee & submit' : 'Submit',
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -163,10 +283,19 @@ class _DesignDeliverablesDetailPageState
 
     setState(() => _pendingActionIds.add(designId));
     try {
-      await DesignService.requestRevision(designId, reason: reason);
+      // Bấm nút "Accept fee & submit" CHÍNH LÀ sự đồng ý — gửi kèm để server khỏi trả 409.
+      await DesignService.requestRevision(
+        designId,
+        reason: reason,
+        acceptExtraFee: willBeCharged,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Revision request submitted.')),
+          SnackBar(
+            content: Text(willBeCharged && fee != null
+                ? 'Revision requested. An extra fee of ${formatVnd(fee)} was added as a change order.'
+                : 'Revision request submitted.'),
+          ),
         );
         setState(() {
           final idx = _designs.indexWhere((d) => d.id == designId);
@@ -556,7 +685,25 @@ class _DesignDeliverablesDetailPageState
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
+
+                // Lịch sử phiên bản — luôn hiện, kể cả khi thiết kế đã duyệt:
+                // sau khi duyệt xong chủ quán vẫn cần tra lại từng vòng đã đổi gì.
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => _showVersionHistory(design),
+                    icon: const Icon(Icons.history_rounded, size: 16),
+                    label: const Text('Version history'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.espresso,
+                      padding: EdgeInsets.zero,
+                      textStyle: GoogleFonts.inter(
+                          fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
 
                 // Action buttons
                 if (isSubmitted) ...[
@@ -808,6 +955,207 @@ class _DesignDeliverablesDetailPageState
 
   String _formatDate(DateTime dt) {
     final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  }
+}
+
+/// Hạn mức vòng sửa còn lại của một bản thiết kế, hiện ngay trong hộp thoại
+/// "Request Revision".
+///
+/// Hạn mức đến từ báo giá đã duyệt và tính trên CẢ engagement, không phải trên
+/// từng bản vẽ — nên phần "đã dùng" đọc [RevisionQuotaResponse.engagementUsedRevisionCount].
+/// [RevisionQuotaResponse.freeRevisionCount] = null nghĩa là không báo giá nào chốt
+/// con số, tức không giới hạn: khi đó không hiện gì để khỏi doạ người dùng bằng
+/// một hạn mức không tồn tại.
+class _RevisionQuotaBanner extends StatelessWidget {
+  final RevisionQuotaResponse quota;
+  final double? fee;
+
+  const _RevisionQuotaBanner({required this.quota, required this.fee});
+
+  @override
+  Widget build(BuildContext context) {
+    if (quota.freeRevisionCount == null) return const SizedBox.shrink();
+
+    final charged = quota.nextRevisionCharged;
+    final remaining = quota.remainingFreeRevisions ?? 0;
+
+    final color = charged ? const Color(0xFFB3261E) : AppColors.espresso;
+    final text = charged
+        ? (fee != null
+            // Số tiền phải nằm trong câu chữ, không chỉ ở nút bấm: đây là khoản
+            // owner sẽ phải trả thật, được ghi thành change order.
+            ? 'You have used all ${quota.freeRevisionCount} free revisions '
+                '(${quota.engagementUsedRevisionCount} used). This round costs '
+                '${formatVnd(fee!)} and will be added as a change order.'
+            : 'You have used all ${quota.freeRevisionCount} free revisions. '
+                'The provider has not published a price for extra rounds, so the '
+                'fee has to be agreed on a change order.')
+        : 'Free revisions left: $remaining of ${quota.freeRevisionCount} '
+            '(${quota.engagementUsedRevisionCount} used on this collaboration).';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(charged ? Icons.payments_outlined : Icons.info_outline,
+              size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                  fontSize: 12, height: 1.4, color: color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Một dòng trong lịch sử phiên bản.
+///
+/// `changeSummary` được đặt lên trước và nổi bật hơn phần còn lại: đó là câu trả
+/// lời cho câu hỏi duy nhất chủ quán mở màn này để hỏi — "vòng vừa rồi đổi gì".
+/// Khi provider chưa ghi thì nói thẳng là chưa ghi, thay vì để trống một khoảng
+/// làm người đọc tưởng bản này không có thay đổi nào.
+class _DesignVersionTile extends StatelessWidget {
+  final DesignVersionResponse version;
+
+  const _DesignVersionTile({required this.version});
+
+  @override
+  Widget build(BuildContext context) {
+    final isApproved = version.snapshotKind == 'approved';
+    final accent = isApproved ? const Color(0xFF2E7D32) : AppColors.espresso;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.outline.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'v${version.version.toStringAsFixed(1)} · ${version.snapshotKind}',
+                  style: GoogleFonts.inter(
+                      fontSize: 11, fontWeight: FontWeight.w700, color: accent),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _formatDate(version.snapshottedAt),
+                style: GoogleFonts.inter(
+                    fontSize: 11, color: AppColors.placeholder),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            version.changeSummary?.trim().isNotEmpty == true
+                ? version.changeSummary!
+                : 'The designer did not describe what changed in this version.',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              height: 1.45,
+              color: version.changeSummary?.trim().isNotEmpty == true
+                  ? AppColors.primary
+                  : AppColors.placeholder,
+              fontStyle: version.changeSummary?.trim().isNotEmpty == true
+                  ? FontStyle.normal
+                  : FontStyle.italic,
+            ),
+          ),
+          if (version.reason != null && version.reason!.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF6F3F2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.feedback_outlined,
+                      size: 14, color: AppColors.placeholder),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Your feedback on that round: ${version.reason}',
+                      style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          height: 1.4,
+                          color: AppColors.placeholder),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (version.images.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 64,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: version.images.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final url = version.images[i].viewUrl;
+                  if (url == null || url.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      url,
+                      width: 64,
+                      height: 64,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        width: 64,
+                        height: 64,
+                        color: const Color(0xFFF6F3F2),
+                        child: const Icon(Icons.broken_image_outlined,
+                            size: 18, color: AppColors.placeholder),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static String _formatDate(DateTime dt) {
+    const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
