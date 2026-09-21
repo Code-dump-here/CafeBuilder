@@ -13,7 +13,13 @@ class SmsOtpPage extends StatefulWidget {
 }
 
 class _SmsOtpPageState extends State<SmsOtpPage> {
-  static const _codeLength = 4;
+  // Six, because that is what the backend sends: OtpService builds a TOTP of
+  // Otp:Length digits, which defaults to 6 and is not configured anywhere. The
+  // four boxes came from the original Figma mock and survived the commit that
+  // wired this screen up, so the code that arrived by e-mail never fit — and
+  // the short code was still posted to /auth/reset-password, which counted it
+  // as a failed attempt and disabled the request after five tries.
+  static const _codeLength = 6;
   final _digitControllers = List.generate(
     _codeLength,
     (_) => TextEditingController(),
@@ -195,31 +201,42 @@ class _SmsOtpPageState extends State<SmsOtpPage> {
     );
   }
 
+  // Expanded rather than a fixed width: six 54px boxes plus the page's 36px
+  // margins overflow anything narrower than about 400px, and four of them used
+  // to fit with room to spare. Sharing the row out keeps them on one line on a
+  // small phone as well.
   Widget _buildOtpBox(int index) {
-    return Container(
-      width: 54,
-      height: 54,
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        border: Border.all(color: AppColors.outlineVariant),
-        borderRadius: BorderRadius.circular(40),
-      ),
-      child: TextField(
-        controller: _digitControllers[index],
-        textAlign: TextAlign.center,
-        maxLength: 1,
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          counterText: '',
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 3),
+        height: 54,
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          border: Border.all(color: AppColors.outlineVariant),
+          borderRadius: BorderRadius.circular(40),
         ),
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-        onChanged: (value) {
-          if (value.isNotEmpty && index < _codeLength - 1) {
-            FocusScope.of(context).nextFocus();
-          }
-        },
+        child: TextField(
+          controller: _digitControllers[index],
+          textAlign: TextAlign.center,
+          maxLength: 1,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            counterText: '',
+            contentPadding: EdgeInsets.zero,
+          ),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          onChanged: (value) {
+            if (value.isNotEmpty && index < _codeLength - 1) {
+              FocusScope.of(context).nextFocus();
+            } else if (value.isEmpty && index > 0) {
+              // Backspacing out of a box lands in the previous one, as it
+              // already does on the account verification screen.
+              FocusScope.of(context).previousFocus();
+            }
+          },
+        ),
       ),
     );
   }
