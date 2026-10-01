@@ -61,4 +61,4 @@ The codebase is organized primarily within the `lib/` directory:
 When contributing to this project, please adhere to the "Espresso & Form" design system. Avoid using raw colors inside UI files; always map your widgets to `AppColors`. Ensure that any new workflows support multi-role permissions.
 
 ---
-*Built with ❤️ for coffee lovers and creators.*
+
