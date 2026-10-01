@@ -15,6 +15,8 @@ import '../services/project_working_service.dart';
 import '../services/construction_service.dart';
 import '../services/design_service.dart';
 import '../services/design_brief_service.dart';
+import '../services/ai_recommendation_service.dart';
+import '../services/subscription_service.dart';
 import '../widgets/notifications_sheet.dart';
 import '../widgets/location_map_preview.dart';
 import 'home_page.dart';
@@ -53,6 +55,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   List<DesignResponse> _designs = [];
   List<ContractResponse> _contracts = [];
   DesignBriefResponse? _brief;
+  // Latest completed AI concept for the brief — null when none finished.
+  AiRecommendationResponse? _aiConcept;
   bool _loading = true;
   String? _error;
 
@@ -205,6 +209,16 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           : null;
       final workings = (results[1] as PaginationResponse<ProjectWorkingResponse>).items;
 
+      // The AI concept generated from the brief. Until now the image was only
+      // ever shown on the report screen right after generation — leave it and
+      // nothing in the app brought it back. Started here so it runs alongside
+      // the per-engagement fetches below; best-effort like them.
+      final aiFuture = brief == null
+          ? Future<Object?>.value(null)
+          : AiRecommendationService.getRecommendations(briefId: brief.id, pageSize: 20)
+              .then<Object?>((r) => r)
+              .catchError((_) => null);
+
       // Real milestone + activity data lives per-engagement, so gather it in
       // parallel rather than serially.
       final items = <ConstructionItemResponse>[];
@@ -237,6 +251,15 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           }
         }
       }
+
+      // Newest completed job wins. Sorted here rather than trusting the list
+      // order; failed and still-running jobs have nothing to show.
+      final aiRes = await aiFuture;
+      final completedAi = aiRes is PaginationResponse<AiRecommendationResponse>
+          ? (aiRes.items.where((r) => r.isCompleted).toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
+          : <AiRecommendationResponse>[];
+      final aiConcept = completedAi.isEmpty ? null : completedAi.first;
 
       // Application counts per open post. Best-effort: a failure here costs a
       // count on a chip, not the page.
@@ -273,6 +296,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           _designs = designs;
           _contracts = contracts;
           _brief = brief;
+          _aiConcept = aiConcept;
           _loading = false;
         });
         _animController.forward(from: 0.0);
@@ -475,6 +499,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                           child: _buildBudgetOverview(project),
                         ),
                         const SizedBox(height: 24),
+                        if (_aiConcept != null) ...[
+                          _buildAnimatedSection(
+                            index: 4,
+                            child: _buildAiConcept(_aiConcept!),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
                         if (_brief != null) ...[
                           _buildAnimatedSection(
                             index: 4,
@@ -976,6 +1007,181 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
               _buildActivityItem(a.title, _relativeDay(a.at), const Color(0xFFD9EAA3)),
         ],
       )
+    );
+  }
+
+  /// The concept the AI generated from the brief: its image, name and summary.
+  ///
+  /// The image is read straight from `imageArtifactUrl`, i.e. from the AI
+  /// service's own artifact host — nothing is copied to our bucket. If that
+  /// host ever stops serving old artifacts, copy them in the backend when the
+  /// result arrives; this widget keeps reading the same field either way.
+  ///
+  /// Same paywall as the report screen, but locked rather than blurred: the
+  /// image is not requested at all without a subscription. On web the artifact
+  /// host sends no CORS headers, so `Image.network` falls back to an `<img>`
+  /// element, and a blur filter isn't guaranteed to reach one.
+  Widget _buildAiConcept(AiRecommendationResponse rec) {
+    final name = (rec.planConceptName ?? '').trim();
+    final summary = (rec.planSummary ?? '').trim().isNotEmpty
+        ? rec.planSummary!.trim()
+        : rec.conceptSummary.trim();
+    final url = (rec.imageArtifactUrl ?? '').trim();
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'AI Concept',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.espresso,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Generated from your design brief.',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              height: 200,
+              width: double.infinity,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: SubscriptionService.isSubscribedNotifier,
+                builder: (context, isSubscribed, _) {
+                  if (!isSubscribed) return _buildAiConceptLocked(context);
+                  if (url.isEmpty || !_isImageUrl(url)) {
+                    return _buildAiConceptNoImage();
+                  }
+                  return Image.network(
+                    webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+                    url,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) => progress == null
+                        ? child
+                        : Container(
+                            color: AppColors.outlineVariant.withValues(alpha: 0.2),
+                            alignment: Alignment.center,
+                            child: const CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                    errorBuilder: (context, _, _) => _buildAiConceptNoImage(),
+                  );
+                },
+              ),
+            ),
+          ),
+          if (name.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              name,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.espresso,
+              ),
+            ),
+          ],
+          if (summary.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              summary,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                height: 1.5,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Whether an artifact URL points at something `Image.network` can draw.
+  ///
+  /// A job can finish `completed` with the image-spec JSON in
+  /// `imageArtifactUrl` when the render itself didn't come out; asking the
+  /// image widget to decode that only ends in its error state, and on web the
+  /// `<img>` fallback may not even report the failure. No extension at all is
+  /// let through — the error builder still catches a bad one.
+  static bool _isImageUrl(String url) {
+    final file = (Uri.tryParse(url)?.pathSegments.lastOrNull ?? '').toLowerCase();
+    final dot = file.lastIndexOf('.');
+    if (dot < 0) return true;
+    return const {'.png', '.jpg', '.jpeg', '.webp', '.gif'}.contains(file.substring(dot));
+  }
+
+  Widget _buildAiConceptNoImage() {
+    return Container(
+      color: AppColors.outlineVariant.withValues(alpha: 0.2),
+      padding: const EdgeInsets.all(16),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.image_not_supported_outlined, color: AppColors.outline, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            'No image was generated for this concept.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiConceptLocked(BuildContext context) {
+    return Container(
+      color: AppColors.espresso.withValues(alpha: 0.85),
+      padding: const EdgeInsets.all(16),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.lock_rounded, color: Color(0xFFFFD700), size: 28),
+          const SizedBox(height: 8),
+          Text(
+            'Subscribe to see the AI concept image.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pushNamed(context, '/subscription-checkout'),
+            icon: const Icon(Icons.workspace_premium, size: 16),
+            label: Text(
+              'Upgrade',
+              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD700),
+              foregroundColor: AppColors.espresso,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
