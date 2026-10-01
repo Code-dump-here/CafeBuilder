@@ -380,8 +380,15 @@ class AiDesignReportPage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.espresso),
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home_outlined, color: AppColors.espresso),
+            tooltip: 'Go to Home',
+            onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false),
+          ),
+        ],
         title: Text(
           'AI Design Synthesis Report',
           style: GoogleFonts.playfairDisplay(
