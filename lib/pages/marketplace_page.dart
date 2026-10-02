@@ -710,27 +710,13 @@ class _MarketplacePageState extends State<MarketplacePage>
                                   'Budget Tier', project.budgetTier)),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'PROJECT DESCRIPTION',
-                        style: GoogleFonts.inter(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.placeholder,
-                            letterSpacing: 1.0),
-                      ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 28),
+                      _buildSectionLabel('PROJECT DESCRIPTION'),
+                      const SizedBox(height: 10),
                       _buildRichDescription(project.description),
-                      const SizedBox(height: 24),
-                      Text(
-                        'SERVICE REQUIREMENTS',
-                        style: GoogleFonts.inter(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.placeholder,
-                            letterSpacing: 1.0),
-                      ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 28),
+                      _buildSectionLabel('SERVICE REQUIREMENTS'),
+                      const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -745,7 +731,7 @@ class _MarketplacePageState extends State<MarketplacePage>
                                           color: AppColors.outlineVariant)),
                                   child: Text(req,
                                       style: GoogleFonts.inter(
-                                          fontSize: 11,
+                                          fontSize: 12,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.espresso)),
                                 ))
@@ -766,6 +752,32 @@ class _MarketplacePageState extends State<MarketplacePage>
           ),
         );
       },
+    );
+  }
+
+  /// Heading for a block of the detail sheet.
+  ///
+  /// The sheet used to set every label at 9pt in the placeholder grey and
+  /// every value at 13pt in the secondary grey, so a heading carried no more
+  /// weight than the sentence under it and the whole sheet read as one page of
+  /// grey. A heading is darker, larger and sits above a rule; the text under it
+  /// is darker and roomier (see `_buildRichDescription`).
+  Widget _buildSectionLabel(String text) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          text,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AppColors.espresso,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(height: 1, color: AppColors.outlineVariant),
+      ],
     );
   }
 
@@ -807,15 +819,16 @@ class _MarketplacePageState extends State<MarketplacePage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
+          Text(label.toUpperCase(),
               style: GoogleFonts.inter(
-                  fontSize: 9,
+                  fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.placeholder)),
-          const SizedBox(height: 4),
+                  letterSpacing: 0.8,
+                  color: AppColors.textSecondary)),
+          const SizedBox(height: 6),
           Text(val,
               style: GoogleFonts.playfairDisplay(
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: AppColors.espresso)),
         ],
@@ -838,9 +851,9 @@ class _MarketplacePageState extends State<MarketplacePage>
           if (before.isNotEmpty)
             Text(before,
                 style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    height: 1.5)),
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                    height: 1.6)),
           if (before.isNotEmpty) const SizedBox(height: 16),
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
@@ -856,18 +869,18 @@ class _MarketplacePageState extends State<MarketplacePage>
           if (after.isNotEmpty)
             Text(after,
                 style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    height: 1.5)),
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                    height: 1.6)),
         ],
       );
     }
 
     return Text(text,
         style: GoogleFonts.inter(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-            height: 1.5));
+            fontSize: 14,
+            color: AppColors.textPrimary,
+            height: 1.6));
   }
 }
 
