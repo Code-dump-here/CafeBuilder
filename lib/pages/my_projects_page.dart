@@ -83,7 +83,16 @@ class _MyProjectsPageState extends State<MyProjectsPage> with SingleTickerProvid
 
   Future<void> _loadPostedProjectIds() async {
     try {
-      final response = await PostService.getPosts(pageNumber: 1, pageSize: 100);
+      // Only posts still open count as "already posted". Asking for every post
+      // regardless of status marked a project as posted for good: once an
+      // opening was filled — which closes it — the Post button never came
+      // back, so the second opening a project usually needs (design hired,
+      // construction still to find) could not be published from here.
+      final response = await PostService.getPosts(
+        pageNumber: 1,
+        pageSize: 100,
+        status: 'open',
+      );
       if (mounted) {
         setState(() {
           _postedProjectIds.clear();
