@@ -3,6 +3,15 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../models/responses/api_responses.dart';
 import '../services/project_working_service.dart';
+import '../services/project_service.dart';
+import '../services/quotation_service.dart';
+import '../models/responses/quotation_payment_responses.dart';
+import 'quotation_details_page.dart';
+import 'payment_batches_page.dart';
+import 'change_orders_page.dart';
+import '../services/payment_batch_service.dart';
+import '../services/change_order_service.dart';
+import '../models/responses/change_order_responses.dart';
 import '../services/contract_service.dart';
 import '../services/design_service.dart';
 import '../services/construction_service.dart';
@@ -30,6 +39,25 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
 
   String? _activeWorkingId;
   ProjectWorkingResponse? _working;
+  // Every engagement on the project. The page aggregates designs and
+  // construction across all of them, so acceptance has to be per engagement
+  // too — pinning it to the one we opened with (always the designer) left the
+  // constructor's engagement with no way to be accepted or ended (02/10/2026).
+  List<ProjectWorkingResponse> _engagements = [];
+  ProjectResponse? _project;
+  // Quotations per engagement id. The owner app only reached a quotation from
+  // the Proposals screen, so one sent after the proposal was accepted — or one
+  // for a direct hire — could never be approved, and the contract could never
+  // be built from it (no payment instalments).
+  Map<String, List<QuotationResponse>> _quotationsByEngagement = {};
+  // Payment instalments per DESIGN engagement id. The server refuses to accept
+  // design work while any instalment is unconfirmed (owner uploads the proof,
+  // the designer confirms it), so the button has to know before it is pressed.
+  Map<String, List<PaymentBatchResponse>> _batchesByEngagement = {};
+  // Change orders still waiting for a decision, per engagement id. Like an
+  // unpaid instalment, each one blocks accepting the work and closing the
+  // project until it is accepted or rejected.
+  Map<String, List<ChangeOrderResponse>> _pendingChangeOrdersByEngagement = {};
   List<ContractResponse> _contracts = [];
   List<DesignResponse> _designs = [];
   List<ConstructionItemResponse> _constructionItems = [];
@@ -82,6 +110,46 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       final workingsPage = await ProjectWorkingService.getProjectWorkings(projectShopOwnerId: projectId, pageSize: 50);
       final allWorkingIds = workingsPage.items.map((w) => w.id).toList();
 
+      // Project status decides the closing banner and the "Close project"
+      // button. A failure only costs that part of the page.
+      ProjectResponse? project;
+      try {
+        project = await ProjectService.getProject(projectId);
+      } catch (_) {}
+
+      // Listing by engagement returns both anchors: quotations filed on the
+      // engagement itself and the won bid filed under the application it grew
+      // from (a quotation priced after the proposal was accepted can only sit
+      // on the engagement).
+      final quotationsByEngagement = <String, List<QuotationResponse>>{};
+      for (final w in workingsPage.items) {
+        if (w.status.toLowerCase() == 'rejected') continue;
+        try {
+          final page = await QuotationService.getQuotations(
+            projectWorkingId: w.id,
+            pageSize: 20,
+          );
+          quotationsByEngagement[w.id] = page.items;
+        } catch (_) {}
+      }
+
+      // Every engagement except rejected / ended-early ones: accepting the work
+      // and closing the project both wait on these (server PaymentSettlementRules).
+      final batchesByEngagement = <String, List<PaymentBatchResponse>>{};
+      final pendingChangeOrdersByEngagement = <String, List<ChangeOrderResponse>>{};
+      for (final w in workingsPage.items) {
+        final s = w.status.toLowerCase();
+        if (s == 'rejected' || s == 'terminated') continue;
+        try {
+          final page = await PaymentBatchService.getBatches(projectWorkingId: w.id, pageSize: 50);
+          batchesByEngagement[w.id] = page.items;
+        } catch (_) {}
+        try {
+          final page = await ChangeOrderService.getAll(projectWorkingId: w.id, status: 'pending');
+          pendingChangeOrdersByEngagement[w.id] = page.items;
+        } catch (_) {}
+      }
+
       List<ContractResponse> allContracts = [];
       List<DesignResponse> allDesigns = [];
       List<ConstructionItemResponse> allItems = [];
@@ -132,6 +200,11 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
       if (mounted) {
         setState(() {
           _working = workingRes;
+          _engagements = workingsPage.items;
+          _project = project;
+          _quotationsByEngagement = quotationsByEngagement;
+          _batchesByEngagement = batchesByEngagement;
+          _pendingChangeOrdersByEngagement = pendingChangeOrdersByEngagement;
           _contracts = allContracts;
           _designs = DesignService.ownerVisible(allDesigns);
           _constructionItems = allItems;
@@ -229,13 +302,31 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     }
   }
 
-  Future<void> _completeProject() async {
-    if (_activeWorkingId == null) return;
+  /// "Design" / "Construction" — the scope an engagement covers, for labels.
+  static String _scopeLabel(ProjectWorkingResponse w) {
+    switch (w.contractType.toLowerCase()) {
+      case 'design':
+        return 'Design';
+      case 'construction':
+        return 'Construction';
+      case 'both':
+        return 'Design & construction';
+      default:
+        return w.contractType;
+    }
+  }
+
+  /// Accepts ONE provider's work. The project itself stays open until every
+  /// engagement is closed and the owner closes it.
+  Future<void> _completeEngagement(ProjectWorkingResponse w) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Accept and close engagement'),
-        content: const Text('Are you sure you want to accept the work and end the engagement with this provider?'),
+        title: Text('Accept ${_scopeLabel(w).toLowerCase()} work'),
+        content: Text(
+          'Accept the ${_scopeLabel(w).toLowerCase()} work of ${w.providerDisplayName} and close '
+          'this engagement? Other providers on the project are not affected.',
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           ElevatedButton(
@@ -252,13 +343,13 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     setState(() => _engagementActionInProgress = true);
 
     try {
-      await ProjectWorkingService.completeEngagement(_activeWorkingId!);
+      await ProjectWorkingService.completeEngagement(w.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Project marked as completed! You can now write a review.')),
+          SnackBar(content: Text('${w.providerDisplayName}\'s work accepted. You can now write a review.')),
         );
         _loadWorkspaceData();
-        _showReviewDialog();
+        _showReviewDialog(w);
       }
     } catch (e) {
       if (mounted) {
@@ -277,8 +368,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   /// Asks the provider to end the engagement. This does *not* end it — the
   /// provider has to agree first — so the copy says so rather than claiming
   /// the work is already cancelled.
-  Future<void> _terminateEngagement() async {
-    if (_activeWorkingId == null) return;
+  Future<void> _terminateEngagement(ProjectWorkingResponse w) async {
     final reasonController = TextEditingController();
     final confirm = await showDialog<bool>(
       context: context,
@@ -322,7 +412,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
 
     try {
       final updated = await ProjectWorkingService.requestTermination(
-        _activeWorkingId!,
+        w.id,
         reason: reason,
       );
       if (mounted) {
@@ -350,8 +440,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   }
 
   /// Answers a request the provider raised.
-  Future<void> _respondToTermination(bool approve) async {
-    if (_activeWorkingId == null) return;
+  Future<void> _respondToTermination(ProjectWorkingResponse w, bool approve) async {
     if (approve) {
       final confirm = await showDialog<bool>(
         context: context,
@@ -377,7 +466,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
 
     try {
       await ProjectWorkingService.respondToTermination(
-        _activeWorkingId!,
+        w.id,
         approve: approve,
       );
       if (mounted) {
@@ -402,9 +491,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   /// Shown while a termination request is waiting on someone. Which side
   /// raised it decides whether the owner answers it or can withdraw it —
   /// without this the owner had no way to see a provider's request at all.
-  Widget _buildTerminationBanner() {
-    final w = _working;
-    if (w == null) return const SizedBox.shrink();
+  Widget _buildTerminationBanner(ProjectWorkingResponse w) {
     final raisedByProvider = w.terminationRequestedBy?.toLowerCase() == 'provider';
     final note = w.terminationRequestNote;
 
@@ -451,13 +538,33 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                 : 'The engagement continues until they agree.',
             style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
           ),
+          // Agreeing to end a signed engagement leaves its scope unfinished,
+          // and the server won't close a project like that (ProjectClosureRules).
+          // Owners were ending a finished constructor to "get it out of the
+          // way" and then found the project stuck — say so before they agree.
+          if (raisedByProvider && w.hasConfirmedContract) ...[
+            const SizedBox(height: 8),
+            Text(
+              _deliverablesDone(w)
+                  ? 'This work looks finished — accept it instead. Ending a signed engagement '
+                      'means the project cannot be closed until someone else completes this part.'
+                  : 'Ending a signed engagement means the project cannot be closed until someone '
+                      'else completes this part.',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFFE65100),
+                height: 1.4,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           if (raisedByProvider)
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _engagementActionInProgress ? null : () => _respondToTermination(false),
+                    onPressed: _engagementActionInProgress ? null : () => _respondToTermination(w, false),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.espresso,
                       side: const BorderSide(color: AppColors.outlineVariant),
@@ -469,7 +576,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _engagementActionInProgress ? null : () => _respondToTermination(true),
+                    onPressed: _engagementActionInProgress ? null : () => _respondToTermination(w, true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
@@ -485,7 +592,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: _engagementActionInProgress ? null : _withdrawTerminationRequest,
+                onPressed: _engagementActionInProgress ? null : () => _withdrawTerminationRequest(w),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.espresso,
                   side: const BorderSide(color: AppColors.outlineVariant),
@@ -500,12 +607,11 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
   }
 
   /// Withdraws our own pending request.
-  Future<void> _withdrawTerminationRequest() async {
-    if (_activeWorkingId == null) return;
+  Future<void> _withdrawTerminationRequest(ProjectWorkingResponse w) async {
     if (_engagementActionInProgress) return;
     setState(() => _engagementActionInProgress = true);
     try {
-      await ProjectWorkingService.cancelTerminationRequest(_activeWorkingId!);
+      await ProjectWorkingService.cancelTerminationRequest(w.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Request withdrawn.')),
@@ -521,8 +627,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     }
   }
 
-  void _showReviewDialog() {
-    if (_activeWorkingId == null) return;
+  void _showReviewDialog(ProjectWorkingResponse w) {
     double rating = 5.0;
     final commentController = TextEditingController();
 
@@ -534,7 +639,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Rate your experience with this provider:'),
+              Text('Rate your experience with ${w.providerDisplayName}:'),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -566,7 +671,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               onPressed: () async {
                 try {
                   await ReviewService.createReview(
-                    projectWorkingId: _activeWorkingId!,
+                    projectWorkingId: w.id,
                     overallRating: rating,
                     comment: commentController.text.trim(),
                   );
@@ -1403,14 +1508,31 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
               child: Row(
                 children: [
                   Icon(
-                    task.status == 'completed' ? Icons.check_circle : Icons.radio_button_unchecked,
+                    task.status == 'completed'
+                        ? Icons.check_circle
+                        : task.status == 'in_progress'
+                            ? Icons.timelapse
+                            : Icons.radio_button_unchecked,
                     size: 14,
-                    color: task.status == 'completed' ? Colors.green : AppColors.placeholder,
+                    color: task.status == 'completed'
+                        ? Colors.green
+                        : task.status == 'in_progress'
+                            ? const Color(0xFFE65100)
+                            : AppColors.placeholder,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(task.name, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textPrimary)),
                   ),
+                  if (task.status == 'in_progress')
+                    Text(
+                      'In progress',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFE65100),
+                      ),
+                    ),
                   if (task.imageUrl != null)
                     IconButton(
                       icon: const Icon(Icons.photo, size: 16, color: AppColors.espresso),
@@ -1452,8 +1574,248 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
     );
   }
 
+  /// Mirrors the server's acceptance rule (ProjectWorkingService): the work is
+  /// acceptable once the provider reports completion, or once its
+  /// deliverables are visibly done — design: an approved design;
+  /// construction: every milestone completed. Until then the button stays
+  /// disabled, so accepting the designer can't be mistaken for accepting the
+  /// constructor's unfinished site.
+  bool _deliverablesDone(ProjectWorkingResponse w) {
+    final designsOk = _designs.any(
+        (d) => d.projectWorkingId == w.id && d.status.toLowerCase() == 'approved');
+    final items = _constructionItems.where((i) => i.projectWorkingId == w.id).toList();
+    final constructionOk =
+        items.isNotEmpty && items.every((i) => i.status.toLowerCase() == 'completed');
+    switch (w.contractType.toLowerCase()) {
+      case 'design':
+        return designsOk;
+      case 'construction':
+        return constructionOk;
+      case 'both':
+        return designsOk && constructionOk;
+      default:
+        return false;
+    }
+  }
+
+  /// Instalments of one engagement not yet confirmed by the provider.
+  List<PaymentBatchResponse> _unsettledBatchesOf(String engagementId) =>
+      (_batchesByEngagement[engagementId] ?? const <PaymentBatchResponse>[])
+          .where((b) => b.status.toLowerCase() != 'confirmed')
+          .toList()
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+  /// Every unsettled instalment on the project, as (provider, batch). The
+  /// server refuses to close or delete the project while any remain.
+  List<(ProjectWorkingResponse, PaymentBatchResponse)> get _unsettledForProject => [
+        for (final w in _engagements)
+          for (final b in _unsettledBatchesOf(w.id)) (w, b),
+      ];
+
+  /// Change orders still waiting for a decision on one engagement.
+  List<ChangeOrderResponse> _pendingChangeOrdersOf(String engagementId) =>
+      _pendingChangeOrdersByEngagement[engagementId] ?? const <ChangeOrderResponse>[];
+
+  /// Every pending change order on the project, as (provider, order).
+  List<(ProjectWorkingResponse, ChangeOrderResponse)> get _pendingChangeOrdersForProject => [
+        for (final w in _engagements)
+          for (final o in _pendingChangeOrdersOf(w.id)) (w, o),
+      ];
+
+  Future<void> _openChangeOrders() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeOrdersPage(
+          projectWorkings: _engagements,
+          projectName: _working?.projectName ?? 'Project',
+        ),
+      ),
+    );
+    if (mounted) _loadWorkspaceData();
+  }
+
+  /// What is still owed before [action]: unpaid instalments and change orders
+  /// awaiting a decision, with a way to each screen that settles them.
+  Widget _buildOutstandingBox({
+    required String action,
+    required List<(String, PaymentBatchResponse)> batches,
+    required List<(String, ChangeOrderResponse)> changeOrders,
+  }) {
+    final lineStyle = GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.4);
+    Widget link(String label, VoidCallback onTap) => TextButton(
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(0, 32),
+            foregroundColor: AppColors.espresso,
+          ),
+          onPressed: onTap,
+          child: Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700)),
+        );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFFB300)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Settle these before $action:',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFFB27300),
+            ),
+          ),
+          const SizedBox(height: 6),
+          for (final (prefix, b) in batches)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                '• $prefix${b.name} · ${formatVnd(b.amount)} — ${_batchStatusHint(b)}',
+                style: lineStyle,
+              ),
+            ),
+          for (final (prefix, o) in changeOrders)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                '• ${prefix}Change order "${o.title}" · ${formatVnd(o.amount)} — accept or reject it',
+                style: lineStyle,
+              ),
+            ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 16,
+            children: [
+              if (batches.isNotEmpty) link('Open Payments', _openPayments),
+              if (changeOrders.isNotEmpty) link('Open Change orders', _openChangeOrders),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _batchStatusHint(PaymentBatchResponse b) => switch (b.status.toLowerCase()) {
+        'proof_submitted' => 'waiting for the provider to confirm',
+        'rejected' => 'proof rejected, upload a new one',
+        _ => 'upload your payment proof',
+      };
+
+  Future<void> _openPayments() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentBatchesPage(
+          projectWorkings: _engagements,
+          projectName: _working?.projectName ?? 'Project',
+        ),
+      ),
+    );
+    if (mounted) _loadWorkspaceData();
+  }
+
+  bool get _projectCompleted => _project?.status.toLowerCase() == 'completed';
+  bool get _projectCancelled => _project?.status.toLowerCase() == 'cancelled';
+
+  /// Engagements still holding the project open — the server refuses to close
+  /// the project while any of these exist.
+  List<ProjectWorkingResponse> get _openEngagements => _engagements
+      .where((e) => ProjectWorkingService.engagedStatuses.contains(e.status.toLowerCase()))
+      .toList();
+
+  static bool _coversScope(ProjectWorkingResponse w, String scope) {
+    final kind = w.contractType.toLowerCase();
+    return kind == scope || kind == 'both';
+  }
+
+  /// Scopes ('design' / 'construction') whose provider signed a contract and
+  /// then ended the engagement midway, with nobody accepted for that scope.
+  /// Mirrors rule 4 of the server's ProjectClosureRules: such a project can't
+  /// be closed — ending a signed engagement doesn't finish the work.
+  List<String> get _abandonedScopes => const ['design', 'construction']
+      .where((scope) =>
+          _engagements.any((e) =>
+              e.status.toLowerCase() == 'terminated' &&
+              e.hasConfirmedContract &&
+              _coversScope(e, scope)) &&
+          !_engagements.any((e) => e.status.toLowerCase() == 'completed' && _coversScope(e, scope)))
+      .toList();
+
+  Future<void> _closeProject() async {
+    final project = _project;
+    if (project == null) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Close project'),
+        content: const Text(
+          'Every provider has been accepted or has left the project. Close the project now?',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.espresso),
+            child: const Text('Close project', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    if (_engagementActionInProgress) return;
+    setState(() => _engagementActionInProgress = true);
+    try {
+      await ProjectService.completeProject(project.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Project closed.')),
+        );
+        _loadWorkspaceData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _engagementActionInProgress = false);
+    }
+  }
+
   Widget _buildAcceptanceSection() {
-    final isCompleted = _working?.status == 'completed';
+    final isCompleted = _projectCompleted;
+    // Rejected engagements never started — nothing to accept or end.
+    final engagements = _engagements
+        .where((e) => e.status.toLowerCase() != 'rejected')
+        .toList();
+    final open = _openEngagements;
+    final accepted = _engagements.where((e) => e.status.toLowerCase() == 'completed').toList();
+    final abandoned = _abandonedScopes;
+    final unpaid = _unsettledForProject;
+    final undecided = _pendingChangeOrdersForProject;
+    final owesSomething = unpaid.isNotEmpty || undecided.isNotEmpty;
+    // Everything but money is in order: show what is left to pay or decide
+    // instead of a Close button the server would refuse.
+    final closableButUnpaid = !isCompleted &&
+        !_projectCancelled &&
+        _project != null &&
+        open.isEmpty &&
+        accepted.isNotEmpty &&
+        abandoned.isEmpty &&
+        owesSomething;
+    final canCloseProject = !isCompleted &&
+        !_projectCancelled &&
+        _project != null &&
+        open.isEmpty &&
+        accepted.isNotEmpty &&
+        abandoned.isEmpty &&
+        !owesSomething;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1493,7 +1855,11 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isCompleted ? 'Project Completed!' : 'Final Acceptance',
+                      isCompleted
+                          ? 'Project Completed!'
+                          : _projectCancelled
+                              ? 'Project Cancelled'
+                              : 'Final Acceptance',
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -1504,7 +1870,7 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                     Text(
                       isCompleted
                           ? 'Congratulations! This project has been signed off.'
-                          : 'Ready to finalize? Review all deliverables first.',
+                          : 'Accept each provider\'s work separately, then close the project.',
                       style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
@@ -1513,53 +1879,11 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
             ],
           ),
           const SizedBox(height: 20),
-          if (!isCompleted) ...[
-            Text(
-              'When all designs and construction milestones meet your expectations, tap below to complete the project and rate your provider.',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
-            ),
-            const SizedBox(height: 20),
-            if (_working?.status == 'accepted' && _working?.hasConfirmedContract == true)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _engagementActionInProgress ? null : _completeProject,
-                  icon: const Icon(Icons.check_circle, size: 20, color: Colors.white),
-                  label: Text(_working?.isAwaitingAcceptance == true ? 'Acceptance (pending)' : 'Accept work'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _working?.isAwaitingAcceptance == true ? Colors.green.shade700 : AppColors.espresso,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    elevation: _working?.isAwaitingAcceptance == true ? 4 : 0,
-                  ),
-                ),
-              ),
-            if (_working?.isAwaitingTerminationApproval == true) ...[
-              const SizedBox(height: 12),
-              _buildTerminationBanner(),
-            ] else if (_working?.status == 'accepted') ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _engagementActionInProgress ? null : _terminateEngagement,
-                  icon: const Icon(Icons.cancel, size: 20, color: Colors.red),
-                  // Reads as a proposal, not a done deal — the provider still
-                  // has to agree before anything ends.
-                  label: const Text('Request to end the engagement'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                ),
-              ),
-            ],
-          ] else ...[
+          for (final w in engagements) ...[
+            _buildEngagementAcceptanceCard(w),
+            const SizedBox(height: 12),
+          ],
+          if (isCompleted) ...[
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1579,20 +1903,337 @@ class _CollaborationWorkspacePageState extends State<CollaborationWorkspacePage>
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+          ] else if (canCloseProject) ...[
+            const SizedBox(height: 4),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _showReviewDialog,
-                icon: const Icon(Icons.star, size: 20, color: Colors.white),
-                label: const Text('Rate Your Provider'),
+                onPressed: _engagementActionInProgress ? null : _closeProject,
+                icon: const Icon(Icons.verified, size: 20, color: Colors.white),
+                label: const Text('Close project'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF9A825),
+                  backgroundColor: const Color(0xFF2E7D32),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
+                ),
+              ),
+            ),
+          ] else if (closableButUnpaid) ...[
+            const SizedBox(height: 4),
+            _buildOutstandingBox(
+              action: 'closing the project',
+              batches: [for (final (w, b) in unpaid) ('${_scopeLabel(w)} — ', b)],
+              changeOrders: [for (final (w, o) in undecided) ('${_scopeLabel(w)} — ', o)],
+            ),
+          ] else if (open.isNotEmpty && !_projectCancelled) ...[
+            const SizedBox(height: 4),
+            Text(
+              'The project can be closed once every provider above is accepted or has ended '
+              'the engagement (${open.length} still open).',
+              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.5),
+            ),
+          ] else if (abandoned.isNotEmpty && !_projectCancelled) ...[
+            const SizedBox(height: 4),
+            Text(
+              'The ${abandoned.join(' and ')} work was ended after the contract was signed and '
+              'nobody has finished it. Hire a provider to complete it before closing the project, '
+              'or cancel the project from the project page.',
+              style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFFE65100), height: 1.5),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// The quotation that prices this engagement, and whether the signed
+  /// contract agrees with it. Payment instalments are generated from the
+  /// approved quotation's terms, so the contract total has to match it.
+  Widget _buildQuotationRow(ProjectWorkingResponse w) {
+    final list = [...(_quotationsByEngagement[w.id] ?? const <QuotationResponse>[])]
+      ..sort((a, b) => b.version.compareTo(a.version));
+    final approved = list.where((q) => q.status.toLowerCase() == 'accepted').firstOrNull;
+    final waiting = approved == null
+        ? list
+            .where((q) => const {'sent', 'revision_requested'}.contains(q.status.toLowerCase()))
+            .firstOrNull
+        : null;
+    final quotation = approved ?? waiting;
+    if (quotation == null) return const SizedBox.shrink();
+
+    final needsDecision = quotation.status.toLowerCase() == 'sent';
+    final statusText = switch (quotation.status.toLowerCase()) {
+      'accepted' => 'Approved',
+      'sent' => 'Waiting for your approval',
+      'revision_requested' => 'New version requested',
+      final other => other,
+    };
+
+    final signed = _contracts
+        .where((c) => c.projectWorkingId == w.id && c.status == 'confirmed')
+        .firstOrNull;
+    final mismatch = approved != null &&
+        signed != null &&
+        (signed.agreedValue - approved.totalAmount).abs() >= 1;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: needsDecision ? const Color(0xFFFFF8E1) : const Color(0xFFF6F3F1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: needsDecision ? const Color(0xFFFFB300) : AppColors.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.request_quote_outlined, size: 18, color: AppColors.espresso),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Quotation v${quotation.version} · ${formatVnd(quotation.totalAmount)}',
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.espresso),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              statusText,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: needsDecision ? const Color(0xFFB27300) : AppColors.textSecondary,
+              ),
+            ),
+            if (needsDecision) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Approve it so the contract and its payment instalments follow this price.',
+                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+              ),
+            ],
+            if (mismatch) ...[
+              const SizedBox(height: 6),
+              Text(
+                'The signed contract (${formatVnd(signed.agreedValue)}) does not match this quotation — '
+                'payment instalments follow the quotation.',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFE65100),
+                  height: 1.4,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 32),
+                  foregroundColor: AppColors.espresso,
+                ),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => QuotationDetailsPage(
+                        quotationId: quotation.id,
+                        initialQuotation: quotation,
+                        scope: w.contractType,
+                      ),
+                    ),
+                  );
+                  if (mounted) _loadWorkspaceData();
+                },
+                child: Text(
+                  needsDecision ? 'Review & approve quotation' : 'View quotation',
+                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// One provider's acceptance state and the actions that apply to it alone.
+  Widget _buildEngagementAcceptanceCard(ProjectWorkingResponse w) {
+    final status = w.status.toLowerCase();
+    final isAccepted = status == 'accepted';
+    final ready = w.isAwaitingAcceptance || _deliverablesDone(w);
+    // Every scope (design and construction): pay every instalment and decide
+    // every change order before accepting the work — the server refuses
+    // otherwise (PaymentSettlementRules, 02/10/2026).
+    final unsettled = _unsettledBatchesOf(w.id);
+    final undecided = _pendingChangeOrdersOf(w.id);
+    final owes = unsettled.isNotEmpty || undecided.isNotEmpty;
+    final canAccept = ready && !owes;
+
+    final (String chip, Color chipColor) = switch (status) {
+      'completed' => ('Accepted', const Color(0xFF2E7D32)),
+      'terminated' => ('Ended', Colors.grey.shade700),
+      'requested' => ('Invitation pending', const Color(0xFF6D4C41)),
+      _ when w.isAwaitingTerminationApproval => ('End requested', const Color(0xFFE65100)),
+      _ when ready && owes => ('Payment pending', const Color(0xFFB27300)),
+      _ when w.isAwaitingAcceptance => ('Ready for acceptance', Colors.green.shade700),
+      _ when !w.hasConfirmedContract => ('Contract not signed', const Color(0xFF6D4C41)),
+      _ => ('In progress', AppColors.espresso),
+    };
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _scopeLabel(w).toUpperCase(),
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      w.providerDisplayName.isNotEmpty ? w.providerDisplayName : 'Provider',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.espresso,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: chipColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  chip,
+                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: chipColor),
+                ),
+              ),
+            ],
+          ),
+          _buildQuotationRow(w),
+          if (status == 'requested') ...[
+            const SizedBox(height: 8),
+            Text(
+              'Waiting for the provider to accept the invitation.',
+              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+            ),
+          ],
+          if (isAccepted && w.isAwaitingAcceptance &&
+              (w.completionRequestNote?.trim().isNotEmpty ?? false)) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Provider\'s note: ${w.completionRequestNote}',
+              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+            ),
+          ],
+          if (isAccepted && w.hasConfirmedContract) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _engagementActionInProgress || !canAccept ? null : () => _completeEngagement(w),
+                icon: const Icon(Icons.check_circle, size: 20, color: Colors.white),
+                label: Text('Accept ${_scopeLabel(w).toLowerCase()} work'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: w.isAwaitingAcceptance ? Colors.green.shade700 : AppColors.espresso,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.outlineVariant,
+                  disabledForegroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            if (!ready) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Available once ${w.providerDisplayName} finishes and reports completion.',
+                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+              ),
+            ] else if (owes) ...[
+              const SizedBox(height: 8),
+              _buildOutstandingBox(
+                action: 'accepting the ${_scopeLabel(w).toLowerCase()} work',
+                batches: [for (final b in unsettled) ('', b)],
+                changeOrders: [for (final o in undecided) ('', o)],
+              ),
+            ],
+          ],
+          if (isAccepted && w.isAwaitingTerminationApproval) ...[
+            const SizedBox(height: 12),
+            _buildTerminationBanner(w),
+          ] else if (isAccepted) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _engagementActionInProgress ? null : () => _terminateEngagement(w),
+                icon: const Icon(Icons.cancel, size: 18, color: Colors.red),
+                // Reads as a proposal, not a done deal — the provider still
+                // has to agree before anything ends.
+                label: const Text('Request to end the engagement'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+          if (status == 'completed') ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _showReviewDialog(w),
+                icon: const Icon(Icons.star, size: 18, color: Color(0xFFF9A825)),
+                label: const Text('Rate this provider'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFB27300),
+                  side: const BorderSide(color: Color(0xFFF9A825)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),

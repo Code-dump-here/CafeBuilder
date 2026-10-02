@@ -38,9 +38,17 @@ class QuotationService {
     ApiClient.throwIfError(response);
   }
 
-  static Future<void> acceptQuotation(String id) async {
+  /// Approving a bid's quotation also accepts the bid: the server opens the
+  /// engagement and returns it here. Null when no engagement was opened — a
+  /// direct hire's quotation, or one approved after the bid was accepted.
+  static Future<ProjectWorkingResponse?> acceptQuotation(String id) async {
     final response = await ApiClient.authPost('/quotations/$id/accept', {});
     ApiClient.throwIfError(response);
+    final body = ApiClient.parseBody(response);
+    final engagement = body['engagement'];
+    return engagement is Map<String, dynamic>
+        ? ProjectWorkingResponse.fromJson(engagement)
+        : null;
   }
 
   /// Turn a bid down for good. [reason] is optional server-side but is the
