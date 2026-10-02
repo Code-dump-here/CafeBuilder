@@ -529,13 +529,23 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                             ),
                           ),
                           const SizedBox(height: 24),
-                        ] else if (project.openPosts.isNotEmpty) ...[
+                        ],
+                        // A project can carry two openings at once — one for
+                        // design, one for construction. The recruiting card
+                        // used to be the `else` of the block above, so hiring
+                        // the first provider hid it: the second opening stayed
+                        // open on the marketplace, kept collecting
+                        // applications, and the owner had no way left to read
+                        // or close it. It stands on its own now and lives as
+                        // long as a post is open, disappearing when that post
+                        // is accepted or closed like the first one did.
+                        if (_openPosts.isNotEmpty) ...[
                           _buildAnimatedSection(
                             index: 5,
                             child: _buildRecruitingStatus(project.openPosts),
                           ),
                           const SizedBox(height: 24),
-                        ] else ...[
+                        ] else if (project.providers.isEmpty) ...[
                           _buildAnimatedSection(
                             index: 5,
                             child: _buildEmptyProvidersState(),
