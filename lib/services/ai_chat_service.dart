@@ -98,10 +98,38 @@ class AiChatService {
     }
   }
 
+  /// Whether to attest this build with App Check.
+  ///
+  /// Off by default, because attestation cannot succeed here: Play Integrity
+  /// only vouches for an app installed from Play and signed with its
+  /// registered upload key, and this project signs even its release builds
+  /// with the debug keystore (android/app/build.gradle.kts). Activating it
+  /// anyway made every AI request fail on the token exchange — a 403 "App
+  /// attestation failed" — while the Firebase console showed AI Logic as
+  /// Unenforced and therefore perfectly willing to answer without a token.
+  ///
+  /// Turn it on for a build that can actually attest:
+  ///   flutter build apk --dart-define=ENABLE_APP_CHECK=true
+  ///
+  /// This has to be switched on for good once Firebase requires App Check
+  /// enforcement for AI Logic on 2 November 2026, which also means shipping a
+  /// build signed with a real upload key.
+  static const bool _appCheckEnabled =
+      bool.fromEnvironment('ENABLE_APP_CHECK', defaultValue: false);
+
   /// App Check attests that requests come from a genuine build of this app.
   /// A failure here shouldn't disable the assistant outright — enforcement is
   /// the backend's decision, so we log and carry on.
   static Future<void> _activateAppCheck() async {
+    if (!_appCheckEnabled) {
+      dev.log(
+        'App Check skipped — this build cannot attest (see _appCheckEnabled). '
+        'AI Logic must stay Unenforced in the Firebase console for the '
+        'assistant to answer.',
+        name: 'AiChatService',
+      );
+      return;
+    }
     try {
       if (kIsWeb) {
         if (!FirebaseConfig.hasAppCheck) {
