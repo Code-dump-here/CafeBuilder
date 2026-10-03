@@ -61,6 +61,13 @@ class ConstructionService {
         status: status,
       );
 
+  static Future<ConstructionItemResponse> getMilestone(String id) async {
+    final response = await ApiClient.authGet('/construction-items/$id');
+    ApiClient.throwIfError(response);
+    final body = ApiClient.parseBody(response);
+    return ConstructionItemResponse.fromJson(body);
+  }
+
   static Future<ConstructionItemResponse> updateMilestone(
     String id, {
     String? name,

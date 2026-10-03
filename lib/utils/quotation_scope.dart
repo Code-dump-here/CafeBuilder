@@ -18,6 +18,11 @@ enum QuotationScope {
   design,
   construction,
 
+  /// Design and build from one provider. Carries the design revision terms
+  /// (the design phase is real and the server enforces them) as well as the
+  /// construction side — labelled as such rather than as a design quotation.
+  both,
+
   /// The caller could not say. Everything is shown — see [showsDesignTerms].
   unknown,
 }
@@ -29,17 +34,17 @@ enum QuotationScope {
 /// application, `ProjectWorking.contractType` for a direct invitation — but
 /// both serialise the same three values, so one parser covers both.
 ///
-/// `both` resolves to [QuotationScope.design] deliberately: a turnkey
-/// engagement does carry a design phase, the revision quota applies to it, and
-/// the server will enforce it. Treating `both` as construction would hide
-/// terms that are genuinely binding.
+/// `both` keeps its own value: a turnkey engagement does carry a design phase,
+/// so its revision terms still show (the server enforces them), but calling the
+/// document a "Design quotation" misnamed a bill that is mostly construction.
 QuotationScope quotationScopeFrom(String? raw) {
   switch (raw?.trim().toLowerCase()) {
     case 'construction':
       return QuotationScope.construction;
     case 'design':
-    case 'both':
       return QuotationScope.design;
+    case 'both':
+      return QuotationScope.both;
     default:
       return QuotationScope.unknown;
   }
@@ -70,6 +75,7 @@ extension QuotationScopeView on QuotationScope {
   String? get label => switch (this) {
         QuotationScope.design => 'Design quotation',
         QuotationScope.construction => 'Construction quotation',
+        QuotationScope.both => 'Design & build quotation',
         QuotationScope.unknown => null,
       };
 }
