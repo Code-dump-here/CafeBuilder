@@ -363,10 +363,13 @@ class AiDesignReportPage extends StatelessWidget {
     return '—';
   }
 
-  String _imageUrl() {
+  /// The generated image, or null when there is none. There used to be a
+  /// stock café photo here as a fallback: when the run was refused (no plan
+  /// yet) or failed, subscribing just un-blurred a picture the AI never made.
+  String? _imageUrl() {
     final url = report?.imageArtifactUrl;
     if (url != null && url.isNotEmpty) return url;
-    return 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=800';
+    return null;
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -895,7 +898,29 @@ class AiDesignReportPage extends StatelessWidget {
                         sigmaX: isSubscribed ? 0 : 12,
                         sigmaY: isSubscribed ? 0 : 12,
                       ),
-                      child: Image.network(
+                      child: url == null
+                          ? Container(
+                              width: double.infinity,
+                              height: 280,
+                              color: Colors.grey[100],
+                              padding: const EdgeInsets.all(24),
+                              alignment: Alignment.center,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.image_not_supported_outlined, color: Colors.grey, size: 40),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    report == null || !report!.isCompleted
+                                        ? 'No AI concept was generated yet. Open the project to generate it once your plan is active.'
+                                        : 'No image was generated for this concept.',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Image.network(
                         webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                         url,
                         width: double.infinity,

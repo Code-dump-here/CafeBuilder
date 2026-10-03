@@ -33,27 +33,32 @@ class AiRecommendationService {
   // ── Create recommendation (POST → 202 Accepted) ─────────────────────────────
   /// Returns the queued job as an [AiRecommendationResponse] with state='queued'.
   /// The caller should then poll [pollUntilComplete] to wait for the result.
+  ///
+  /// Zones, notes and reference images left null are not sent, so the server
+  /// falls back to its own defaults and to the brief's brand note — what a
+  /// retry from the project page wants, since the onboarding answers are not
+  /// stored anywhere. An empty list, by contrast, is sent as "none".
   static Future<AiRecommendationResponse> createRecommendation({
     required String briefId,
-    List<String> mustHaveZones = const [],
-    List<String> niceToHaveZones = const [],
-    String notes = '',
+    List<String>? mustHaveZones,
+    List<String>? niceToHaveZones,
+    String? notes,
     bool generateImage = true,
     String? imageView,
     int? detailLevel,
     int alternativesCount = 1,
-    List<String> referenceImageUrls = const [],
+    List<String>? referenceImageUrls,
   }) async {
     final response = await ApiClient.authPost('/ai-recommendations', {
       'briefId': briefId,
-      'mustHaveZones': mustHaveZones,
-      'niceToHaveZones': niceToHaveZones,
-      'notes': notes,
+      if (mustHaveZones != null) 'mustHaveZones': mustHaveZones,
+      if (niceToHaveZones != null) 'niceToHaveZones': niceToHaveZones,
+      if (notes != null) 'notes': notes,
       'generateImage': generateImage,
       if (imageView != null) 'imageView': imageView,
       if (detailLevel != null) 'detailLevel': detailLevel,
       'alternativesCount': alternativesCount,
-      'referenceImageUrls': referenceImageUrls,
+      if (referenceImageUrls != null) 'referenceImageUrls': referenceImageUrls,
     });
 
     // 202 Accepted → queued job (not a full recommendation yet)

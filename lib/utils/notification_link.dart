@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../models/responses/api_responses.dart';
 import '../pages/project_detail_page.dart';
+import '../pages/quotation_details_page.dart';
 import '../services/apply_service.dart';
+import '../services/construction_service.dart';
+import '../services/contract_service.dart';
+import '../services/payment_batch_service.dart';
+import '../services/post_service.dart';
 import '../services/project_working_service.dart';
+import '../services/quotation_service.dart';
 
 /// Shared notification formatting and deep-link resolution.
 ///
@@ -53,18 +59,30 @@ bool notificationHasReference(NotificationResponse noti) {
   final id = noti.referenceId;
   if (type == null || type.isEmpty) return false;
   if (id == null || id.isEmpty) return false;
-  return type == 'project' ||
-      type == 'project_provider' ||
-      type == 'project_application';
+  return _openableTypes.contains(type);
 }
 
-/// Resolves a notification's (referenceType, referenceId) to a project and
+/// Every `referenceType` the backend writes (`NotificationService`, named after
+/// the table). Before 03/10/2026 only the first three opened anything, so a
+/// "New quotation" notification led nowhere.
+const _openableTypes = {
+  'project',
+  'project_provider',
+  'project_application',
+  'quotation',
+  'contract',
+  'payment_batch',
+  'construction_item',
+};
+
+/// Resolves a notification's (referenceType, referenceId) to a screen and
 /// opens it.
 ///
-/// Only `project` carries a project id directly; `project_provider` and
-/// `project_application` reference an engagement or an apply row, so those need
-/// one extra lookup to find the project they belong to. Unknown or missing
-/// reference data no-ops rather than guessing.
+/// A quotation opens on its own page, where the owner can approve it — that is
+/// what the notification asks of them. Everything else opens the project it
+/// belongs to: only `project` carries a project id directly, the rest need one
+/// or two lookups (row → engagement → project). Unknown or missing reference
+/// data no-ops rather than guessing.
 ///
 /// Returns true when a screen was actually pushed, so callers can tell the
 /// difference between "opened it" and "nothing to open".
@@ -77,18 +95,35 @@ Future<bool> openNotificationReference(
   final id = noti.referenceId!;
 
   try {
+    if (type == 'quotation') return await _openQuotation(context, id);
+
+    Future<String> projectOfEngagement(String workingId) async =>
+        (await ProjectWorkingService.getProjectWorking(workingId)).projectShopOwnerId;
+
     String? projectId;
     switch (type) {
       case 'project':
         projectId = id;
         break;
       case 'project_provider':
-        final working = await ProjectWorkingService.getProjectWorking(id);
-        projectId = working.projectShopOwnerId;
+        projectId = await projectOfEngagement(id);
         break;
       case 'project_application':
         final apply = await ApplyService.getApply(id);
         projectId = apply.projectShopOwnerId;
+        break;
+      case 'contract':
+        final contract = await ContractService.getContract(id);
+        projectId = await projectOfEngagement(contract.projectWorkingId);
+        break;
+      case 'payment_batch':
+        final batch = await PaymentBatchService.getById(id);
+        final contract = await ContractService.getContract(batch.contractId);
+        projectId = await projectOfEngagement(contract.projectWorkingId);
+        break;
+      case 'construction_item':
+        final item = await ConstructionService.getMilestone(id);
+        projectId = await projectOfEngagement(item.projectWorkingId);
         break;
     }
     if (projectId == null || projectId.isEmpty) return false;
@@ -108,4 +143,40 @@ Future<bool> openNotificationReference(
     // screen the user is on.
     return false;
   }
+}
+
+/// Opens a quotation on its own page — approve, reject or ask for a revision
+/// right from the notification.
+///
+/// The page needs the scope of the work to label the document and decide
+/// whether design revision terms belong on it, and the quotation does not carry
+/// it: an engagement states it as `contractType`, a bid inherits the post's
+/// `serviceKind`. A failed scope lookup still opens the page, unlabelled.
+Future<bool> _openQuotation(BuildContext context, String id) async {
+  final quotation = await QuotationService.getQuotation(id);
+
+  String? scope;
+  try {
+    final workingId = quotation.projectWorkingId;
+    final applyId = quotation.applyId;
+    if (workingId != null && workingId.isNotEmpty) {
+      scope = (await ProjectWorkingService.getProjectWorking(workingId)).contractType;
+    } else if (applyId != null && applyId.isNotEmpty) {
+      final apply = await ApplyService.getApply(applyId);
+      scope = (await PostService.getPost(apply.postId)).serviceKind;
+    }
+  } catch (_) {}
+
+  if (!context.mounted) return false;
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => QuotationDetailsPage(
+        quotationId: quotation.id,
+        initialQuotation: quotation,
+        scope: scope,
+      ),
+    ),
+  );
+  return true;
 }

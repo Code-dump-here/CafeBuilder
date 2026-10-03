@@ -61,6 +61,11 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   DesignBriefResponse? _brief;
   // Latest completed AI concept for the brief — null when none finished.
   AiRecommendationResponse? _aiConcept;
+  // Newest AI job of any state: tells "never generated" from "still running"
+  // and "failed" when there is no concept to show.
+  AiRecommendationResponse? _aiLatestJob;
+  // A job started or resumed from this screen is being polled.
+  bool _aiGenerating = false;
   bool _loading = true;
   String? _error;
 
@@ -256,14 +261,15 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
         }
       }
 
-      // Newest completed job wins. Sorted here rather than trusting the list
-      // order; failed and still-running jobs have nothing to show.
+      // Newest completed job is the concept shown. Sorted here rather than
+      // trusting the list order. The newest job of any state is kept too, so
+      // the card can say "running" or "failed" when no concept exists yet.
       final aiRes = await aiFuture;
-      final completedAi = aiRes is PaginationResponse<AiRecommendationResponse>
-          ? (aiRes.items.where((r) => r.isCompleted).toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
+      final aiJobs = aiRes is PaginationResponse<AiRecommendationResponse>
+          ? (aiRes.items.toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
           : <AiRecommendationResponse>[];
-      final aiConcept = completedAi.isEmpty ? null : completedAi.first;
+      final aiConcept = aiJobs.where((r) => r.isCompleted).firstOrNull;
+      final aiLatestJob = aiJobs.firstOrNull;
 
       // Application counts per open post. Best-effort: a failure here costs a
       // count on a chip, not the page.
@@ -301,9 +307,18 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           _contracts = contracts;
           _brief = brief;
           _aiConcept = aiConcept;
+          _aiLatestJob = aiLatestJob;
           _loading = false;
         });
         _animController.forward(from: 0.0);
+        // A job still running (started here or during onboarding, then left)
+        // is followed until it lands, so the concept appears without a reload.
+        if (aiConcept == null &&
+            aiLatestJob != null &&
+            _isAiJobRunning(aiLatestJob) &&
+            !_aiGenerating) {
+          _followAiJob(aiLatestJob.id);
+        }
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -507,6 +522,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                           _buildAnimatedSection(
                             index: 4,
                             child: _buildAiConcept(_aiConcept!),
+                          ),
+                          const SizedBox(height: 24),
+                        ] else if (_brief != null) ...[
+                          // No concept yet: the onboarding run was refused
+                          // (no plan at the time), failed, or is still going.
+                          _buildAnimatedSection(
+                            index: 4,
+                            child: _buildAiConceptMissing(),
                           ),
                           const SizedBox(height: 24),
                         ],
@@ -1197,6 +1220,195 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
         ],
       ),
     );
+  }
+
+  static bool _isAiJobRunning(AiRecommendationResponse job) =>
+      !job.isCompleted && !job.isFailed;
+
+  /// The AI card when the brief has no finished concept.
+  ///
+  /// The concept is generated once, at the end of onboarding. An owner without
+  /// a plan at that moment is refused by the server's paywall (409) — and
+  /// before 03/10/2026 nothing offered the run again once they subscribed, so
+  /// the project never got its image. This card is that second chance; it also
+  /// covers a run that failed or is still going.
+  Widget _buildAiConceptMissing() {
+    final job = _aiLatestJob;
+    final running = _aiGenerating || (job != null && _isAiJobRunning(job));
+    final failed = !running && job != null && job.isFailed;
+
+    final message = running
+        ? 'The AI is designing a concept from your brief. This usually takes a minute or two.'
+        : failed
+            ? 'The last AI run did not finish. You can start it again.'
+            : 'No AI concept has been generated for this brief yet.';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'AI Concept',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.espresso,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            message,
+            style: GoogleFonts.inter(fontSize: 12, height: 1.5, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          if (running && _aiGenerating) ...[
+            const LinearProgressIndicator(minHeight: 3),
+            if (job != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Status: ${job.state}',
+                style: GoogleFonts.inter(fontSize: 11, color: AppColors.placeholder),
+              ),
+            ],
+          ] else if (running && job != null)
+            // Polling gave up while the job was still going; let the owner look again.
+            OutlinedButton.icon(
+              onPressed: () => _followAiJob(job.id),
+              icon: const Icon(Icons.refresh, size: 16),
+              label: Text(
+                'Check again',
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            )
+          else
+            ValueListenableBuilder<bool>(
+              valueListenable: SubscriptionService.isSubscribedNotifier,
+              builder: (context, isSubscribed, _) {
+                if (!isSubscribed) {
+                  return Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      Text(
+                        'An active plan is needed to generate it.',
+                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textPrimary),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () => Navigator.pushNamed(context, '/subscription-checkout')
+                            // Come back to a card that knows about the new plan.
+                            .then((_) => SubscriptionService.refreshFromServer().ignore()),
+                        icon: const Icon(Icons.workspace_premium, size: 16),
+                        label: Text(
+                          'Upgrade',
+                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD700),
+                          foregroundColor: AppColors.espresso,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return ElevatedButton.icon(
+                  onPressed: _generateAiConcept,
+                  icon: const Icon(Icons.auto_awesome, size: 16),
+                  label: Text(
+                    failed ? 'Try again' : 'Generate AI concept',
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.espresso,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Starts an AI run for the brief and follows it to the end.
+  ///
+  /// Zones and notes are left to the server's defaults and the brief's brand
+  /// note: the answers given during onboarding are not stored anywhere else.
+  Future<void> _generateAiConcept() async {
+    final brief = _brief;
+    if (brief == null || _aiGenerating) return;
+    setState(() => _aiGenerating = true);
+    try {
+      final queued = await AiRecommendationService.createRecommendation(briefId: brief.id);
+      if (!mounted) return;
+      setState(() => _aiLatestJob = queued);
+      await _followAiJob(queued.id);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _aiGenerating = false);
+      // 409 here is the server's AI paywall: the plan this device remembers is
+      // not active on the server. Re-sync so the card switches to Upgrade.
+      final paywall = e.statusCode == 409 && e.message.toLowerCase().contains('subscription');
+      if (paywall) SubscriptionService.refreshFromServer().ignore();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            paywall ? 'An active plan is needed to generate the AI concept.' : e.message,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _aiGenerating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not start the AI concept. Please try again.')),
+      );
+    }
+  }
+
+  /// Polls a running job until it completes or fails (up to ~3 minutes).
+  Future<void> _followAiJob(String id) async {
+    if (mounted) setState(() => _aiGenerating = true);
+    AiRecommendationResponse? result;
+    try {
+      result = await AiRecommendationService.pollUntilComplete(
+        id,
+        intervalSeconds: 5,
+        maxAttempts: 36,
+        onPoll: (rec) {
+          if (mounted) setState(() => _aiLatestJob = rec);
+        },
+      );
+    } catch (_) {}
+    if (!mounted) return;
+    final finished = result;
+    setState(() {
+      _aiGenerating = false;
+      if (finished != null) {
+        _aiLatestJob = finished;
+        if (finished.isCompleted) _aiConcept = finished;
+      }
+    });
+    if (finished != null && finished.isFailed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The AI could not finish this concept. You can try again.')),
+      );
+    }
   }
 
   /// The brief the owner answered during onboarding, saved by the API at
