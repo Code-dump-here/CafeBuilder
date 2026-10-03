@@ -29,6 +29,10 @@ import 'find_constructors_page.dart';
 import 'site_profile_page.dart';
 import 'change_orders_page.dart';
 import 'payment_batches_page.dart';
+import '../services/payment_batch_service.dart';
+import '../services/change_order_service.dart';
+import '../models/responses/quotation_payment_responses.dart';
+import '../models/responses/change_order_responses.dart';
 import 'daily_logs_page.dart';
 import '../utils/money.dart';
 
@@ -2432,6 +2436,112 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
     );
   }
 
+  /// What the owner still owes before closing or deleting: instalments not yet
+  /// confirmed by the provider, and change orders nobody has accepted or
+  /// rejected. Mirrors the server's PaymentSettlementRules — every engagement
+  /// except one ended early by mutual agreement (its unpaid stages were settled
+  /// in that agreement). Null when it can't be told.
+  Future<(List<PaymentBatchResponse>, List<ChangeOrderResponse>)?> _findOutstanding() async {
+    try {
+      final batches = <PaymentBatchResponse>[];
+      final orders = <ChangeOrderResponse>[];
+      for (final w in _projectWorkings) {
+        final status = w.status.toLowerCase();
+        if (status == 'rejected' || status == 'terminated') continue;
+        final page = await PaymentBatchService.getBatches(projectWorkingId: w.id, pageSize: 50);
+        batches.addAll(page.items.where((b) => b.status.toLowerCase() != 'confirmed'));
+        final pending = await ChangeOrderService.getAll(projectWorkingId: w.id, status: 'pending');
+        orders.addAll(pending.items);
+      }
+      return (batches, orders);
+    } catch (_) {
+      return null; // let the server decide
+    }
+  }
+
+  /// Tells the owner what blocks [action] and offers the way out.
+  /// Returns true when nothing is outstanding and the caller may go on.
+  Future<bool> _ensurePaymentsSettled(String action) async {
+    final outstanding = await _findOutstanding();
+    if (outstanding == null || !mounted) return true;
+    final (unsettled, undecided) = outstanding;
+    if (unsettled.isEmpty && undecided.isEmpty) return true;
+
+    final lineStyle = GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.4);
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Settle payments before $action'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Every instalment must be paid and confirmed by the provider, and every change '
+                'order accepted or rejected, first:',
+              ),
+              const SizedBox(height: 10),
+              for (final b in unsettled)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '• ${b.name} · ${formatVnd(b.amount)} — ${switch (b.status.toLowerCase()) {
+                      'proof_submitted' => 'waiting for the provider to confirm',
+                      'rejected' => 'proof rejected, upload a new one',
+                      _ => 'upload your payment proof',
+                    }}',
+                    style: lineStyle,
+                  ),
+                ),
+              for (final o in undecided)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '• Change order "${o.title}" · ${formatVnd(o.amount)} — accept or reject it',
+                    style: lineStyle,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          if (undecided.isNotEmpty)
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'change-orders'),
+              child: const Text('Open Change orders'),
+            ),
+          if (unsettled.isNotEmpty)
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, 'payments'),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.espresso),
+              child: const Text('Open Payments', style: TextStyle(color: Colors.white)),
+            ),
+        ],
+      ),
+    );
+
+    if (choice != null && mounted) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => choice == 'payments'
+              ? PaymentBatchesPage(
+                  projectWorkings: _projectWorkings,
+                  projectName: _project?.name ?? 'Project',
+                )
+              : ChangeOrdersPage(
+                  projectWorkings: _projectWorkings,
+                  projectName: _project?.name ?? 'Project',
+                ),
+        ),
+      );
+      if (mounted) _loadProject();
+    }
+    return false;
+  }
+
   Future<void> _completeProject() async {
     final engagements = _projectWorkings;
     final conMo = engagements
@@ -2440,8 +2550,19 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
     final daNghiemThu = engagements.where((e) => e.status == "completed").toList();
 
     if (conMo.isNotEmpty) {
+      // Name them: a bare count left the owner guessing which provider was
+      // holding the project open (and a pending end-request still counts).
+      final names = conMo
+          .map((e) => '${e.providerDisplayName} (${e.contractType}'
+              '${e.isAwaitingTerminationApproval ? ', end requested' : ''})')
+          .join(', ');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${conMo.length} engagements are still open — accept or cancel them first.')),
+        SnackBar(
+          content: Text(
+            'Still open: $names. Open Workspace to accept their work or respond to the end request first.',
+          ),
+          duration: const Duration(seconds: 6),
+        ),
       );
       return;
     }
@@ -2452,6 +2573,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
       );
       return;
     }
+
+    if (!await _ensurePaymentsSettled('closing the project')) return;
+    if (!mounted) return;
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -2593,6 +2717,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   }
 
   Future<void> _deleteProject() async {
+    // Deleting drops the record of every instalment — not while any is unpaid.
+    if (!await _ensurePaymentsSettled('deleting the project')) return;
+    if (!mounted) return;
     final name = _project?.name ?? 'this project';
     final confirmed = await showDialog<bool>(
       context: context,

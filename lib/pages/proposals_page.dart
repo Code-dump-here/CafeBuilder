@@ -14,6 +14,8 @@ import 'designer_detail_page.dart';
 import 'constructor_detail_page.dart';
 import 'quotation_details_page.dart';
 import '../services/quotation_service.dart';
+import '../models/responses/quotation_payment_responses.dart';
+import '../utils/money.dart';
 
 class ProposalsPage extends StatefulWidget {
   /// Posts as the caller knew them. Used only as the initial value — the page
@@ -332,6 +334,46 @@ class _ProposalsPageState extends State<ProposalsPage> {
       return;
     }
 
+    // A proposal with a quotation waiting on the owner is accepted THROUGH that
+    // quotation: the server then accepts the proposal as well, and the price
+    // is locked in. Accepting the proposal alone left the quotation stuck at
+    // 'sent' — the contract was then typed by hand, its value drifted from the
+    // quotation, and no payment instalments were ever generated (02/10/2026).
+    QuotationResponse? pendingQuotation;
+    try {
+      final quotes = await QuotationService.getQuotations(applyId: apply.id, pageSize: 20);
+      pendingQuotation = (quotes.items.where((q) => q.status.toLowerCase() == 'sent').toList()
+            ..sort((a, b) => b.version.compareTo(a.version)))
+          .firstOrNull;
+    } catch (_) {
+      // Can't tell — fall back to accepting the proposal on its own.
+    }
+    if (!mounted) return;
+
+    if (pendingQuotation != null) {
+      final quote = pendingQuotation;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Accept proposal and quotation'),
+          content: Text(
+            'This proposal comes with quotation v${quote.version} for ${formatVnd(quote.totalAmount)}. '
+            'Accepting the proposal approves this quotation too — the contract value and payment '
+            'instalments will follow it.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.espresso),
+              child: const Text('Accept', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -339,7 +381,10 @@ class _ProposalsPageState extends State<ProposalsPage> {
     );
 
     try {
-      final working = await ApplyService.acceptApply(apply.id);
+      final working = pendingQuotation != null
+          ? (await QuotationService.acceptQuotation(pendingQuotation.id)) ??
+              (throw StateError('The quotation was approved but no engagement came back — refresh the page.'))
+          : await ApplyService.acceptApply(apply.id);
       final accepted = working.contractType.toLowerCase();
       if (accepted == 'design' || accepted == 'both') _designTaken = true;
       if (accepted == 'construction' || accepted == 'both') _constructionTaken = true;

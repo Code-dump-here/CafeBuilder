@@ -839,17 +839,26 @@ class _ConstructionProgressDetailPageState
 
   Widget _buildTaskRow(ConstructionTaskResponse task) {
     final isDone = task.status == 'completed';
+    // The constructor marks a task in progress before finishing it; showing
+    // only done/not-done hid that step from the owner entirely (02/10/2026).
+    final isActive = task.status == 'in_progress';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+            isDone
+                ? Icons.check_circle
+                : isActive
+                    ? Icons.timelapse
+                    : Icons.radio_button_unchecked,
             size: 16,
             color: isDone
                 ? const Color(0xFF2E7D32)
-                : AppColors.placeholder,
+                : isActive
+                    ? const Color(0xFFE65100)
+                    : AppColors.placeholder,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -871,6 +880,15 @@ class _ConstructionProgressDetailPageState
                         : FontWeight.w500,
                   ),
                 ),
+                if (isActive)
+                  Text(
+                    'In progress',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFE65100),
+                    ),
+                  ),
                 if (task.description != null &&
                     task.description!.isNotEmpty)
                   Text(

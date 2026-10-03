@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import '../models/requests/auth_requests.dart';
 import '../models/responses/api_responses.dart' show AuthResponse;
 import 'api_client.dart';
 import 'service_provider_service.dart';
+import 'subscription_service.dart';
 
 class AuthService {
   static Future<AuthResponse> login(String email, String password) async {
@@ -18,6 +21,13 @@ class AuthService {
       role: auth.role,
       email: auth.email,
     );
+    // The cached "subscribed" flag is per device, not per account, and the
+    // splash-time refresh in main() is skipped when the app starts signed
+    // out. Without this a fresh sign-in kept whatever the device last cached:
+    // a paid owner stayed locked out of the 3D visual (and bought the plan a
+    // second time), or a free account inherited the previous user's unlock.
+    await SubscriptionService.setSubscribed(false);
+    unawaited(SubscriptionService.refreshFromServer());
     return auth;
   }
 
@@ -120,6 +130,7 @@ class AuthService {
     } finally {
       await ApiClient.clearTokens();
       ShopOwnerService.clearCache();
+      await SubscriptionService.setSubscribed(false);
     }
   }
 
