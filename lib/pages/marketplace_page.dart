@@ -4,6 +4,10 @@ import '../theme/app_colors.dart';
 import '../models/marketplace_state.dart';
 import '../services/api_client.dart';
 import '../services/post_service.dart';
+import '../services/project_service.dart';
+import '../services/service_provider_service.dart';
+import '../models/responses/api_responses.dart';
+import '../utils/money.dart';
 import '../widgets/notifications_sheet.dart';
 
 class MarketplacePage extends StatefulWidget {
@@ -16,8 +20,26 @@ class MarketplacePage extends StatefulWidget {
 
 class _MarketplacePageState extends State<MarketplacePage>
     with SingleTickerProviderStateMixin {
+  static const String _fallbackImage =
+      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600';
+
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  /// The owner's completed projects, kept apart from
+  /// `MarketplaceState.broadcasts` because they are projects, not postings.
+  final List<BroadcastProject> _completedProjects = [];
+
+  List<BroadcastProject> _matchingSearch(List<BroadcastProject> items) {
+    final q = _searchQuery.toLowerCase();
+    if (q.isEmpty) return List.of(items);
+    return items
+        .where((item) =>
+            item.title.toLowerCase().contains(q) ||
+            item.location.toLowerCase().contains(q) ||
+            item.style.toLowerCase().contains(q))
+        .toList();
+  }
   late final TabController _tabController;
 
   // ──────────────────────────────────────────────────────────────────
@@ -54,57 +76,106 @@ class _MarketplacePageState extends State<MarketplacePage>
     );
   }
 
+  /// Loads the two tabs: the owner's own open postings, and their own
+  /// completed projects.
+  ///
+  /// Both halves are scoped to the signed-in owner. The page used to ask for
+  /// every post on the platform with no filter at all, which made the first tab
+  /// a public marketplace and the second one "every post anywhere that is no
+  /// longer open" — someone else's filled posting read as a completed project
+  /// of yours, and a post closed on day one of a six-month build read as
+  /// finished work.
   Future<void> _fetchPosts() async {
     try {
-      final response = await PostService.getPosts(pageNumber: 1, pageSize: 100);
+      final shopOwnerId = await ShopOwnerService.ensureShopOwnerId();
+      final projects = await ProjectService.getProjects(
+        ownerId: shopOwnerId,
+        pageSize: 100,
+      );
+      final mine = {for (final p in projects.items) p.id: p};
+
+      final posts = await PostService.getPosts(
+        pageNumber: 1,
+        pageSize: 100,
+        status: 'open',
+      );
       if (!mounted) return;
+
+      // Newest first. This used to sort the mapped list by descending numeric
+      // id; ids are uuids now, so `int.tryParse` returned null for every row
+      // and the comparison was constant — the list silently kept whatever
+      // order the server sent. `createdAt` is what "newest" actually meant, so
+      // sort on that, before mapping.
+      final myOpenPosts = posts.items
+          .where((post) => mine.containsKey(post.projectShopOwnerId))
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      final completed = projects.items
+          .where((project) => project.status.toLowerCase() == 'completed')
+          .toList()
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+
       setState(() {
-        // Newest first. This used to sort the mapped list by descending
-        // numeric id; ids are uuids now, so `int.tryParse` returned null for
-        // every row and the comparison was constant — the list silently kept
-        // whatever order the server sent. `createdAt` is what "newest"
-        // actually meant, so sort on that, before mapping.
-        final sortedPosts = [...response.items]
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-        final serverBroadcasts = sortedPosts.map((post) {
-              // Try to extract AI-generated image URL from description
-              String imageUrl = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600';
-              final aiImageMatch = RegExp(r'🖼️ AI_IMAGE: (.+)').firstMatch(post.description);
-              if (aiImageMatch != null && aiImageMatch.group(1)!.trim().isNotEmpty) {
-                imageUrl = aiImageMatch.group(1)!.trim();
-              }
-              return BroadcastProject(
-              id: post.id.toString(),
-              title: post.title.isNotEmpty ? post.title : 'Marketplace Project',
-              location: post.location.isNotEmpty ? post.location : 'Remote',
-              style: post.style.isNotEmpty ? post.style : 'Concept',
-              budgetTier:
-                  post.budgetTier.isNotEmpty ? post.budgetTier : 'TBD',
-              description: post.description.isNotEmpty
-                  ? post.description
-                  : 'A beautiful architecture project.',
-              requirements: post.requirements.isNotEmpty
-                  ? post.requirements
-                  : ['Interior Design'],
-              date: post.expectedStart.isNotEmpty
-                  ? post.expectedStart
-                  : post.createdAt.toString().substring(0, 10),
-              proposalsCount: 0,
-              commentsCount: 0,
-              status: post.status,
-              imageUrl: imageUrl,
-            );
-            }).toList();
-
-        if (serverBroadcasts.isNotEmpty) {
-          MarketplaceState.broadcasts.clear();
-          MarketplaceState.broadcasts.addAll(serverBroadcasts);
-        }
+        MarketplaceState.broadcasts
+          ..clear()
+          ..addAll(myOpenPosts.map(_broadcastFromPost));
+        _completedProjects
+          ..clear()
+          ..addAll(completed.map(_broadcastFromProject));
       });
     } catch (e) {
-      debugPrint('Error fetching posts: $e');
+      debugPrint('Error fetching the market page: $e');
     }
+  }
+
+  BroadcastProject _broadcastFromPost(PostResponse post) {
+    // The AI concept image is carried inside the description the owner posted.
+    String imageUrl = _fallbackImage;
+    final aiImageMatch = RegExp(r'🖼️ AI_IMAGE: (.+)').firstMatch(post.description);
+    if (aiImageMatch != null && aiImageMatch.group(1)!.trim().isNotEmpty) {
+      imageUrl = aiImageMatch.group(1)!.trim();
+    }
+    return BroadcastProject(
+      id: post.id.toString(),
+      title: post.title.isNotEmpty ? post.title : 'Marketplace Project',
+      location: post.location.isNotEmpty ? post.location : 'Remote',
+      style: post.style.isNotEmpty ? post.style : 'Concept',
+      budgetTier: post.budgetTier.isNotEmpty ? post.budgetTier : 'TBD',
+      description: post.description.isNotEmpty
+          ? post.description
+          : 'A beautiful architecture project.',
+      requirements:
+          post.requirements.isNotEmpty ? post.requirements : ['Interior Design'],
+      date: post.expectedStart.isNotEmpty
+          ? post.expectedStart
+          : post.createdAt.toString().substring(0, 10),
+      proposalsCount: 0,
+      commentsCount: 0,
+      status: post.status,
+      imageUrl: imageUrl,
+    );
+  }
+
+  /// A finished project rendered as a card. It carries no recruitment data —
+  /// there is no posting behind it any more — so the fields a post would fill
+  /// read from the project itself.
+  BroadcastProject _broadcastFromProject(ProjectResponse project) {
+    return BroadcastProject(
+      id: project.id,
+      title: project.name.isNotEmpty ? project.name : 'Project',
+      location: project.address.isNotEmpty ? project.address : 'Remote',
+      style: '${project.areaM2.toStringAsFixed(0)} m²',
+      budgetTier: formatVnd(project.budget),
+      description: 'Completed on '
+          '${project.updatedAt.toString().substring(0, 10)}.',
+      requirements: const <String>[],
+      date: project.updatedAt.toString().substring(0, 10),
+      proposalsCount: 0,
+      commentsCount: 0,
+      status: project.status,
+      imageUrl: _fallbackImage,
+    );
   }
 
   @override
@@ -120,15 +191,8 @@ class _MarketplacePageState extends State<MarketplacePage>
   // ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final all = MarketplaceState.broadcasts.where((item) {
-      final q = _searchQuery.toLowerCase();
-      return item.title.toLowerCase().contains(q) ||
-          item.location.toLowerCase().contains(q) ||
-          item.style.toLowerCase().contains(q);
-    }).toList();
-
-    final openItems = all.where(_isOpen).toList();
-    final completedItems = all.where((p) => !_isOpen(p)).toList();
+    final openItems = _matchingSearch(MarketplaceState.broadcasts);
+    final completedItems = _matchingSearch(_completedProjects);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -376,7 +440,7 @@ class _MarketplacePageState extends State<MarketplacePage>
             const SizedBox(height: 8),
             Text(
               isCompleted
-                  ? 'Projects that have been assigned will appear here.'
+                  ? 'Your finished projects will appear here.'
                   : 'Try adjusting your search criteria.',
               textAlign: TextAlign.center,
               style:
@@ -568,7 +632,11 @@ class _MarketplacePageState extends State<MarketplacePage>
                         elevation: 0,
                       ),
                       child: Text(
-                        open ? 'View Detail' : 'Assigned',
+                        open
+                            ? 'View Detail'
+                            : project.status.toLowerCase() == 'completed'
+                                ? 'Completed'
+                                : 'Assigned',
                         style: GoogleFonts.inter(
                             fontSize: 11, fontWeight: FontWeight.bold),
                       ),
